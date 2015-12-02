@@ -1,0 +1,25 @@
+<!-- abstract component definition -->
+<abstractComponent name="LinearFunction" uniqueID="tutorialLF">
+     <componentOverview>
+	 <summary>A linear function, implements the Function interface.</summary>
+	 <description>A member of the CCA tutorial components.  Returns 2*x.</description>
+	 <author>Craig Rasmussen</author>
+     </componentOverview>   
+
+     <ports>
+        <provides name="FunctionPort" type="http://functionport.location" maxConnections="10" minConnections="1" dynamic="true">
+            <!-- the type is a URI to the port definition, which
+                 should probably appear in a different file.
+              -->
+            <summary>Evaluates the linear function 2*x</summary>
+            <description>A more verbose description of functionality</description>
+            <property name="someProperty" value="someValue" type="int"/>
+         </provides>
+
+	 <uses name="MathPort" type="http://mathport.location" maxConnections="7" minConnections="1">
+            <summary>how's this port used</summary>
+	    <description>more verbose description</description>
+	    <property name="someProperty" value="someValue" type="double"/>
+         </uses>
+     </ports>  
+</abstractComponent>

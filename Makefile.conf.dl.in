@@ -1,0 +1,40 @@
+# Most folks need to set a values here.
+# It is setup so that you can define the following env vars:
+# CCA_ROOT: where the current spec lives.
+# JAVA_HM: where the JDK1.2x is located
+# MPI_HOME: where MPI is located
+# TOMCAT_HOME: where the jakarta tomcat servlet server is found.
+# 
+# All the other stuff that used to be defined here for
+# specific components is now gone away to the component
+# world where it is expected to be dynamic loaded.
+#---------------------------------------------------------
+# Where the cca spec lives
+CCA_ROOT = @CCA_ROOT@
+
+# Where this file lives
+CCAFE_ROOT = @CCAFE_ROOT@
+CCAFE_CXX_ROOT = @CCAFE_CXX_ROOT@
+
+# Where ccaffeine might ultimately be installed, when we get an install target.
+CCAFE_INSTALL_ROOT = @CCAFE_INSTALL_ROOT@
+# Where ccafe will be installed as an rpm. only on a good day is
+# this identical to CCAFE_INSTALL_ROOT.
+CCAFE_RPM_ROOT = @CCAFE_RPM_ROOT@
+
+#Where Jakarta tomcat lives 
+TOMCAT_HOME = @TOMCAT_HM@
+
+# Where MPI lives.
+# typically /usr/local/mpich.
+# see also cxx/
+MPI = @MPI@
+
+# where you hide your blas/lapack/(f77||f90) libraries.
+# Give full paths.
+MATHLIBS= @MATH_LIBS@
+
+
+# Most folks probably don't need to set anything below here.
+
+

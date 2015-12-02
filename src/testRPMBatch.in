@@ -1,0 +1,251 @@
+#! @SHELL@
+
+progname=`echo $0 | sed -e 's%.*/%%g'`
+HAVE_MPI=@USEMPI@
+MPI_IS_MPD=@MPI_IS_MPD@
+XMPI=""
+if test "x$HAVE_MPI" != "x1" ; then
+  echo "$progname: ccaffeine compiled without MPI. Trying nonparallel args."
+  MPIRUN=""
+  MPI_IS_MPD=0
+else
+  if test "x$MPI_IS_MPD" = "x1"; then
+    mpdbin=@MPI_BIN@
+    if test "x$LD_LIBRARY_PATH" = "x"; then
+      XMPI=""
+    else
+      XMPI="-MPDENV- LD_LIBRARY_PATH=$LD_LIBRARY_PATH"
+    fi
+    if test ! -f ~/.mpd.conf; then
+      echo "$progname: You forgot to set up ~/.mpd.conf. Exiting."
+      exit 1
+    fi
+  else
+    mpdbin=""
+  fi
+  MPIRUN='@MPIRUN@ -np 3'
+fi
+curdir=`pwd`
+bindir=@bindir@
+libdir=@libdir@
+babellibdir=@BABEL_ROOT@/lib
+pkglibdir=@pkglibdir@
+pkgdatadir=@pkgdatadir@
+binsuffix=@PROGRAM_SUFFIX@
+CLASSIC_CCA_INSTALLED=@CLASSIC_CCA_INSTALLED@
+NEO_CCA_INSTALLED=@NEO_CCA_INSTALLED@
+BABEL_CCA_INSTALLED=@BABEL_CCA_INSTALLED@
+EGNEO_CCA_DATA=@EGNEO_CCA_DATA@
+
+tmpdir=""
+tmpfile=""
+if test ! -w $curdir ; then
+  tmpdir=`mktemp -d -q /tmp/$progname.dir.XXXXXX`
+  if [ $? -ne 0 ]; then
+     echo "$progname: Can't create temp dir /tmp/$progname.dir. Exiting..."
+     exit 1
+  fi
+else
+  tmpdir=`mktemp -d -q $curdir/$progname.dir.XXXXXX`
+  if [ $? -ne 0 ]; then
+     echo "$progname: Can't create temp dir $curdir/$progname.dir. Exiting..."
+     exit 1
+  fi
+fi
+tmpfile=$tmpdir/$progname.out
+cd $tmpdir
+
+grepfiles="$tmpfile $tmpdir/pErr0 $tmpdir/pOut0"
+#LD_LIBRARY_PATH="$babellibdir:$LD_LIBRARY_PATH"; export LD_LIBRARY_PATH
+#SIDL_DLL_PATH=$libdir;$babellibdir;export SIDL_DLL_PATH
+answer1="Printer says the string is: Foobar!"
+answer2="Hello World"
+answer3="WITHOUT babel"
+answer4="Printer says the string is: Foobar! from bs.StarterComponent.0"
+answer5="called non-self setString.@"
+answer6="TestMPI.go completed"
+answer7="ERROR TestMPI.go FAIL"
+echo "====================================================================="
+echo "                  Testing the Ccaffeine build ...                    "
+echo "proceeding with env vars:"
+echo "# LD_LIBRARY_PATH=$LD_LIBRARY_PATH"
+echo "# SIDL_DLL_PATH=$SIDL_DLL_PATH"
+echo "# tmpdir=$tmpdir"
+infile="$tmpdir/mpitest.rcfile"
+frame_opts="--ccafe-rc $infile --ccafe-outputdir $tmpdir --ccafe-pwd $curdir $XMPI"
+echo "# ccaffeine options = $frame_opts"
+echo "# input is in $infile"
+echo "# output will be in $tmpdir/pErr* and $tmpdir/pOut*"
+echo "# "
+
+if test "x$NEO_CCA_INSTALLED" = "x1"; then
+# next assumes a standard install of neo and ccaffeine in the same prefix
+NEOTEST_INPUT="path append $EGNEO_CCA_DATA
+repository get-global eg.neo.SimpleStamper
+create eg.neo.SimpleStamper enSS1
+create eg.neo.SimpleStamper enSS2
+connect enSS1 out_port enSS2 in_port
+go enSS1 go
+"
+else
+NEOTEST_INPUT="# no neo built-in"
+fi
+
+if test "x$BABEL_CCA_INSTALLED" = "x1"; then
+BABELTEST_INPUT="repository get-global ccafe0.PrinterComponent
+repository get-global ccafe1.StarterComponent
+instantiate ccafe0.PrinterComponent PrinterComponent1
+instantiate ccafe1.StarterComponent StarterComponent1
+display component StarterComponent1
+display component PrinterComponent1
+connect StarterComponent1 output PrinterComponent1 string
+go StarterComponent1 go
+disconnect StarterComponent1 output PrinterComponent1 string
+"
+if test "x$HAVE_MPI" = "x1"; then
+MPI_BABELTEST_INPUT="repository get-global ccafe6.TestMPI
+instantiate ccafe6.TestMPI TestMPI1
+display component MPISetup
+display component TestMPI1
+go TestMPI1 go"
+else
+MPI_BABELTEST_INPUT="# no mpi built-in"
+fi
+else
+BABELTEST_INPUT="# no babel built-in"
+fi
+
+if test "x$CLASSIC_CCA_INSTALLED" = "x1"; then
+CLASSICTEST_INPUT="repository get-global StarterComponent
+repository get-global TimeStamper
+repository get-global Timer
+repository get-global PrinterComponent
+repository get-global ComplicatedStarterComponent
+repository get-global ComplicatedPrinterComponent
+instantiate StarterComponent StarterComponent0
+instantiate PrinterComponent PrinterComponent0
+display component StarterComponent0
+display component PrinterComponent0
+connect StarterComponent0 out0 PrinterComponent0 printer_port
+go StarterComponent0 go_port
+"
+# repository get-global RevalidateTest
+CLASSICTEST2_INPUT="repository get-global BSTest
+instantiate BSTest bs
+go bs go
+"
+else
+CLASSICTEST_INPUT="# no classic built-in"
+CLASSICTEST2_INPUT="# no classic built-in"
+fi
+
+
+cat << EOF > $infile
+#!ccaffeine
+path set $libdir
+path append $pkgdatadir/components
+
+# do classic test now or not
+$CLASSICTEST_INPUT
+
+# do neo test now or not
+$NEOTEST_INPUT
+
+# Do Babel stuff now ...
+$BABELTEST_INPUT
+
+# babel mpi now...
+$MPI_BABELTEST_INPUT
+
+# do fake classic bs test now or not
+$CLASSICTEST2_INPUT
+
+display arena
+display state
+bye
+EOF
+if test "x$MPI_IS_MPD" = "x1"; then
+  echo "Whacking all present MPI mpd device jobs..."
+  $mpdbin/mpdallexit
+  echo "Restarting mpd"
+  $mpdbin/mpd -b
+  sleep 2
+  $mpdbin/mpdtrace
+fi
+rm -f $tmpdir/pErr* $tmpdir/pOut* $tmpfile
+touch $grepfiles
+if test "x$HAVE_MPI" = "x1" ; then
+  echo "# If this takes more than 30 seconds to complete,"
+  echo "# probably it hung in MPI_Init for some reason and you"
+  echo "# should kill it."
+  echo "# "
+fi
+echo "$MPIRUN $bindir/ccafe-batch$binsuffix $frame_opts"
+if $MPIRUN $bindir/ccafe-batch$binsuffix $frame_opts >$tmpfile 2>&1
+then
+	echo -n "didn't crash or hang up early ...  "
+else
+	echo -n "didn't make it all the way through ...  "
+fi
+if (grep "$answer1" $grepfiles >/dev/null 2>&1) && 
+   (grep "$answer2" $grepfiles >/dev/null 2>&1) &&
+   (grep "$answer4" $grepfiles >/dev/null 2>&1) &&
+   (grep "$answer5" $grepfiles >/dev/null 2>&1) 
+then
+	echo looks like it is working.
+	dumptrash=yes
+else
+	echo "The output indicates CLASSIC dccafe or BABEL dccafe is inoperative."
+	echo "See $tmpfile if the rest of this message is unexpected."
+fi
+if (grep "$answer1" $grepfiles >/dev/null 2>&1)
+then
+	echo "Looks like CLASSIC dccafe is working."
+else
+    if test "x$CLASSIC_CCA_INSTALLED" = "x1" ; then
+            echo  "CLASSIC dccafe is NOT working."
+                echo  "This is bad."
+    else
+        echo "CLASSIC support is not configured into ccaffeine."
+    fi
+fi
+if (grep "$answer2" $grepfiles >/dev/null 2>&1)
+then
+	echo "Looks like BABEL dccafe is working."
+	if (grep "$answer6" $grepfiles >/dev/null 2>&1)
+	then
+		echo "Looks like BABEL mpi ports are working."
+	else
+	    if test "x$HAVE_MPI" = "x1" ; then
+		    echo  "dccafe babel mpi ports NOT working."
+			echo  "This is bad."
+	    else
+		echo "MPI support is not configured into ccaffeine."
+	    fi
+	fi
+else
+    if test "x$BABEL_CCA_INSTALLED" = "x1" ; then
+            echo  "BABEL dccafe is NOT working."
+                echo  "This is bad."
+    else
+        echo "BABEL support is not configured into ccaffeine."
+    fi
+fi
+if (grep "$answer5" $tmpfile >/dev/null 2>&1)
+then
+        echo "Looks like NEO dccafe is working."
+else
+    if test "x$NEO_CCA_INSTALLED" = "x1"; then
+            echo  "NEO dccafe is NOT working."
+                echo  "This is bad."
+    else
+        echo "NEO support is not configured into ccaffeine."
+        fi
+fi
+echo      done with Ccaffeine tests.
+echo "====================================================================="
+exit 0
+if test "X$dumptrash" = "XYes" ; then
+	rm -rf $tmpdir
+fi
+

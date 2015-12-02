@@ -1,0 +1,15 @@
+So here's what we had to do on catalyst.ca.sandia.gov for sc03.
+configure probably needs to know this. well, really, it just
+needs to be given the right flags.
+baa
+
+ LOCALFLAGS = $(SOMELOCALFLAGS) $(BABELSTUFF_INC)
+---
+> LOCALFLAGS = $(SOMELOCALFLAGS) $(BABELSTUFF_INC) -I/usr/local/lampi/include -D_ULM_MPI_H_
+296c296
+<       $(PURIFY) $(MPICXX) $$BFLFLAGS $(LOCALFLAGS) $(STV_LDFLAGS)       \
+---
+>       $(PURIFY) $(MPICXX) $$BFLFLAGS $(LOCALFLAGS) $(STV_LDFLAGS) \
+302a303
+>                 /usr/local/lampi/lib/libmpi.so \
+

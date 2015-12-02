@@ -1,0 +1,19 @@
+create SNL_Map sn
+parameter sn setSize n 10
+go sn freezeSize
+
+create ISIS_DCSR_Matrix a
+connect a ESI_MapPartition sn ESI_MapPartition
+
+create ISIS_Vector b
+connect b ESI_MapPartition sn ESI_MapPartition
+
+create identity pc
+connect pc Sample_ESI_Vector b x
+connect pc ESI_MatrixMultiply a ESI_MatrixMultiply
+
+create ISIS_GMRES gm
+connect gm ESI_Operator a ESI_Operator
+connect gm ESI_Preconditioner pc ESI_Preconditioner
+
+display chain a

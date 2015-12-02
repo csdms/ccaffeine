@@ -1,0 +1,15 @@
+// prefix = 'ccaffeine.CcafeTypeMap.put'
+
+
+// void
+// ccaffeine::CcafeTypeMap_impl::put%name% (
+//   /*in*/ std::string key,
+//   /*in*/ %type% value ) 
+// throw () 
+
+{
+  Object< %type% >* ptr = new Object< %type% >(%name%);
+  ptr->set(value);
+  OPtr optr((ObjectBase*)ptr);
+  table[key] = optr;
+}

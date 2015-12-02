@@ -1,0 +1,83 @@
+# tests for neo drivers
+
+CCAFE_HOME=../../..
+buildroot=../../../..
+include $(CCAFE_HOME)/Makefile.Rules
+VPATH := $(srcdir)/cxx/dc/neo/test
+include $(EGNEO_CONFIG)
+include $(NEOTESTPARAMETER_CONFIG)
+
+
+INPUT= $(NEOCCA_SCRIPTS_DIR)/test-script-ccafe.scr
+OUTPUT=Test_Script_Ccafe_scr_NeoMain
+
+B2N=$(NEOCCA_INSTALL_ROOT)/bin/bld2neo
+
+NEOFWK_INC=-I$(CCAFE_HOME)/dc/neo/ccafe-bind
+
+CXXFLAGS_LOCAL=$(CXXFLAGS) $(NEOCCA_INC)
+CXXFLAGS_MAIN=$(CXXFLAGS) $(NEOCCA_INC) $(NEOFWK_INC)
+
+ifneq "$(HAVE_BABEL)" "0"
+BABELGOO=\
+$(BABEL_CCA_LIBS) \
+$(BABEL_ROOT)/lib/libsidl.a
+endif
+
+LIBS= \
+$(CCAFE_HOME)/lib/libccafeCore.a \
+$(EGNEO_STATIC_LIB) \
+$(NEOTESTPARAMETER_STATIC_LIB) \
+$(NEOCCA_STATIC_LIB) \
+$(BABELGOO) \
+-lxml2 -lz -lm $(CCAFE_THREAD_LIBS) -ldl
+
+
+bins driver.x: gen
+	-$(RM) driver.x
+	-$(CXX) -c $(CXXFLAGS_LOCAL) $(OUTPUT).cc
+	-$(MPICXX) -o driver.x $(CXXFLAGS_MAIN) driver.cc \
+	$(OUTPUT).o \
+	$(LIBS)
+	@if ! test -x driver.x; then \
+		echo "Problem building generated code. Probably input script error." ; \
+		echo "Check in $(OUTPUT).cc for errors caused by missing components."; \
+		echo "Ccaffeine will work just fine in spite of this."; \
+	fi
+
+x:
+	@echo "M$(NEO_PRERUN)M"
+
+gen:
+	$(NEO_PRERUN) $(B2N) $(INPUT) $(OUTPUT)
+
+OUTSRC=  tee -a src-list-driver >>  ../../src-list
+
+src-list:
+	@$(RM) src-list-driver
+	@echo "DRIVER_SRC_CXX += \\" | $(OUTSRC)
+	@echo "$(CCAFE_ROOT)/cxx/dc/neo/test/$(OUTPUT).cc" | $(OUTSRC)
+	@echo "NEO_TESTS += neotest" | $(OUTSRC)
+	@echo "CMPT_LIST_CXX_neotest = \\" | $(OUTSRC)
+	@echo "$(CCAFE_ROOT)/cxx/dc/neo/test/$(OUTPUT).cc" | $(OUTSRC)
+	@echo "DRIVER_SRC_neotest=$(srcdir)/cxx/dc/neo/test/driver.cc" | $(OUTSRC)
+	@echo "" | $(OUTSRC)
+	@echo "CMPT_COMPLIBS_neotest=$(EGNEO_STATIC_LIB) $(NEOTESTPARAMETER_STATIC_LIB)" | $(OUTSRC)
+	@echo "updated src-list from dc/babel/test/src"
+
+
+check: driver.x
+	-@if test -x driver.x; then \
+		./driver.x ; \
+	else \
+		echo "Skipping check of neo-static-build-from-script. bad input."; \
+	fi
+	
+VGOPTS=-v --leak-check=yes --leak-resolution=high --show-reachable=yes
+run:
+	valgrind $(VGOPTS)  ./driver.x
+
+depend:
+
+clean:
+	-$(RM) $(OUTPUT).* *.o emake.log *.x src-list-driver

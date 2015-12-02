@@ -1,0 +1,88 @@
+CCAFE_HOME = ../../../..
+include $(CCAFE_HOME)/Makefile.Rules
+
+
+include babel.make
+
+LN_S = ln -s
+BABEL_HOME = $(BABEL_ROOT)
+SERVER_HOME = ../lib
+LIB = libccaffeine$(VER_SUFFIX)$(PROGRAM_SUFFIX)$(CCAFE_SHLIB_SUFFIX)
+LIBA = libccaffeine$(VER_SUFFIX)$(PROGRAM_SUFFIX).a
+CCA_SERVER_DIR = $(CCASPEC_BABEL_XML_REPOSITORY)
+BABL_INCLUDE = -I$(CCASPEC_BABEL_includedir) $(BABEL_CCA_INC) -I.
+BOOST_INCLUDE = $(BOOST_INC)
+CLASSIC_HOME = $(CLASSIC_CCA_ROOT)
+CCASPEC_LIB_SO = $(CCASPEC_LIB_L_DIR)/$(CCASPEC_SHARED_LIB)
+CCASPEC_LIB_A = $(CCASPEC_LIB_L_DIR)/$(CCASPEC_STATIC_LIB)
+
+#clearly neo appearing here is bogus. the bogosity
+# however is a result of poor core framework encapsulation,
+# not this code.
+
+CXXFLAGS_LOCAL= $(CXXFLAGS) $(BABL_INCLUDE) $(NEOCCA_INC)
+
+all: $(LIB) $(LIBA)
+
+.SUFFIXES:
+.SUFFIXES: .o .i .cc .c
+
+.cc.i:
+	$(CXX) $(CXXFLAGS_LOCAL) -E $< > $@
+
+.cc.o:
+	$(CXX) $(CXXFLAGS_LOCAL) -c $<
+.c.o:
+	$(CC)  $(CXXFLAGS_LOCAL) -c $< 
+
+SRCS = $(IMPLSRCS) $(IORSRCS) $(SKELSRCS) $(STUBSRCS)
+
+OBJSX = ${SRCS:.cc=.o} 
+OBJS = ${OBJSX:.c=.o}
+
+src-list:
+	@echo "BABEL_FWK = $(CCAFE_ROOT)/cxx/dc/babel/babel-cca/server" >> ../../../src-list
+	@echo "DC_LIST_CXX += \\" >> ../../../src-list
+	@for i in $(IMPLSRCS) $(SKELSRCS) $(STUBSRCS); do \
+                echo "$(CCAFE_ROOT)/cxx/dc/babel/babel-cca/server/$$i \\" >> ../../../src-list ; \
+        done
+	@echo "" >> ../../../src-list
+	@echo "DC_LIST_CC += \\" >> ../../../src-list
+	@for i in $(IORSRCS); do \
+                echo "$(CCAFE_ROOT)/cxx/dc/babel/babel-cca/server/$$i \\" >> ../../../src-list ; \
+        done
+	@echo "" >> ../../../src-list
+	@echo "LIBCCAFFEINE_SRC = \\" >> ../../../src-list
+	@for i in $(SRCS); do \
+                echo "$(CCAFE_ROOT)/cxx/dc/babel/babel-cca/server/$$i \\" >> ../../../src-list ; \
+        done
+	@echo "" >> ../../../src-list
+	@echo "updated src-list from dc/babel/babel-cca/server"
+
+$(LIB): $(OBJS)
+	$(CCAFE_SHLIB_LD) $(CXXFLAGS_LOCAL) -o $@ $(BABL_INCLUDE) ${OBJS} $(CCASPEC_LIB_A) 
+	$(INSTALL) $@ $(CCAFE_HOME)/lib
+
+$(LIBA): $(OBJS)
+	ar crv $(LIBA) $(OBJS)
+	$(INSTALL_DATA) $@ $(CCAFE_HOME)/lib
+
+clean:
+	-$(RM) $(OBJS) $(LIB) $(LIBA) *.i
+
+test: t1
+
+t1:
+	$(CXX) $(CXXFLAGS_LOCAL)  \
+		-c -Dccaffeine_ports_ParameterPortWrap_MAIN \
+		ccaffeine_ports_ParameterPortWrap_Impl.cc
+	$(CXX) $(CXXFLAGS_LOCAL)  \
+		-o t1.x \
+		*.o $(CCASPEC_LIB_A) \
+	/home/baallan/work/posthack/local-86/lib/libsidl.a -ldl
+
+#  sym link funny business because the makedepend won't honor "-f"
+depend:
+	$(RM) Makefile; $(LN_S) Makefile.babel Makefile
+	-$(DEPEND) $(CXXFLAGS_LOCAL) $(IORSRCS) $(SKELSRCS) $(STUBSRCS) $(IMPLSRCS)
+	$(RM) Makefile

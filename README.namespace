@@ -1,0 +1,34 @@
+Here's the tree layouts:
+{c++ namespaces}
+
+-----------------------------------------------
+Custom Package directories
+{gov::sandia::ccaffeine}
+dc/ (see below)
+port/ (abstract ports expected by ccaffeine but not part of the CCA spec (yet))
+cmd/
+sc99/
+util/
+parameters/
+jc++/	(c++ only)
+
+{gov::doe::esi}
+esi/
+
+{org::gnu}
+gnu/
+
+
+-----------------------------------------------
+ccaffeine core
+{gov::sandia::ccaffeine::dc[::the-leaf-name]}
+dc/
+dc/component (?? migrates up a level? out of tree entirely?)
+dc/framework (was dc_fwk)
+dc/distributed
+dc/port		(default implementations of ccaffeine port/ headers above)
+mc/user_iface (MVC pattern, drivers)
+dc/user_iface/ccacmd (specializations for us of the cmd package)
+dc/user_iface/gui (java only)
+
+The jeembo stuff migrates to viz-stv in the ccaffeine repository.

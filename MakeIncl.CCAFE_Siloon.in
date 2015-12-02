@@ -1,0 +1,14 @@
+#-----------------------------------------------------------------------------
+# The location of the SILOON install directory.  From here one can
+# obtain the file, $(SILOON_ROOT)/lib/MakeIncl.siloon, which contains
+# information necessary to create the python bindings for BuilderServices.
+#-----------------------------------------------------------------------------
+
+CCA_ROOT            = @CCA_ROOT@
+PYTHON_SCRIPTING    = @PYTHON_SCRIPTING@
+PYTHON_INCLUDE      = @PYTHON_INCLUDE@
+PYTHON_CPPFLAGS     = @PYTHON_CPPFLAGS@
+PYTHON_LDFLAGS      = @PYTHON_LDFLAGS@
+CCAFE_SHLIB_LD      = @CCAFE_SHLIB_LD@
+CCAFE_SHLIB_LDFLAGS = @CCAFE_SHLIB_LDFLAGS@
+RANLIB              = @RANLIB@

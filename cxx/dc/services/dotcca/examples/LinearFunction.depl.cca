@@ -1,0 +1,15 @@
+<componentDeployment name="LinearFunction" uniqueID="tutorialLF">
+  <environment language="f90" framework="ccafeine-classic"> 
+    <library loading="dynamic" name="libcomp.so" location="/home/norris/mycomplibs"/>
+    <frameworkOptions>
+	<!-- name-value pairs -->
+    </frameworkOptions>
+    <environmentVariables>
+      <variable name="VARNAME" value="VALUE"/>
+    </environmentVariables>
+    <dependencies>
+      <library name="libpetsc.so"/>
+      <service name="ssh"/>
+    </dependencies>
+  </environment>
+</componentDeployment>

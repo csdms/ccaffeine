@@ -1,0 +1,16 @@
+// ParameterPortFactoryTest.sidl is a configure generated file.
+
+@CCAFE4_SIDL_START_0@
+@CCAFE4_SIDL_START_1@
+
+  /** When the GoPort is hit, use the ParameterPortFactory.  */
+  class ParameterPortFactoryTest implements-all 
+	gov.cca.Component, 
+	gov.cca.ports.ParameterGetListener,
+	gov.cca.ports.ParameterSetListener, 
+	gov.cca.ports.GoPort
+  {
+  }
+
+}
+

@@ -1,0 +1,107 @@
+# $Revision: 1.1 $
+# $Author: baallan $
+
+buildroot=../..
+CCAFE_HOME=..
+zeroth: first
+
+include $(CCAFE_HOME)/Makefile.Rules
+VPATH := $(srcdir)/cxx/util
+DL_LIB = -ldl
+
+
+# Must use the -fPIC option because this is included in many shared obj
+# libraries.
+
+%.o : %.cc
+	$(CXX) -c $(CXXFLAGS) -fPIC  $<
+
+%.o : %.cxx
+	$(CXX) -c $(CXXFLAGS) -fPIC  $<
+
+%.o : %.c
+	$(CXX) -c $(CXXFLAGS) -v $<
+
+
+CXXSRC = TypeMap.cxx IO.cxx gdbWaitForAttach.cxx StringTools.cc
+ifeq "x$(BUILD_DYNALOAD)" "xyes"
+CSRC = ascDynaLoad.c
+else
+CSRC=
+endif
+CXXOBJX = $(CXXSRC:%.cxx=%.o)
+CXXOBJ = $(CXXOBJX:%.cc=%.o)
+COBJ = $(CSRC:%.c=%.o)
+
+LIB = libcafeutil.a
+
+first all : lib
+	@touch .allbuild.complete
+
+bins:
+	@touch .binbuild.complete
+
+src-list:
+	@$(RM) src-list
+	@echo "UTIL_LIST_CXX=\\" >> src-list
+	@for i in $(CXXSRC) ; do \
+		echo "$(srcdir)/cxx/util/$$i \\" >> src-list ; \
+	done
+	@echo "" >> src-list
+	@echo "UTIL_LIST_C=\\" >> src-list
+	@for i in x $(CSRC) ; do \
+		if ! test "$$i" = "x" ; then \
+			echo "$(srcdir)/cxx/util/$$i \\" >> src-list ; \
+		fi ; \
+	done
+	@echo "" >> src-list
+	@echo updated src-list
+
+lib : compile
+	ar $(ARFLAGS) $(LIB) $(CXXOBJ) $(COBJ)
+	$(RANLIB) $(LIB)
+
+compile : $(CXXOBJ) $(COBJ)
+	@echo done $(CXXOBJ) foo $(BUILD_DYNALOAD)
+
+warning :
+	@echo CCAFE_HOME = $(CCAFE_HOME)   
+	@echo Make sure this is set properly!
+
+test: ttest stest itest
+
+clean : 
+	-$(RM) $(CXXOBJ) $(COBJ) $(LIB) a.out libutil.a shr.o *.u *.x src-list *.o
+
+adltest: adlTest.cxx
+	$(CXX)  $(CXXFLAGS) adlTest.cxx ascDynaLoad.o $(DL_LIB)
+
+ttest:
+	$(CXX)  $(CXXFLAGS) -DUTIL_TYPEMAP_MAIN TypeMap.cxx -o ttest.x IO.o
+	./ttest.x
+
+stest:
+	$(CXX)  $(CXXFLAGS) testStringTools.cc StringTools.o -o stest.x
+	./stest.x
+
+itest:
+	$(CXX)  $(CXXFLAGS) testIO.cc IO.o -o itest.x
+	./itest.x
+
+census: census.c
+	mpicc census.c -o census.x
+	mpirun -np 2 census.x
+
+gen:
+	@echo "gen util done"
+
+depend:
+	$(DEPEND)  $(CXXFLAGS) $(CXXSRC)
+depend-sys:
+	$(DEPENDSYS) $(CXXFLAGS) $(CXXSRC)
+
+.PHONY: src-list
+
+ifneq "x$(TARGET)" "xclean"
+include Makefile.depends
+endif

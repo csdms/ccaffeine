@@ -1,0 +1,30 @@
+include babel.make
+
+BABEL_HOME = /usr/local/babel
+SERVER_HOME = ../lib
+LIB = libccaffeine.so
+BABL_INCLUDE = -I ../../cca/server
+BOOST_INCLUDE = -I $$HOME/src/boost_1_27_0
+PRESERVE = Object.hh                      \
+           $(IMPLSRCS) $(IMPLHDRS)
+CXXFLAGS = $(BABL_INCLUDE) $(BOOST_INCLUDE)
+
+all: $(LIB)
+
+.cc.o:
+	g++ -fPIC $(CXXFLAGS) -I$(BABEL_HOME)/include -c $<
+.c.o:
+	gcc -fPIC  $(CXXFLAGS) -I$(BABEL_HOME)/include -c $< 
+
+SRCS = $(IMPLSRCS) $(IORSRCS) $(SKELSRCS) $(STUBSRCS)
+
+OBJS = ${IMPLSRCS:.cc=.o} ${IORSRCS:.c=.o} \
+       ${SKELSRCS:.cc=.o} ${STUBSRCS:.cc=.o}
+
+$(LIB): ${OBJS}
+	g++ -shared -o $@ $(BABL_INCLUDE) ${OBJS}
+	cp $(PRESERVE) ..
+
+clean:
+	rm $(OBJS) $(LIB)
+

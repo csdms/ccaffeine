@@ -1,0 +1,2 @@
+norris@mcs.anl.gov
+Updated m4 and configure to work with autoconf >= 2.60 and automake (for aclocal) >= 1.9

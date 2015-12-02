@@ -1,0 +1,91 @@
+CCAFE_HOME=../..
+zeroth: first
+
+include $(CCAFE_HOME)/Makefile.Rules
+ifeq "$(NEO_CCA_INSTALLED)" "1"
+NEO_INCLUDE=$(NEOCCA_INC)
+else
+NEO_INCLUDE=
+endif
+
+CXXFLAGS_LOCAL = $(CXXFLAGS) $(NEO_INCLUDE)
+
+%.o : %.C
+	$(CXX) -c $(CXXFLAGS_LOCAL)  $<
+%.o : %.cxx
+	$(MPICXX) -c $(CXXFLAGS_LOCAL) $(CCA_PLLFLAGS) $<
+%.i : %.cxx
+	$(MPICXX) -E $(CXXFLAGS_LOCAL) $(CCA_PLLFLAGS)  $< | egrep -v ^$$ |egrep -v '^# ' > $@
+
+LIB = libports.a
+
+CXXSRC = \
+	OpqParameterPort.cxx \
+	OpqParameterPortFactory.cxx  \
+	DefaultGUIService.cxx \
+	DefaultConfigurableParameterFactory.cxx \
+	DefaultParameterPort.cxx \
+	CCA_Block.cxx \
+	DefaultJPrintfPort.cxx \
+	DefaultPrintfPort.cxx \
+	DefaultKeyValuePort.cxx      \
+	DefaultMPIService.cxx DefaultMPIBorrow.cxx \
+        Caffeine_Port_DynamicLink.cxx
+
+CXXOBJ = $(CXXSRC:%.cxx=%.o)
+
+first all : $(CXXOBJ) lib
+	@echo done $(CXXOBJ)
+
+$(CXXOBJ) : $(CXXSRC)
+
+src-list:
+	@$(RM) src-list
+	@echo "DC_LIST_CXX += \\" >> ../src-list
+	@for i in $(CXXSRC) ; do \
+                echo "$(srcdir)/cxx/dc/port/$$i \\" >> ../src-list ; \
+        done
+	@echo "" >> ../src-list
+	@echo "updated src-list from dc/port"
+
+
+lib $(LIB): $(CXXOBJ)
+	@-$(RM)  $(LIB)
+	ar ruv $(LIB) $(CXXOBJ)
+	$(RANLIB) $(LIB)
+
+gen:
+	@echo "gen dc/port done"
+
+ptest: OpqParameterPortFactory.h OpqParameterPortFactory.cxx \
+		$(CCAFE_HOME)/util/libcafeutil.a
+	$(CXX) $(CXXFLAGS_LOCAL) -DOpqParameterPortFactory_MAIN \
+		OpqParameterPortFactory.cxx OpqParameterPort.o \
+		$(CCAFE_HOME)/dc/classic/ccafe-bind/libClsCcafe.a \
+		$(NEO_LIBRARY) \
+		$(CCAFE_HOME)/dc/framework/libdc_fwk.a \
+		$(CCAFE_HOME)/util/libcafeutil.a -o ptest.x
+
+otest: OpqParameterPort.h OpqParameterPort.cxx \
+		$(CCAFE_HOME)/util/libcafeutil.a
+	$(CXX) $(CXXFLAGS_LOCAL) -DOpqParameterPort_MAIN \
+		OpqParameterPort.cxx \
+		$(CCAFE_HOME)/dc/classic/ccafe-bind/libClsCcafe.a \
+		$(NEO_LIBRARY) \
+		$(CCAFE_HOME)/dc/framework/libdc_fwk.a \
+		$(CCAFE_HOME)/util/libcafeutil.a -o otest.x
+
+clean: 
+	$(RM) $(CXXOBJ) $(LIB) *.x shr.o *.u
+
+depend:
+	$(DEPEND) $(CXXFLAGS_LOCAL) $(CXXSRC)
+
+depend-sys:
+	$(DEPENDSYS) $(CXXFLAGS_LOCAL) $(CXXSRC)
+
+ifneq "x$(TARGET)" "xclean"
+ifneq "x$(TARGET)" "xdistclean"
+include Makefile.depends
+endif
+endif

@@ -1,0 +1,26 @@
+* Added libtool usage to build. 
+ - It is possible, though rather unlikely, that MPI support still works--
+    this is an unstable check-in from the build point of view.
+ - Started (but not finished) VPATH support for build. 
+ - Created single-dir compilation. 
+ - Made babel mandatory, even for classic and neo users, because we want 
+   babel's libtool.
+ - Split gen from depend and depend will probably become a developer-only
+   option soon as it eats a lot of useless build time.
+ - Split StringConsumerPort into its own library, now that libraries are
+   handled very sanely by libtool.
+ - Added --enable-single to turn on building serial driver when mpi is
+   otherwise present.
+ - Added --enable-showlibtool, --enable-makedebug, --enable-showcompile
+   to turn on additional build spew, as the build is now very pretty by
+   default.
+ - Moved readline compilation flags into the configured internal package header.
+ - Split a main function into CmdLineBuilderController2_SerialMain.cxx from
+   CmdLineBuilderController2.cxx.
+ - Got esi directory out of the build by moving mpiwrapper.h.
+ - Got rid of unused ID string warnings.
+ - Made a semi-useful check target.
+ - Fixed some int implicit-casting errors.
+ - Updated simpleTests to emit correct messages when static linked.
+ - When using mpiCC with libtool, mpiCC may need fixing: 
+     '-Wl,-rpath /libdir' should have been '-Wl,-rpath,/libdir'

@@ -1,0 +1,208 @@
+#===============Begin things you might want to change======================
+
+# Steve, Kenneth, Dennis: you need to change this to be the cca-spec
+# in your area.  To be safe, you can check it out from:
+#
+# cvs -d :ext:<you>@z.ca.sandia.gov:/home/ccastd/repository checkout cca-spec
+#
+# Change the following to point to where this is:
+CCA_ROOT = @CCA_ROOT@
+CCAFE_HOME=../../cxx
+
+include @CLASSIC_CCA_CONFIG@
+
+BS_CCA_INCLUDE = $(CCA_INC)
+
+# EG_ROOT = @CCA_ROOT@/cxx/eg
+# include $(EG_ROOT)/ccaComponent/MakeIncl.EGComponent
+
+# cvs -d :ext:<you>@z.ca.sandia.gov:/home/ccaffeine/repository checkout dccafe
+#
+# Change the following to point to where this is:
+
+CCAFE_ROOT = @CCAFE_ROOT@
+CCAFE_JAVA_ROOT = @CCAFE_JAVA_ROOT@
+CCAFE_CXX_ROOT = @CCAFE_CXX_ROOT@
+# we need ccaffeine
+include $(CCAFE_CXX_ROOT)/MakeIncl.CCAFE_Component
+# we need ccaffeine's mpi settings
+include $(CCAFE_CXX_ROOT)/MakeIncl.CCAFE_MPI
+
+# This is the directory where shared object components live:
+LIB_RUNTIME_DIR = $(CCAFE_CXX_ROOT)/dc/component
+
+# Change this to be whatever, I defer to Steve. should be g++ or equivalent.
+CXX = @CXX@
+RANLIB=@RANLIB@
+
+MPI_LIBDIR = @MPI_LIBDIR@
+MPILIB = @MPILIB@
+
+# Includes necessary for C to work with your distribution of Java.
+# This *must* be the same JDK that you are running the JVM from.
+
+JAVA_HOME = @JAVA_HM@
+JAVA_JNI_INCLUDE = -I$(JAVA_HOME)/include \
+		   -I$(JAVA_HOME)/include/linux
+JAVAC = $(JAVA_HOME)/bin/javac
+JAVA = $(JAVA_HOME)/bin/java
+
+# uncomment one of these:
+# This is the standard swig distribution:
+# SWIG=/usr/bin/swig
+# This is the new one that also does ruby:
+SWIG=@SWIG_HOME@
+
+
+# Flags necessary to do dynamic linking
+DLFLAGS=@CCAFE_LD_SEARCH_FLAGS@ @CCAFE_LD_FLAGS@ @CCAFE_SHLIB_LD_LIBS@
+
+#===============End things you might need to change==========================
+
+BS_CCA_INCLUDE = $(CCA_INC) $(EG_INC)
+BS_CCAFE_HOME = $(CCAFE_ROOT)/cxx
+BS_CCAFE_INCLUDE = $(CCAFE_INC)
+BS_CXXFLAGS = @CXXFLAGS@ @EXTRA_CFLAGS@ \
+	$(BS_CCA_INCLUDE) $(BS_CCAFE_INCLUDE) 
+
+
+BS_CCAFE_LIBS= \
+$(CCAFE_HOME)/dc/user_iface/libccafeBM.a \
+$(CCAFE_HOME)/dc/framework/libdc_fwk.a \
+$(CCAFE_HOME)/dc/component/libcomponent.a \
+$(CCAFE_HOME)/dc/port/libports.a \
+$(CCAFE_HOME)/parameters/libparameters.a \
+$(CCAFE_HOME)/jc++/libjcpp.a \
+$(CCAFE_HOME)/scutil/libscutil.a \
+$(CCAFE_HOME)/util/libcafeutil.a $(CCA_DL_LIBS)
+
+# libs needed only because local main's use getopt.
+LOCAL_LIBS=\
+$(CCAFE_HOME)/gnu/getopt/libgetCCAFEopt.a
+
+%.o : %.cxx
+	$(CXX) -c $(BS_CXXFLAGS) $<
+
+SWIGFLAGS= -c++ -shadow
+
+SWIG_IFILE = AbstractFramework.i
+SRC =   CcaffeineAbstractFramework.cxx ComponentProxy.cxx \
+	DefaultStringList.cxx CcafeCCAException.cxx       \
+	CcaffeineBuilderService.cxx DefaultComponentID.cxx
+OBJ = $(SRC:%.cxx=%.o)
+OBJFROMBELOW = $(OBJ:%.o=../%.o)
+
+LIB= libprotobs.a
+
+lib libobj : $(OBJ)
+	-$(RM)  $(LIB)
+	ar $(ARFLAGS) $(LIB) $(OBJ)
+	$(RANLIB) $(LIB)
+
+#=================Java Binding======================================
+
+# Directory into which all of the java-specific files will go.
+JAVA_DIR = ./java
+
+# The name of the SWIG-generated java class for this interface.
+JAVA_SRC = $(SWIG_IFILE:%.i=%.java)
+JAVA_CLS = $(JAVA_SRC:%.java=%.class)
+
+# The name of the SWIG-generated JNI wrapper 
+JAVA_WRAP = $(JAVA_SRC:%.java=%_wrap.c)
+JAVA_OBJ = $(JAVA_WRAP:%.c=%.o)
+
+# The name of the shared library for the C to Java binding 
+JAVA_LIB = libAbstractFwk.so
+
+allJava : $(JAVA_DIR)/$(JAVA_LIB) $(JAVA_DIR)/$(JAVA_CLS)
+
+doSWIGJava : $(SWIG_IFILE) $(JAVA_DIR)
+	(cd $(JAVA_DIR);for i in $(SWIG_IFILE); do $(SWIG) $(SWIGFLAGS) -java   -o `basename ../$$i .i`_wrap.c ../$$i; done)
+
+$(JAVA_DIR) : 
+	mkdir $(JAVA_DIR)
+
+
+$(JAVA_DIR)/$(JAVA_SRC) $(JAVA_DIR)/$(JAVA_WRAP) : $(JAVA_DIR) doSWIGJava
+
+$(JAVA_DIR)/$(JAVA_OBJ) : $(JAVA_DIR) $(JAVA_DIR)/$(JAVA_WRAP) doSWIGJava
+	(cd $(JAVA_DIR);for i in *_wrap.c;do $(CXX) -c -I.. $(BS_CXXFLAGS) $(JAVA_JNI_INCLUDE) $$i;done)
+
+$(JAVA_DIR)/$(JAVA_CLS) : $(JAVA_DIR) $(JAVA_DIR)/$(JAVA_SRC)
+	(cd $(JAVA_DIR);$(JAVAC) *.java)
+
+
+$(JAVA_DIR)/$(JAVA_LIB) : $(JAVA_DIR) $(OBJ) $(JAVA_DIR)/$(JAVA_OBJ)
+	(cd $(JAVA_DIR);g++ -shared $(OBJFROMBELOW) $(JAVA_OBJ) $(BS_CCAFE_LIBS) $(DLFLAGS) -o $(JAVA_LIB))
+
+JavaTest : $(JAVA_DIR)/$(JAVA_LIB)
+	cp JavaTest.java $(JAVA_DIR)
+	(cd $(JAVA_DIR);$(JAVAC) JavaTest.java)
+	(cd $(JAVA_DIR); LD_LIBRARY_PATH=$$LD_LIBRARY_PATH:"`pwd`"/$(JAVA_DIR) $(JAVA) JavaTest)
+
+
+#====================Python Binding=========================================
+
+# Directory into which all of the python-specific files will go.
+PYTHON_DIR = ./python
+
+# The name of the SWIG-generated python class for this interface.
+PYTHON_SRC = $(SWIG_IFILE:%.i=%.py)
+
+# The name of the SWIG-generated JNI wrapper 
+PYTHON_WRAP = $(PYTHON_SRC:%.py=%_wrap.c)
+PYTHON_OBJ = $(PYTHON_WRAP:%.c=%.o)
+
+# The name of the shared library for the C to Python binding 
+PYTHON_LIB = libAbstractFwk.so
+
+allPython : $(PYTHON_DIR)/$(PYTHON_LIB) $(PYTHON_DIR)/$(PYTHON_CLS)
+
+doSWIGPython : $(SWIG_IFILE) $(PYTHON_DIR)
+	(cd $(PYTHON_DIR);for i in $(SWIG_IFILE); do $(SWIG) $(SWIGFLAGS) -python   -o `basename ../$$i .i`_wrap.c ../$$i; done)
+
+ifeq "$(USER)" "rob"
+$(PYTHON_DIR) : 
+	mkdir $(PYTHON_DIR)
+
+$(PYTHON_DIR)/$(PYTHON_SRC) $(PYTHON_DIR)/$(PYTHON_WRAP) : $(PYTHON_DIR) doSWIGPython
+
+$(PYTHON_DIR)/$(PYTHON_OBJ) : $(PYTHON_DIR) $(PYTHON_DIR)/$(PYTHON_WRAP) doSWIGPython
+	(cd $(PYTHON_DIR);for i in *_wrap.c;do $(CXX) -c -I.. $(BS_CXXFLAGS) $(PYTHON_JNI_INCLUDE) $$i;done)
+
+$(PYTHON_DIR)/$(PYTHON_CLS) : $(PYTHON_DIR) $(PYTHON_DIR)/$(PYTHON_SRC)
+	(cd $(PYTHON_DIR);$(PYTHONC) *.py)
+
+$(PYTHON_DIR)/$(PYTHON_LIB) : $(PYTHON_DIR) $(OBJ) $(PYTHON_DIR)/$(PYTHON_OBJ)
+	(cd $(PYTHON_DIR);g++ -shared $(OBJFROMBELOW) $(PYTHON_OBJ) $(BS_CCAFE_LIBS) $(DLFLAGS) -o $(PYTHON_LIB))
+endif
+# end block rob
+
+PythonTest : $(PYTHON_DIR)/$(PYTHON_LIB)
+	cp PythonTest.py $(PYTHON_DIR)
+	(cd $(PYTHON_DIR);$(PYTHONC) JavaTest.py)
+	(cd $(PYTHON_DIR); LD_LIBRARY_PATH=$$LD_LIBRARY_PATH:"`pwd`"/$(PYTHON_DIR) $(PYTHON) PythonTest)
+
+#====================C++ Test Code==========================================
+
+test: testAbstractFwk testBuilderService
+
+testAbstractFwk : testAbstractFwk.o $(OBJ)
+	$(CXX) $(BS_CXXFLAGS) -o testAbstractFwk testAbstractFwk.o \
+		$(OBJ) $(LOCAL_LIBS) $(BS_CCAFE_LIBS) \
+		-L$(MPI_LIBDIR) $(MPILIB) $(DLFLAGS)
+	./testAbstractFwk
+
+testBuilderService : testBuilderService.o $(OBJ)
+	 $(CXX) $(BS_CXXFLAGS) -o testBuilderService testBuilderService.o \
+		$(OBJ) $(LOCAL_LIBS) $(BS_CCAFE_LIBS) \
+		-L$(MPI_LIBDIR) $(MPILIB) $(DLFLAGS)
+	-./testBuilderService
+
+clean :
+	rm -fr java
+	rm -fr python
+	rm -f $(OBJ) testAbstractFwk.o testBuilderService.o \
+		testAbstractFwk testBuilderService
+

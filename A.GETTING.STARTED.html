@@ -1,0 +1,1269 @@
+<html>
+<title> this file massively out of datea</title>
+<body bgcolor="white">
+<pre>
+<b>SC01 Configure/build for dccafe summary.</b> 
+See dccafe/* instructions for more details.
+
+BUILD: (note you must have <a href="specQuick.html">built the specification</a>, cca-spec/, first).
+<b>If you are lucky</b> (and have gmake by default):
+
+% <b>cd dccafe</b>
+% <b>./configure</b>
+% <b>make</b>
+
+TESTS:
+
+0) The simplest thing to do is run the scripts provided with
+   Ccaffeine.  If the top-level Ccaffeine directory (usually named dccafe):
+
+% <b>./bin/runParallelLocal</b> # starts the C++ backend
+% <b>./bin/runGUI   </b>        # starts the GUI
+
+At this point you should see the GUI with no components loaded in the
+pallet.  To initialize the parallel backend with the (trivial)
+components that come with Ccaffeine type:
+
+% <b>./bin/runParallelLocal --kill </b># kill off previously running processes
+% <b>./bin/runParallelLocal --ccafe-rc `pwd`/CcaffeineRC</b>
+% <b>./bin/runGUI</b>           # starts the GUI
+
+This will read in the standard components first and give you something
+to play with. More detailed and complicated testing appears below.
+
+
+1) checking c++ backend
+% <b>cd cxx/dc/user_iface</b>
+% <b>./ccafe-single</b>
+cca> <b>pallet</b>
+cca> <b>quit</b>
+
+2) checking c++ backend and java gui with command multiplexing
+% <b>cp cxx/dc/user_iface/CcaffeineRC ~/.ccaferc</b>
+% <b>cd java/gov/sandia/ccaffeine/dc/user_iface</b>
+% <b>make itstop</b>
+% <b>make test1</b>
+	[select "quit" at the File menu.]
+% <b>make itstop</b>
+
+should verify a running java/c++ cca framework.
+The "itstop" target cleans up any stray java or dccafe processes you own.
+If you are running other java software concurrently, it may get killed.
+If MPI is unable to start correctly, test 4 may fail.
+
+<b>If you are not lucky</b>, you may need to use the switches to help
+configure cope with the c++ side. Particularly any of
+	--with-mpi=$MPI_HOME
+        --with-jdk12=$JAVA_HOME
+        --with-cPP=$CXX
+	--with-blas=BLASLIB
+	--with-lapack=LAPACKLIB
+	--with-tclsh=EXECUTABLE
+	--with-pvmd=$PVM_ROOT/lib/pvmd
+	--with-cca=/ccastd/tree/location
+
+We suggest the following configuration to start off
+(assuming you have checked out or untarred cca-spec and
+dccafe both into a common directory, e.g 
+% ls sc01
+sc01/dccafe sc01/cca-spec sc01/sandbox
+
+and your mpi,java are in /usr/local):
+
+% ./configure --with-mpi=/usr/local/mpich \
+   --with-jdk12=/usr/local/jdk1.2.2 \
+   --with-blas=no \
+   --with-lapack=no \
+   --with-pvmd=no
+
+<b>KAFFE which comes with most linux by default is unsupported,
+though configure may find it accidentally.</b>
+
+Please compare your <a href="#config">configure output</a> and <a href="#build">build output</a> to ours
+before reporting warnings or errors. Some warnings about missing
+libraries are normal.
+
+Advanced testing and use
+
+The C++ framework can be run through a c++ command line
+	cd cxx/dc/user_iface
+    cp CcaffeineRC ~/.ccaferc
+	./ccafe
+At present you have to use the "path" and "repository"
+commands to bootstrap components other than those
+found in CcaffeineRC. See doc/FAQ.txt for an example.
+
+The Java front/C++ back framework can be had by 
+	cd java/dc/user_iface
+	make testXXX
+where testXXX is one of the test targets that is
+appropriate to your desired configuration. Most depend on
+the optional presence of mpi/pvm. The testXXX targets
+are not formally documented anywhere.
+
+Building your own components and linking them in is
+covered by example in cxx/dc/component and
+by header in cxx/dc/framework/ComponentFactory.h.
+But best of all in tutorials/cpp/00_HelloWorld.
+See also 
+	cca-spec/MakeIncl.CCA_Component
+provided for inclusion in your makefile(s).
+Drop a proper .cca file and .so file in an element of
+$env(CCA_COMPONENT_PATH) and it should be loadable.
+
+If you wish to use any of the CCAFFEINE services in your
+component, the make include file
+	dccafe/cxx/MakeIncl.CCAFE_Component
+should be handy. See Proposal.Makefiles for how we think
+component makefiles should be made 'portable' across frameworks.
+
+
+<a name="config"></a>
+<b>Successful configure output</b>
+<a href="#config">configure output</a> and <a href="#build">build output</a>.
+checking host system type... i686-pc-linux-gnu
+checking for gawk... gawk
+checking whether ln -s works... yes
+checking whether make sets ${MAKE}... yes
+checking for ranlib... ranlib
+checking for g77... g77
+checking whether cc understands -c and -o together... yes
+checking for c++... c++
+checking whether the C++ compiler (c++  ) works... yes
+checking whether the C++ compiler (c++  ) is a cross-compiler... no
+checking whether we are using GNU C++... yes
+checking whether c++ accepts -g... yes
+checking how to run the C preprocessor... cc -E
+checking how to run the C++ preprocessor... c++ -E
+checking for flex... flex
+checking for yywrap in -lfl... yes
+checking for bison... bison -y
+checking size of short... 2
+checking size of short *... 4
+checking for jdk 1.2... checking for javac... /usr/local/jdk1.2.2/bin/javac
+found /usr/local/jdk1.2.2/bin/javac.
+checking for Python directories... found /usr/include/python2.0 and /usr/lib/python2.0.
+checking for pvmd... pvmd found. PVM_ROOT is /usr/share/pvm3.
+checking for pvmgetarch... found /usr/share/pvm3/lib/pvmgetarch.
+checking for efence... efence found.
+checking for MakeIncl.CUMULVS_Component... no
+configure: warning: Cannot find viz-stv. Eyes disabled.
+checking for gmake... gmake
+checking for tclsh... tclsh
+checking for ruby... ruby
+checking for swig... swig
+checking host system type... i686-pc-linux-gnu
+checking target system type... i686-pc-linux-gnu
+checking build system type... i686-pc-linux-gnu
+checking for mpi... checking for mpi in /home/baallan/sc01/mpi ...
+checking for mpi in /home/baallan/mpi ...
+checking for mpi in /home/baallan/sc01/mpich ...
+checking for mpi in /home/baallan/mpich ...
+checking for mpi in /usr/local/mpich ...
+/usr/local/mpich (LINUX) found.
+checking mpicc... yes
+checking mpiCC... yes
+checking for MakeIncl.ISIS_Component... no
+configure: warning: Cannot find isis-esi. ISIS disabled.
+checking for libblas.a... /usr/local/lib/libblas.a
+checking for liblapack.a... /usr/local/lib/liblapack.a
+checking for sin... no
+checking for main in -lieee... yes
+checking for z_div in -lg2c... yes
+checking for main in -ldl... yes
+checking for ANSI C header files... yes
+checking for fcntl.h... yes
+checking for strings.h... yes
+checking for sys/file.h... yes
+checking for sys/time.h... yes
+checking for unistd.h... yes
+checking for working const... yes
+checking for size_t... yes
+checking whether time.h and sys/time.h may both be included... yes
+checking for connect... yes
+checking for gethostbyname... yes
+checking whether setvbuf arguments are reversed... no
+checking for vprintf... yes
+checking for select... yes
+checking for socket... yes
+checking for strdup... yes
+checking for strerror... yes
+checking for strstr... yes
+checking for strtol... yes
+checking system version (for dynamic loading)... Linux-2.4.9
+checking for dlopen in -ldl... yes
+checking for sys/ioctl.h... yes
+checking for sys/filio.h... no
+checking FIONBIO vs. O_NONBLOCK for nonblocking I/O... O_NONBLOCK
+creating ./config.status
+creating varlist
+creating Makefile
+creating Makefile.dl
+creating Makefile.conf.dl
+creating cxx/Makefile.Rules
+creating cxx/Makefile.Vars
+creating cxx/MakeIncl.CCAFE_MPI
+creating cxx/dc/user_iface/ccacmd/Makefile
+creating cxx/dc/user_iface/CcaffeineRC
+creating cxx/scutil/detemplate.rb
+creating java/Makefile.Rules
+creating java/gov/sandia/ccaffeine/dc/user_iface/runFromServletEg/Makefile
+creating scripts/simplify-bld
+creating chez-rob/protoBS/Makefile
+creating MakeIncl.CCAFE_Siloon
+
+
+<a name="build"></a>
+<a href="#config">configure output</a> and <a href="#build">build output</a>.
+<b>Successful build output</b>
+
+[baallan@cca-forum dccafe-built ]$ make
+(cd java; make)
+make[1]: Entering directory `/home/baallan/sc01/dccafe-built/java'
+rm -f cmd dc parameters port util esi
+ln -s gov/sandia/ccaffeine/cmd .
+ln -s gov/sandia/ccaffeine/dc .
+ln -s gov/sandia/ccaffeine/esi .
+ln -s gov/sandia/ccaffeine/parameters .
+ln -s gov/sandia/ccaffeine/port .
+ln -s gov/sandia/ccaffeine/util .
+make[2]: Entering directory `/home/baallan/sc01/dccafe-built/java/gov/sandia/ccaffeine/cmd'
+/usr/local/jdk1.2.2/bin/javac -classpath :../../../..:/home/baallan/sc01/cca-spec-built/java CmdContext.java
+/usr/local/jdk1.2.2/bin/javac -classpath :../../../..:/home/baallan/sc01/cca-spec-built/java CmdAction.java
+/usr/local/jdk1.2.2/bin/javac -classpath :../../../..:/home/baallan/sc01/cca-spec-built/java CmdActionExit.java
+/usr/local/jdk1.2.2/bin/javac -classpath :../../../..:/home/baallan/sc01/cca-spec-built/java CmdActionHelp.java
+make[2]: Leaving directory `/home/baallan/sc01/dccafe-built/java/gov/sandia/ccaffeine/cmd'
+make[2]: Entering directory `/home/baallan/sc01/dccafe-built/java/gov/sandia/ccaffeine/dc'
+(cd user_iface;make)
+make[3]: Entering directory `/home/baallan/sc01/dccafe-built/java/gov/sandia/ccaffeine/dc/user_iface'
+/usr/local/jdk1.2.2/bin/javac -classpath :../../../../..:/home/baallan/sc01/cca-spec-built/java BuilderController.java
+/usr/local/jdk1.2.2/bin/javac -classpath :../../../../..:/home/baallan/sc01/cca-spec-built/java BuilderModel.java
+/usr/local/jdk1.2.2/bin/javac -classpath :../../../../..:/home/baallan/sc01/cca-spec-built/java BuilderServer.java
+/usr/local/jdk1.2.2/bin/javac -classpath :../../../../..:/home/baallan/sc01/cca-spec-built/java BuilderClient.java
+/usr/local/jdk1.2.2/bin/javac -classpath :../../../../..:/home/baallan/sc01/cca-spec-built/java BuilderView.java
+/usr/local/jdk1.2.2/bin/javac -classpath :../../../../..:/home/baallan/sc01/cca-spec-built/java CmdLineBuilderController2.java
+/usr/local/jdk1.2.2/bin/javac -classpath :../../../../..:/home/baallan/sc01/cca-spec-built/java CmdLineBuilderController3.java
+/usr/local/jdk1.2.2/bin/javac -classpath :../../../../..:/home/baallan/sc01/cca-spec-built/java CmdLineBuilderApplet.java
+Note: ../../../../../gov/sandia/ccaffeine/dc/user_iface/AWTConsole.java uses or overrides a deprecated API.  Recompile with "-deprecation" for details.
+1 warning
+/usr/local/jdk1.2.2/bin/javac -classpath :../../../../..:/home/baallan/sc01/cca-spec-built/java JConsole.java
+(cd gui; make)
+make[4]: Entering directory `/home/baallan/sc01/dccafe-built/java/gov/sandia/ccaffeine/dc/user_iface/gui'
+/usr/local/jdk1.2.2/bin/javac -classpath :../../../../../..:/home/baallan/sc01/cca-spec-built/java AppFrame.java
+make[4]: Leaving directory `/home/baallan/sc01/dccafe-built/java/gov/sandia/ccaffeine/dc/user_iface/gui'
+make[3]: Leaving directory `/home/baallan/sc01/dccafe-built/java/gov/sandia/ccaffeine/dc/user_iface'
+(cd component;make)
+make[3]: Entering directory `/home/baallan/sc01/dccafe-built/java/gov/sandia/ccaffeine/dc/component'
+/usr/local/jdk1.2.2/bin/javac -classpath :../../../../..:/home/baallan/sc01/cca-spec-built/java PrinterComponent.java
+/usr/local/jdk1.2.2/bin/javac -classpath :../../../../..:/home/baallan/sc01/cca-spec-built/java StarterComponent.java
+/usr/local/jdk1.2.2/bin/javac -classpath :../../../../..:/home/baallan/sc01/cca-spec-built/java TimeStamper.java
+/usr/local/jdk1.2.2/bin/javac -classpath :../../../../..:/home/baallan/sc01/cca-spec-built/java Timer.java
+/usr/local/jdk1.2.2/bin/javac -classpath :../../../../..:/home/baallan/sc01/cca-spec-built/java LinearSystemIsis.java
+/usr/local/jdk1.2.2/bin/javac -classpath :../../../../..:/home/baallan/sc01/cca-spec-built/java RevalidateTest.java
+make[3]: Leaving directory `/home/baallan/sc01/dccafe-built/java/gov/sandia/ccaffeine/dc/component'
+(cd distributed;make)
+make[3]: Entering directory `/home/baallan/sc01/dccafe-built/java/gov/sandia/ccaffeine/dc/distributed'
+/usr/local/jdk1.2.2/bin/javac -classpath :../../../../..:/home/baallan/sc01/cca-spec-built/java TestClientServer.java
+/usr/local/jdk1.2.2/bin/javac -classpath :../../../../..:/home/baallan/sc01/cca-spec-built/java MessageBasedDataCollector.java
+/usr/local/jdk1.2.2/bin/javac -classpath :../../../../..:/home/baallan/sc01/cca-spec-built/java RunMuxer.java
+/usr/local/jdk1.2.2/bin/javac -classpath :../../../../..:/home/baallan/sc01/cca-spec-built/java TimeDelayDataCollector.java
+/usr/local/jdk1.2.2/bin/javac -classpath :../../../../..:/home/baallan/sc01/cca-spec-built/java EchoAllDataCollector.java
+/usr/local/jdk1.2.2/bin/javac -classpath :../../../../..:/home/baallan/sc01/cca-spec-built/java MuxingProcess.java
+/usr/local/jdk1.2.2/bin/javac -classpath :../../../../..:/home/baallan/sc01/cca-spec-built/java LineMessageDataCollector.java
+make[3]: Leaving directory `/home/baallan/sc01/dccafe-built/java/gov/sandia/ccaffeine/dc/distributed'
+make[2]: Leaving directory `/home/baallan/sc01/dccafe-built/java/gov/sandia/ccaffeine/dc'
+make[2]: Entering directory `/home/baallan/sc01/dccafe-built/java/gnu'
+(cd getopt; make)
+make[3]: Entering directory `/home/baallan/sc01/dccafe-built/java/gnu/getopt'
+/usr/local/jdk1.2.2/bin/javac -classpath :../..:/home/baallan/sc01/cca-spec-built/java GetoptDemo.java
+make[3]: Leaving directory `/home/baallan/sc01/dccafe-built/java/gnu/getopt'
+done.
+make[2]: Leaving directory `/home/baallan/sc01/dccafe-built/java/gnu'
+make[2]: Entering directory `/home/baallan/sc01/dccafe-built/java/gov/sandia/ccaffeine/parameters'
+/usr/local/jdk1.2.2/bin/javac -classpath :../../../..:/home/baallan/sc01/cca-spec-built/java FloatParameter.java
+/usr/local/jdk1.2.2/bin/javac -classpath :../../../..:/home/baallan/sc01/cca-spec-built/java LongParameter.java
+/usr/local/jdk1.2.2/bin/java -Djava.compiler=NONE -classpath :../../../..:/home/baallan/sc01/cca-spec-built/java gov.sandia.ccaffeine.parameters.BoolParameter
+BOOL&p&true&which word didn't you understand?&enter true or false&true
+p
+true
+newParamField dummyI dummyP  BOOL  p
+paramCurrent dummyI dummyP p true
+paramHelp dummyI dummyP p which word didn't you understand?
+paramPrompt dummyI dummyP p enter true or false
+paramDefault dummyI dummyP p true
+
+make[2]: Leaving directory `/home/baallan/sc01/dccafe-built/java/gov/sandia/ccaffeine/parameters'
+make[2]: Entering directory `/home/baallan/sc01/dccafe-built/java/gov/sandia/ccaffeine/esi'
+/usr/local/jdk1.2.2/bin/javac -classpath :../../../..:/home/baallan/sc01/cca-spec-built/java ESI_Vector.java
+/usr/local/jdk1.2.2/bin/javac -classpath :../../../..:/home/baallan/sc01/cca-spec-built/java esi_Vector_snl.java
+make[2]: Leaving directory `/home/baallan/sc01/dccafe-built/java/gov/sandia/ccaffeine/esi'
+make[2]: Entering directory `/home/baallan/sc01/dccafe-built/java/gov/sandia/ccaffeine/port'
+make[2]: Nothing to be done for `all'.
+make[2]: Leaving directory `/home/baallan/sc01/dccafe-built/java/gov/sandia/ccaffeine/port'
+make[2]: Entering directory `/home/baallan/sc01/dccafe-built/java/gov/sandia/ccaffeine/util'
+make[2]: Nothing to be done for `all'.
+make[2]: Leaving directory `/home/baallan/sc01/dccafe-built/java/gov/sandia/ccaffeine/util'
+java build done.
+make[1]: Leaving directory `/home/baallan/sc01/dccafe-built/java'
+(cd cxx; make depend)
+make[1]: Entering directory `/home/baallan/sc01/dccafe-built/cxx'
+find . -name Makefile.depends -print -exec rm {} \;
+./dc/port/Makefile.depends
+./dc/framework/Makefile.depends
+./dc/Makefile.depends
+./dc/component/Makefile.depends
+./dc/user_iface/Makefile.depends
+./dc/user_iface/ccacmd/Makefile.depends
+./dc/distributed/Makefile.depends
+./dc/std_iface/Makefile.depends
+./cmd/Makefile.depends
+./doc/Makefile.depends
+./esi/Makefile.depends
+./gnu/Makefile.depends
+./gnu/getopt/Makefile.depends
+./lib/Makefile.depends
+./jc++/io/Makefile.depends
+./jc++/lang/Makefile.depends
+./jc++/test/Makefile.depends
+./jc++/util/Makefile.depends
+./jc++/Makefile.depends
+./port/Makefile.depends
+./port/data-interfaces/Makefile.depends
+./sc99/Makefile.depends
+./util/Makefile.depends
+./Makefile.depends
+./parameters/Makefile.depends
+./scutil/Makefile.depends
+./stovepipe/Makefile.depends
+find . -name Makefile -print -exec util/newdepend {} \;
+./dc/port/Makefile
+./dc/port/Makefile.depends
+./dc/framework/Makefile
+./dc/framework/Makefile.depends
+./dc/Makefile
+./dc/Makefile.depends
+./dc/component/Makefile
+./dc/component/Makefile.depends
+./dc/user_iface/Makefile
+./dc/user_iface/Makefile.depends
+./dc/user_iface/ccacmd/Makefile
+./dc/user_iface/ccacmd/Makefile.depends
+./dc/distributed/Makefile
+./dc/distributed/Makefile.depends
+./dc/std_iface/Makefile
+./dc/std_iface/Makefile.depends
+./cmd/Makefile
+./cmd/Makefile.depends
+./doc/Makefile
+./doc/Makefile.depends
+./esi/Makefile
+./esi/Makefile.depends
+./gnu/Makefile
+./gnu/Makefile.depends
+./gnu/getopt/Makefile
+./gnu/getopt/Makefile.depends
+./lib/Makefile
+./lib/Makefile.depends
+./jc++/io/Makefile
+./jc++/io/Makefile.depends
+./jc++/lang/Makefile
+./jc++/lang/Makefile.depends
+./jc++/test/Makefile
+./jc++/test/Makefile.depends
+./jc++/util/Makefile
+./jc++/util/Makefile.depends
+./jc++/Makefile
+./jc++/Makefile.depends
+./port/Makefile
+./port/Makefile.depends
+./port/data-interfaces/Makefile
+./port/data-interfaces/Makefile.depends
+./sc99/Makefile
+./sc99/Makefile.depends
+./util/Makefile
+./util/Makefile.depends
+./Makefile
+./Makefile.depends
+./parameters/Makefile
+./parameters/Makefile.depends
+./scutil/Makefile
+./scutil/Makefile.depends
+./stovepipe/Makefile
+./stovepipe/Makefile.depends
+gmake[2]: Entering directory `/home/baallan/sc01/dccafe-built/cxx/jc++'
+(cd lang; gmake depend)
+gmake[3]: Entering directory `/home/baallan/sc01/dccafe-built/cxx/jc++/lang'
+../../util/g++depinclude_nosys -E -g    -DOS_LINUX -Wall -D_EFENCE  -I../.. -I/home/baallan/sc01/cca-spec-built/cxx/include   Object.cxx FloatJC.cxx DoubleJC.cxx IntegerJC.cxx LongJC.cxx BooleanJC.cxx String.cxx
+gmake[3]: Leaving directory `/home/baallan/sc01/dccafe-built/cxx/jc++/lang'
+(cd util; gmake depend)
+gmake[3]: Entering directory `/home/baallan/sc01/dccafe-built/cxx/jc++/util'
+../../util/g++depinclude_nosys -E  -g    -DOS_LINUX -Wall -D_EFENCE  -I../.. -I/home/baallan/sc01/cca-spec-built/cxx/include   Vector.cc StringVector.cc VectEnum.cc HashEnum.cc StringVectEnum.cc StringHashEnum.cc HashBucket.cc ResourceBucket.cc StringHashBucket.cc Hashtable.cc StringHash.cc ResourceHash.cc GenericHashEnum.cc GenericHashBucket.cc GenericHashTable.cc StringBuffer.cc StringTokenizer.cc JString.cc
+gmake[3]: Leaving directory `/home/baallan/sc01/dccafe-built/cxx/jc++/util'
+(cd io; gmake depend)
+gmake[3]: Entering directory `/home/baallan/sc01/dccafe-built/cxx/jc++/io'
+../../util/g++depinclude_nosys -E  -g    -DOS_LINUX -Wall -D_EFENCE  -I../.. -I/home/baallan/sc01/cca-spec-built/cxx/include   StdReader.cc BufferedReader.cc NonblockingReader.cc
+gmake[3]: Leaving directory `/home/baallan/sc01/dccafe-built/cxx/jc++/io'
+gmake[2]: Leaving directory `/home/baallan/sc01/dccafe-built/cxx/jc++'
+gmake[2]: Entering directory `/home/baallan/sc01/dccafe-built/cxx/parameters'
+../util/g++depinclude_nosys -E -g    -DOS_LINUX -Wall -D_EFENCE  -I.. -I/home/baallan/sc01/cca-spec-built/cxx/include   parametersDynamic.cxx BaseParameter.cxx BoolParameter.cxx DoubleParameter.cxx FloatParameter.cxx IntParameter.cxx LongParameter.cxx StringParameter.cxx
+gmake[2]: Leaving directory `/home/baallan/sc01/dccafe-built/cxx/parameters'
+gmake[2]: Entering directory `/home/baallan/sc01/dccafe-built/cxx/port'
+done
+gmake[2]: Leaving directory `/home/baallan/sc01/dccafe-built/cxx/port'
+gmake[2]: Entering directory `/home/baallan/sc01/dccafe-built/cxx/sc99'
+done
+gmake[2]: Leaving directory `/home/baallan/sc01/dccafe-built/cxx/sc99'
+gmake[2]: Entering directory `/home/baallan/sc01/dccafe-built/cxx/util'
+../util/g++depinclude_nosys -E  -g    -DOS_LINUX -Wall -D_EFENCE  -I.. -I/home/baallan/sc01/cca-spec-built/cxx/include   IO.cxx gdbWaitForAttach.cxx
+gmake[2]: Leaving directory `/home/baallan/sc01/dccafe-built/cxx/util'
+gmake[2]: Entering directory `/home/baallan/sc01/dccafe-built/cxx/cmd'
+../util/g++depinclude_nosys -E -g    -DOS_LINUX -Wall -D_EFENCE  -I.. -I/home/baallan/sc01/cca-spec-built/cxx/include   CmdContext.cxx CmdActionExit.cxx CmdActionHelp.cxx CmdParse.cxx
+gmake[2]: Leaving directory `/home/baallan/sc01/dccafe-built/cxx/cmd'
+gmake[2]: Entering directory `/home/baallan/sc01/dccafe-built/cxx/scutil'
+../util/g++depinclude_nosys -E  -g    -DOS_LINUX -Wall -D_EFENCE  -I.. -I/home/baallan/sc01/cca-spec-built/cxx/include   SCEnumeration.cpp SCVectEnum.cpp SCVector.cpp
+gmake[2]: Leaving directory `/home/baallan/sc01/dccafe-built/cxx/scutil'
+gmake[2]: Entering directory `/home/baallan/sc01/dccafe-built/cxx/stovepipe'
+Manual dependencies written by Rob
+gmake[2]: Leaving directory `/home/baallan/sc01/dccafe-built/cxx/stovepipe'
+gmake[2]: Entering directory `/home/baallan/sc01/dccafe-built/cxx/dc'
+(cd component;gmake depend)
+gmake[3]: Entering directory `/home/baallan/sc01/dccafe-built/cxx/dc/component'
+../../util/g++depinclude_nosys -E -g    -DOS_LINUX -Wall -D_EFENCE  -I../.. -I/home/baallan/sc01/cca-spec-built/cxx/include    -I/home/baallan/sc01/cca-spec-built/cxx/eg/include -I/home/baallan/sc01/cca-spec-built/cxx/eg/ccaComponent -D_EG  Timer.cxx StarterComponent.cxx TimeStamper.cxx PrinterComponent.cxx RevalidateTest.cxx  
+gmake[3]: Leaving directory `/home/baallan/sc01/dccafe-built/cxx/dc/component'
+(cd distributed;gmake depend)
+gmake[3]: Entering directory `/home/baallan/sc01/dccafe-built/cxx/dc/distributed'
+../../util/g++depinclude_nosys -E -g    -DOS_LINUX -Wall -D_EFENCE  -I../.. -I/home/baallan/sc01/cca-spec-built/cxx/include   ClientServerSocket.cxx ProcessorInfo.cxx  ConnectionManager.cxx SocketConnectionManager.cxx LinewiseClient.cxx ServerMux.cxx DataCollectorFactory.cxx MessageData.cxx ServerOutOfBandListener.cxx
+gmake[3]: Leaving directory `/home/baallan/sc01/dccafe-built/cxx/dc/distributed'
+(cd framework;gmake depend)
+gmake[3]: Entering directory `/home/baallan/sc01/dccafe-built/cxx/dc/framework'
+../../util/g++depinclude_nosys -E -g    -DOS_LINUX -Wall -D_EFENCE  -I../.. -I/home/baallan/sc01/cca-spec-built/cxx/include   ComponentFactory.cxx  ServicesHelper.cxx  ComponentInfo.cxx Gizzard.cxx ConnectionFramework.cxx DefaultPortInfo.cxx ComponentChangedEvent.cxx GizzardComponentChangedEvent.cxx GizzardConnection.cxx
+gmake[3]: Leaving directory `/home/baallan/sc01/dccafe-built/cxx/dc/framework'
+(cd std_iface;gmake depend)
+gmake[3]: Entering directory `/home/baallan/sc01/dccafe-built/cxx/dc/std_iface'
+done
+gmake[3]: Leaving directory `/home/baallan/sc01/dccafe-built/cxx/dc/std_iface'
+(cd user_iface;gmake depend)
+gmake[3]: Entering directory `/home/baallan/sc01/dccafe-built/cxx/dc/user_iface'
+(cd ccacmd; gmake depend)
+gmake[4]: Entering directory `/home/baallan/sc01/dccafe-built/cxx/dc/user_iface/ccacmd'
+../../../util/g++depinclude_nosys -E -g    -DOS_LINUX -Wall -D_EFENCE  -I../../.. -I/home/baallan/sc01/cca-spec-built/cxx/include   CmdActionCCAConnect.cxx CmdActionCCADisplay.cxx CmdActionCCAPallet.cxx CmdActionCCAArena.cxx CmdActionCCAGo.cxx CmdActionCCAConfig.cxx CmdActionCCAProperties.cxx CmdActionCCALinks.cxx CmdActionCCAInstantiate.cxx CmdActionCCARemove.cxx CmdActionCCARepository.cxx CmdActionCCAPath.cxx CmdActionCCAShell.cxx CmdContextCCA.cxx CmdActionCCANuke.cxx CmdActionCCADisconnect.cxx
+gmake[4]: Leaving directory `/home/baallan/sc01/dccafe-built/cxx/dc/user_iface/ccacmd'
+../../util/g++depinclude_nosys -E -g    -DOS_LINUX -Wall -D_EFENCE  -I../.. -I/home/baallan/sc01/cca-spec-built/cxx/include   DefaultBuilderModel.cxx Link.cxx CmdLineBuilderViewForHuman.cxx CmdLineBuilderViewForGUI.cxx CmdLineBuilderViewMux.cxx CmdLineBuilderController2.cxx forceIsisBlasLapackLink.cxx CmdLineClient.cxx
+gmake[3]: Leaving directory `/home/baallan/sc01/dccafe-built/cxx/dc/user_iface'
+gmake[2]: Leaving directory `/home/baallan/sc01/dccafe-built/cxx/dc'
+gmake[2]: Entering directory `/home/baallan/sc01/dccafe-built/cxx/lib'
+dccafe/cxx/lib depends not checked.
+gmake[2]: Leaving directory `/home/baallan/sc01/dccafe-built/cxx/lib'
+make[1]: Leaving directory `/home/baallan/sc01/dccafe-built/cxx'
+(cd cxx; make)
+make[1]: Entering directory `/home/baallan/sc01/dccafe-built/cxx'
+(cd gnu;gmake)
+gmake[2]: Entering directory `/home/baallan/sc01/dccafe-built/cxx/gnu'
+(cd getopt; gmake)
+gmake[3]: Entering directory `/home/baallan/sc01/dccafe-built/cxx/gnu/getopt'
+cc -c -O getCCAFEopt.c
+cc -c -O getCCAFEopt1.c
+ar ruv libgetCCAFEopt.a *.o
+a - getCCAFEopt1.o
+a - getCCAFEopt.o
+ranlib libgetCCAFEopt.a
+done getCCAFEopt.o getCCAFEopt1.o
+gmake[3]: Leaving directory `/home/baallan/sc01/dccafe-built/cxx/gnu/getopt'
+gmake[2]: Leaving directory `/home/baallan/sc01/dccafe-built/cxx/gnu'
+gmake[2]: Entering directory `/home/baallan/sc01/dccafe-built/cxx/jc++'
+(cd util; gmake)
+gmake[3]: Entering directory `/home/baallan/sc01/dccafe-built/cxx/jc++/util'
+c++ -c -g    -DOS_LINUX -Wall -D_EFENCE  -I../.. -I/home/baallan/sc01/cca-spec-built/cxx/include   -D_GNU_SOURCE -D_REENTRANT Vector.cc
+Vector.cc:23: warning: `char id[56]' defined but not used
+c++ -c -g    -DOS_LINUX -Wall -D_EFENCE  -I../.. -I/home/baallan/sc01/cca-spec-built/cxx/include   -D_GNU_SOURCE -D_REENTRANT StringVector.cc
+StringVector.cc:18: warning: `char id[62]' defined but not used
+c++ -c -g    -DOS_LINUX -Wall -D_EFENCE  -I../.. -I/home/baallan/sc01/cca-spec-built/cxx/include   -D_GNU_SOURCE -D_REENTRANT VectEnum.cc
+VectEnum.cc:8: warning: `char id[57]' defined but not used
+c++ -c -g    -DOS_LINUX -Wall -D_EFENCE  -I../.. -I/home/baallan/sc01/cca-spec-built/cxx/include   -D_GNU_SOURCE -D_REENTRANT HashEnum.cc
+HashEnum.cc:15: warning: `char id[57]' defined but not used
+c++ -c -g    -DOS_LINUX -Wall -D_EFENCE  -I../.. -I/home/baallan/sc01/cca-spec-built/cxx/include   -D_GNU_SOURCE -D_REENTRANT StringVectEnum.cc
+StringVectEnum.cc:14: warning: `char id[63]' defined but not used
+c++ -c -g    -DOS_LINUX -Wall -D_EFENCE  -I../.. -I/home/baallan/sc01/cca-spec-built/cxx/include   -D_GNU_SOURCE -D_REENTRANT StringHashEnum.cc
+StringHashEnum.cc:14: warning: `char id[63]' defined but not used
+c++ -c -g    -DOS_LINUX -Wall -D_EFENCE  -I../.. -I/home/baallan/sc01/cca-spec-built/cxx/include   -D_GNU_SOURCE -D_REENTRANT HashBucket.cc
+HashBucket.cc:14: warning: `char id[59]' defined but not used
+c++ -c -g    -DOS_LINUX -Wall -D_EFENCE  -I../.. -I/home/baallan/sc01/cca-spec-built/cxx/include   -D_GNU_SOURCE -D_REENTRANT ResourceBucket.cc
+ResourceBucket.cc:13: warning: `char id[63]' defined but not used
+c++ -c -g    -DOS_LINUX -Wall -D_EFENCE  -I../.. -I/home/baallan/sc01/cca-spec-built/cxx/include   -D_GNU_SOURCE -D_REENTRANT StringHashBucket.cc
+StringHashBucket.cc:11: warning: `char id[65]' defined but not used
+c++ -c -g    -DOS_LINUX -Wall -D_EFENCE  -I../.. -I/home/baallan/sc01/cca-spec-built/cxx/include   -D_GNU_SOURCE -D_REENTRANT Hashtable.cc
+Hashtable.cc:18: warning: `char id[58]' defined but not used
+c++ -c -g    -DOS_LINUX -Wall -D_EFENCE  -I../.. -I/home/baallan/sc01/cca-spec-built/cxx/include   -D_GNU_SOURCE -D_REENTRANT StringHash.cc
+StringHash.cc:21: warning: `char id[56]' defined but not used
+c++ -c -g    -DOS_LINUX -Wall -D_EFENCE  -I../.. -I/home/baallan/sc01/cca-spec-built/cxx/include   -D_GNU_SOURCE -D_REENTRANT ResourceHash.cc
+ResourceHash.cc:26: warning: `char id[62]' defined but not used
+c++ -c -g    -DOS_LINUX -Wall -D_EFENCE  -I../.. -I/home/baallan/sc01/cca-spec-built/cxx/include   -D_GNU_SOURCE -D_REENTRANT GenericHashEnum.cc
+GenericHashEnum.cc:16: warning: `char id[64]' defined but not used
+c++ -c -g    -DOS_LINUX -Wall -D_EFENCE  -I../.. -I/home/baallan/sc01/cca-spec-built/cxx/include   -D_GNU_SOURCE -D_REENTRANT GenericHashBucket.cc
+GenericHashBucket.cc:16: warning: `char id[66]' defined but not used
+c++ -c -g    -DOS_LINUX -Wall -D_EFENCE  -I../.. -I/home/baallan/sc01/cca-spec-built/cxx/include   -D_GNU_SOURCE -D_REENTRANT GenericHashTable.cc
+GenericHashTable.cc:20: warning: `char id[65]' defined but not used
+c++ -c -g    -DOS_LINUX -Wall -D_EFENCE  -I../.. -I/home/baallan/sc01/cca-spec-built/cxx/include   -D_GNU_SOURCE -D_REENTRANT StringBuffer.cc
+StringBuffer.cc:21: warning: `char id[61]' defined but not used
+c++ -c -g    -DOS_LINUX -Wall -D_EFENCE  -I../.. -I/home/baallan/sc01/cca-spec-built/cxx/include   -D_GNU_SOURCE -D_REENTRANT StringTokenizer.cc
+StringTokenizer.cc:2: warning: `char id[64]' defined but not used
+c++ -c -g    -DOS_LINUX -Wall -D_EFENCE  -I../.. -I/home/baallan/sc01/cca-spec-built/cxx/include   -D_GNU_SOURCE -D_REENTRANT JString.cc
+JString.cc:2: warning: `char id[53]' defined but not used
+c++ -c -g    -DOS_LINUX -Wall -D_EFENCE  -I../.. -I/home/baallan/sc01/cca-spec-built/cxx/include   -D_GNU_SOURCE -D_REENTRANT Thread.cc
+ar -rv libjc++util.a Vector.o StringVector.o VectEnum.o HashEnum.o StringVectEnum.o StringHashEnum.o HashBucket.o ResourceBucket.o StringHashBucket.o Hashtable.o StringHash.o ResourceHash.o GenericHashEnum.o GenericHashBucket.o GenericHashTable.o StringBuffer.o StringTokenizer.o JString.o Thread.o 
+a - Vector.o
+a - StringVector.o
+a - VectEnum.o
+a - HashEnum.o
+a - StringVectEnum.o
+a - StringHashEnum.o
+a - HashBucket.o
+a - ResourceBucket.o
+a - StringHashBucket.o
+a - Hashtable.o
+a - StringHash.o
+a - ResourceHash.o
+a - GenericHashEnum.o
+a - GenericHashBucket.o
+a - GenericHashTable.o
+a - StringBuffer.o
+a - StringTokenizer.o
+a - JString.o
+a - Thread.o
+ranlib libjc++util.a
+gmake[3]: Leaving directory `/home/baallan/sc01/dccafe-built/cxx/jc++/util'
+(cd lang; gmake)
+gmake[3]: Entering directory `/home/baallan/sc01/dccafe-built/cxx/jc++/lang'
+c++ -c -g    -DOS_LINUX -Wall -D_EFENCE  -I../.. -I/home/baallan/sc01/cca-spec-built/cxx/include   Object.cxx
+c++ -c -g    -DOS_LINUX -Wall -D_EFENCE  -I../.. -I/home/baallan/sc01/cca-spec-built/cxx/include   FloatJC.cxx
+FloatJC.cxx:2: warning: `char id[57]' defined but not used
+c++ -c -g    -DOS_LINUX -Wall -D_EFENCE  -I../.. -I/home/baallan/sc01/cca-spec-built/cxx/include   DoubleJC.cxx
+DoubleJC.cxx:2: warning: `char id[58]' defined but not used
+c++ -c -g    -DOS_LINUX -Wall -D_EFENCE  -I../.. -I/home/baallan/sc01/cca-spec-built/cxx/include   IntegerJC.cxx
+IntegerJC.cxx:2: warning: `char id[59]' defined but not used
+c++ -c -g    -DOS_LINUX -Wall -D_EFENCE  -I../.. -I/home/baallan/sc01/cca-spec-built/cxx/include   LongJC.cxx
+LongJC.cxx:2: warning: `char id[56]' defined but not used
+c++ -c -g    -DOS_LINUX -Wall -D_EFENCE  -I../.. -I/home/baallan/sc01/cca-spec-built/cxx/include   BooleanJC.cxx
+BooleanJC.cxx:2: warning: `char id[59]' defined but not used
+c++ -c -g    -DOS_LINUX -Wall -D_EFENCE  -I../.. -I/home/baallan/sc01/cca-spec-built/cxx/include   String.cxx
+ar -rv libjexception.a Object.o FloatJC.o DoubleJC.o IntegerJC.o LongJC.o BooleanJC.o String.o
+a - Object.o
+a - FloatJC.o
+a - DoubleJC.o
+a - IntegerJC.o
+a - LongJC.o
+a - BooleanJC.o
+a - String.o
+ranlib libjexception.a
+gmake[3]: Leaving directory `/home/baallan/sc01/dccafe-built/cxx/jc++/lang'
+(cd io; gmake)
+gmake[3]: Entering directory `/home/baallan/sc01/dccafe-built/cxx/jc++/io'
+c++ -c -g    -DOS_LINUX -Wall -D_EFENCE  -I../.. -I/home/baallan/sc01/cca-spec-built/cxx/include   -D_GNU_SOURCE -D_REENTRANT StdReader.cc
+StdReader.cc:2: warning: `char id[58]' defined but not used
+c++ -c -g    -DOS_LINUX -Wall -D_EFENCE  -I../.. -I/home/baallan/sc01/cca-spec-built/cxx/include   -D_GNU_SOURCE -D_REENTRANT BufferedReader.cc
+BufferedReader.cc:2: warning: `char id[63]' defined but not used
+c++ -c -g    -DOS_LINUX -Wall -D_EFENCE  -I../.. -I/home/baallan/sc01/cca-spec-built/cxx/include   -D_GNU_SOURCE -D_REENTRANT NonblockingReader.cc
+NonblockingReader.cc:2: warning: `char id[66]' defined but not used
+ar -rv libjc++io.a StdReader.o BufferedReader.o NonblockingReader.o
+a - StdReader.o
+a - BufferedReader.o
+a - NonblockingReader.o
+ranlib libjc++io.a
+gmake[3]: Leaving directory `/home/baallan/sc01/dccafe-built/cxx/jc++/io'
+c++ -c -g    -DOS_LINUX -Wall -D_EFENCE  -I.. -I/home/baallan/sc01/cca-spec-built/cxx/include   jc++dynamic.cpp
+ar ruv libjcpp.a */*.o jc++dynamic.o
+a - io/BufferedReader.o
+a - io/NonblockingReader.o
+a - io/StdReader.o
+a - lang/BooleanJC.o
+a - lang/DoubleJC.o
+a - lang/FloatJC.o
+a - lang/IntegerJC.o
+a - lang/LongJC.o
+a - lang/Object.o
+a - lang/String.o
+a - util/GenericHashBucket.o
+a - util/GenericHashEnum.o
+a - util/GenericHashTable.o
+a - util/HashBucket.o
+a - util/HashEnum.o
+a - util/Hashtable.o
+a - util/JString.o
+a - util/ResourceBucket.o
+a - util/ResourceHash.o
+a - util/StringBuffer.o
+a - util/StringHashBucket.o
+a - util/StringHashEnum.o
+a - util/StringHash.o
+a - util/StringTokenizer.o
+a - util/StringVectEnum.o
+a - util/StringVector.o
+a - util/Thread.o
+a - util/VectEnum.o
+a - util/Vector.o
+a - jc++dynamic.o
+ranlib libjcpp.a
+gmake[2]: Leaving directory `/home/baallan/sc01/dccafe-built/cxx/jc++'
+gmake[2]: Entering directory `/home/baallan/sc01/dccafe-built/cxx/parameters'
+CCAFE_HOME = ..
+Make sure this is set properly!
+c++ -c -g    -DOS_LINUX -Wall -D_EFENCE  -I.. -I/home/baallan/sc01/cca-spec-built/cxx/include    parametersDynamic.cxx
+parametersDynamic.cxx:7: warning: `char id[67]' defined but not used
+c++ -c -g    -DOS_LINUX -Wall -D_EFENCE  -I.. -I/home/baallan/sc01/cca-spec-built/cxx/include    BaseParameter.cxx
+BaseParameter.cxx:8: warning: `char id[63]' defined but not used
+c++ -c -g    -DOS_LINUX -Wall -D_EFENCE  -I.. -I/home/baallan/sc01/cca-spec-built/cxx/include    BoolParameter.cxx
+BoolParameter.cxx:22: warning: `char id[64]' defined but not used
+c++ -c -g    -DOS_LINUX -Wall -D_EFENCE  -I.. -I/home/baallan/sc01/cca-spec-built/cxx/include    DoubleParameter.cxx
+DoubleParameter.cxx:15: warning: `char id[65]' defined but not used
+c++ -c -g    -DOS_LINUX -Wall -D_EFENCE  -I.. -I/home/baallan/sc01/cca-spec-built/cxx/include    FloatParameter.cxx
+FloatParameter.cxx:15: warning: `char id[64]' defined but not used
+c++ -c -g    -DOS_LINUX -Wall -D_EFENCE  -I.. -I/home/baallan/sc01/cca-spec-built/cxx/include    IntParameter.cxx
+IntParameter.cxx:15: warning: `char id[62]' defined but not used
+c++ -c -g    -DOS_LINUX -Wall -D_EFENCE  -I.. -I/home/baallan/sc01/cca-spec-built/cxx/include    LongParameter.cxx
+LongParameter.cxx:15: warning: `char id[63]' defined but not used
+c++ -c -g    -DOS_LINUX -Wall -D_EFENCE  -I.. -I/home/baallan/sc01/cca-spec-built/cxx/include    StringParameter.cxx
+StringParameter.cxx:16: warning: `char id[66]' defined but not used
+ar ruv libparameters.a *.o
+a - BaseParameter.o
+a - BoolParameter.o
+a - DoubleParameter.o
+a - FloatParameter.o
+a - IntParameter.o
+a - LongParameter.o
+a - parametersDynamic.o
+a - StringParameter.o
+ranlib libparameters.a
+done parametersDynamic.o BaseParameter.o BoolParameter.o DoubleParameter.o FloatParameter.o IntParameter.o LongParameter.o StringParameter.o
+gmake[2]: Leaving directory `/home/baallan/sc01/dccafe-built/cxx/parameters'
+gmake[2]: Entering directory `/home/baallan/sc01/dccafe-built/cxx/port'
+done
+gmake[2]: Leaving directory `/home/baallan/sc01/dccafe-built/cxx/port'
+gmake[2]: Entering directory `/home/baallan/sc01/dccafe-built/cxx/sc99'
+done
+gmake[2]: Leaving directory `/home/baallan/sc01/dccafe-built/cxx/sc99'
+gmake[2]: Entering directory `/home/baallan/sc01/dccafe-built/cxx/util'
+c++ -c -g    -DOS_LINUX -Wall -D_EFENCE  -I.. -I/home/baallan/sc01/cca-spec-built/cxx/include    IO.cxx
+IO.cxx:2: warning: `char id[49]' defined but not used
+c++ -c -g    -DOS_LINUX -Wall -D_EFENCE  -I.. -I/home/baallan/sc01/cca-spec-built/cxx/include    gdbWaitForAttach.cxx
+c++ -c -g    -DOS_LINUX -Wall -D_EFENCE  -I.. -I/home/baallan/sc01/cca-spec-built/cxx/include    ascDynaLoad.c
+done IO.o gdbWaitForAttach.o
+ar -rv libcafeutil.a IO.o gdbWaitForAttach.o ascDynaLoad.o
+a - IO.o
+a - gdbWaitForAttach.o
+a - ascDynaLoad.o
+ranlib libcafeutil.a
+gmake[2]: Leaving directory `/home/baallan/sc01/dccafe-built/cxx/util'
+gmake[2]: Entering directory `/home/baallan/sc01/dccafe-built/cxx/cmd'
+c++ -c -g    -DOS_LINUX -Wall -D_EFENCE  -I.. -I/home/baallan/sc01/cca-spec-built/cxx/include   CmdContext.cxx
+CmdContext.cxx:3: warning: `char id[60]' defined but not used
+c++ -c -g    -DOS_LINUX -Wall -D_EFENCE  -I.. -I/home/baallan/sc01/cca-spec-built/cxx/include   CmdActionExit.cxx
+CmdActionExit.cxx:2: warning: `char id[63]' defined but not used
+c++ -c -g    -DOS_LINUX -Wall -D_EFENCE  -I.. -I/home/baallan/sc01/cca-spec-built/cxx/include   CmdActionHelp.cxx
+CmdActionHelp.cxx:2: warning: `char id[63]' defined but not used
+c++ -c -g    -DOS_LINUX -Wall -D_EFENCE  -I.. -I/home/baallan/sc01/cca-spec-built/cxx/include   CmdParse.cxx
+ar ruv libcmd.a CmdContext.o CmdActionExit.o CmdActionHelp.o CmdParse.o
+a - CmdContext.o
+a - CmdActionExit.o
+a - CmdActionHelp.o
+a - CmdParse.o
+ranlib libcmd.a
+gmake[2]: Leaving directory `/home/baallan/sc01/dccafe-built/cxx/cmd'
+gmake[2]: Entering directory `/home/baallan/sc01/dccafe-built/cxx/scutil'
+c++ -c -g    -DOS_LINUX -Wall -D_EFENCE  -I.. -I/home/baallan/sc01/cca-spec-built/cxx/include   Iterated_gov_o_cca_o_Port_p.gen.cpp
+Iterated_gov_o_cca_o_Port_p.gen.cpp:14: warning: `char id[77]' defined but not used
+c++ -c -g    -DOS_LINUX -Wall -D_EFENCE  -I.. -I/home/baallan/sc01/cca-spec-built/cxx/include   Iterated_gov_o_cca_o_PortInfo_p.gen.cpp
+Iterated_gov_o_cca_o_PortInfo_p.gen.cpp:14: warning: `char id[81]' defined but not used
+c++ -c -g    -DOS_LINUX -Wall -D_EFENCE  -I.. -I/home/baallan/sc01/cca-spec-built/cxx/include   SCEnumeration_gov_o_cca_o_Port_p.gen.cpp
+SCEnumeration_gov_o_cca_o_Port_p.gen.cpp:15: warning: `char id[82]' defined but not used
+c++ -c -g    -DOS_LINUX -Wall -D_EFENCE  -I.. -I/home/baallan/sc01/cca-spec-built/cxx/include   SCEnumeration_gov_o_cca_o_PortInfo_p.gen.cpp
+SCEnumeration_gov_o_cca_o_PortInfo_p.gen.cpp:15: warning: `char id[86]' defined but not used
+c++ -c -g    -DOS_LINUX -Wall -D_EFENCE  -I.. -I/home/baallan/sc01/cca-spec-built/cxx/include   SCVectEnum_gov_o_cca_o_Port_p.gen.cpp
+SCVectEnum_gov_o_cca_o_Port_p.gen.cpp:8: warning: `char id[79]' defined but not used
+c++ -c -g    -DOS_LINUX -Wall -D_EFENCE  -I.. -I/home/baallan/sc01/cca-spec-built/cxx/include   SCVectEnum_gov_o_cca_o_PortInfo_p.gen.cpp
+SCVectEnum_gov_o_cca_o_PortInfo_p.gen.cpp:8: warning: `char id[83]' defined but not used
+c++ -c -g    -DOS_LINUX -Wall -D_EFENCE  -I.. -I/home/baallan/sc01/cca-spec-built/cxx/include   SCVector_gov_o_cca_o_Port_p.gen.cpp
+SCVector_gov_o_cca_o_Port_p.gen.cpp:33: warning: `char id[77]' defined but not used
+c++ -c -g    -DOS_LINUX -Wall -D_EFENCE  -I.. -I/home/baallan/sc01/cca-spec-built/cxx/include   SCVector_gov_o_cca_o_PortInfo_p.gen.cpp
+SCVector_gov_o_cca_o_PortInfo_p.gen.cpp:33: warning: `char id[81]' defined but not used
+c++ -c -g    -DOS_LINUX -Wall -D_EFENCE  -I.. -I/home/baallan/sc01/cca-spec-built/cxx/include   Iterated_UPortStatus_p.gen.cpp
+Iterated_UPortStatus_p.gen.cpp:14: warning: `char id[72]' defined but not used
+c++ -c -g    -DOS_LINUX -Wall -D_EFENCE  -I.. -I/home/baallan/sc01/cca-spec-built/cxx/include   SCEnumeration_UPortStatus_p.gen.cpp
+SCEnumeration_UPortStatus_p.gen.cpp:15: warning: `char id[77]' defined but not used
+c++ -c -g    -DOS_LINUX -Wall -D_EFENCE  -I.. -I/home/baallan/sc01/cca-spec-built/cxx/include   SCVectEnum_UPortStatus_p.gen.cpp
+SCVectEnum_UPortStatus_p.gen.cpp:8: warning: `char id[74]' defined but not used
+c++ -c -g    -DOS_LINUX -Wall -D_EFENCE  -I.. -I/home/baallan/sc01/cca-spec-built/cxx/include   SCVector_UPortStatus_p.gen.cpp
+SCVector_UPortStatus_p.gen.cpp:33: warning: `char id[72]' defined but not used
+c++ -c -g    -DOS_LINUX -Wall -D_EFENCE  -I.. -I/home/baallan/sc01/cca-spec-built/cxx/include   Iterated_ComponentChangedListener_p.gen.cpp
+Iterated_ComponentChangedListener_p.gen.cpp:14: warning: `char id[85]' defined but not used
+c++ -c -g    -DOS_LINUX -Wall -D_EFENCE  -I.. -I/home/baallan/sc01/cca-spec-built/cxx/include   SCEnumeration_ComponentChangedListener_p.gen.cpp
+SCEnumeration_ComponentChangedListener_p.gen.cpp:15: warning: `char id[90]' defined but not used
+c++ -c -g    -DOS_LINUX -Wall -D_EFENCE  -I.. -I/home/baallan/sc01/cca-spec-built/cxx/include   SCVectEnum_ComponentChangedListener_p.gen.cpp
+SCVectEnum_ComponentChangedListener_p.gen.cpp:8: warning: `char id[87]' defined but not used
+c++ -c -g    -DOS_LINUX -Wall -D_EFENCE  -I.. -I/home/baallan/sc01/cca-spec-built/cxx/include   SCVector_ComponentChangedListener_p.gen.cpp
+SCVector_ComponentChangedListener_p.gen.cpp:33: warning: `char id[85]' defined but not used
+c++ -c -g    -DOS_LINUX -Wall -D_EFENCE  -I.. -I/home/baallan/sc01/cca-spec-built/cxx/include   Iterated_gov_o_cca_o_ConnectionEventListener_p.gen.cpp
+Iterated_gov_o_cca_o_ConnectionEventListener_p.gen.cpp:14: warning: `char id[96]' defined but not used
+c++ -c -g    -DOS_LINUX -Wall -D_EFENCE  -I.. -I/home/baallan/sc01/cca-spec-built/cxx/include   SCEnumeration_gov_o_cca_o_ConnectionEventListener_p.gen.cpp
+SCEnumeration_gov_o_cca_o_ConnectionEventListener_p.gen.cpp:15: warning: `char id[101]' defined but not used
+c++ -c -g    -DOS_LINUX -Wall -D_EFENCE  -I.. -I/home/baallan/sc01/cca-spec-built/cxx/include   SCVectEnum_gov_o_cca_o_ConnectionEventListener_p.gen.cpp
+SCVectEnum_gov_o_cca_o_ConnectionEventListener_p.gen.cpp:8: warning: `char id[98]' defined but not used
+c++ -c -g    -DOS_LINUX -Wall -D_EFENCE  -I.. -I/home/baallan/sc01/cca-spec-built/cxx/include   SCVector_gov_o_cca_o_ConnectionEventListener_p.gen.cpp
+SCVector_gov_o_cca_o_ConnectionEventListener_p.gen.cpp:33: warning: `char id[96]' defined but not used
+c++ -c -g    -DOS_LINUX -Wall -D_EFENCE  -I.. -I/home/baallan/sc01/cca-spec-built/cxx/include   Iterated_Connection_p.gen.cpp
+Iterated_Connection_p.gen.cpp:14: warning: `char id[71]' defined but not used
+c++ -c -g    -DOS_LINUX -Wall -D_EFENCE  -I.. -I/home/baallan/sc01/cca-spec-built/cxx/include   SCEnumeration_Connection_p.gen.cpp
+SCEnumeration_Connection_p.gen.cpp:15: warning: `char id[76]' defined but not used
+c++ -c -g    -DOS_LINUX -Wall -D_EFENCE  -I.. -I/home/baallan/sc01/cca-spec-built/cxx/include   SCVectEnum_Connection_p.gen.cpp
+SCVectEnum_Connection_p.gen.cpp:8: warning: `char id[73]' defined but not used
+c++ -c -g    -DOS_LINUX -Wall -D_EFENCE  -I.. -I/home/baallan/sc01/cca-spec-built/cxx/include   SCVector_Connection_p.gen.cpp
+SCVector_Connection_p.gen.cpp:33: warning: `char id[71]' defined but not used
+c++ -c -g    -DOS_LINUX -Wall -D_EFENCE  -I.. -I/home/baallan/sc01/cca-spec-built/cxx/include   Iterated_void_p.gen.cpp
+Iterated_void_p.gen.cpp:14: warning: `char id[65]' defined but not used
+c++ -c -g    -DOS_LINUX -Wall -D_EFENCE  -I.. -I/home/baallan/sc01/cca-spec-built/cxx/include   Iterated_char_p.gen.cpp
+Iterated_char_p.gen.cpp:14: warning: `char id[65]' defined but not used
+c++ -c -g    -DOS_LINUX -Wall -D_EFENCE  -I.. -I/home/baallan/sc01/cca-spec-built/cxx/include   Iterated_int.gen.cpp
+Iterated_int.gen.cpp:14: warning: `char id[62]' defined but not used
+c++ -c -g    -DOS_LINUX -Wall -D_EFENCE  -I.. -I/home/baallan/sc01/cca-spec-built/cxx/include   Iterated_double.gen.cpp
+Iterated_double.gen.cpp:14: warning: `char id[65]' defined but not used
+c++ -c -g    -DOS_LINUX -Wall -D_EFENCE  -I.. -I/home/baallan/sc01/cca-spec-built/cxx/include   Iterated_long_long.gen.cpp
+Iterated_long_long.gen.cpp:14: warning: `char id[68]' defined but not used
+c++ -c -g    -DOS_LINUX -Wall -D_EFENCE  -I.. -I/home/baallan/sc01/cca-spec-built/cxx/include   SCEnumeration_void_p.gen.cpp
+SCEnumeration_void_p.gen.cpp:15: warning: `char id[70]' defined but not used
+c++ -c -g    -DOS_LINUX -Wall -D_EFENCE  -I.. -I/home/baallan/sc01/cca-spec-built/cxx/include   SCEnumeration_char_p.gen.cpp
+SCEnumeration_char_p.gen.cpp:15: warning: `char id[70]' defined but not used
+c++ -c -g    -DOS_LINUX -Wall -D_EFENCE  -I.. -I/home/baallan/sc01/cca-spec-built/cxx/include   SCEnumeration_int.gen.cpp
+SCEnumeration_int.gen.cpp:15: warning: `char id[67]' defined but not used
+c++ -c -g    -DOS_LINUX -Wall -D_EFENCE  -I.. -I/home/baallan/sc01/cca-spec-built/cxx/include   SCEnumeration_double.gen.cpp
+SCEnumeration_double.gen.cpp:15: warning: `char id[70]' defined but not used
+c++ -c -g    -DOS_LINUX -Wall -D_EFENCE  -I.. -I/home/baallan/sc01/cca-spec-built/cxx/include   SCEnumeration_long_long.gen.cpp
+SCEnumeration_long_long.gen.cpp:15: warning: `char id[73]' defined but not used
+c++ -c -g    -DOS_LINUX -Wall -D_EFENCE  -I.. -I/home/baallan/sc01/cca-spec-built/cxx/include   SCVectEnum_void_p.gen.cpp
+SCVectEnum_void_p.gen.cpp:8: warning: `char id[67]' defined but not used
+c++ -c -g    -DOS_LINUX -Wall -D_EFENCE  -I.. -I/home/baallan/sc01/cca-spec-built/cxx/include   SCVectEnum_char_p.gen.cpp
+SCVectEnum_char_p.gen.cpp:8: warning: `char id[67]' defined but not used
+c++ -c -g    -DOS_LINUX -Wall -D_EFENCE  -I.. -I/home/baallan/sc01/cca-spec-built/cxx/include   SCVectEnum_int.gen.cpp
+SCVectEnum_int.gen.cpp:8: warning: `char id[64]' defined but not used
+c++ -c -g    -DOS_LINUX -Wall -D_EFENCE  -I.. -I/home/baallan/sc01/cca-spec-built/cxx/include   SCVectEnum_double.gen.cpp
+SCVectEnum_double.gen.cpp:8: warning: `char id[67]' defined but not used
+c++ -c -g    -DOS_LINUX -Wall -D_EFENCE  -I.. -I/home/baallan/sc01/cca-spec-built/cxx/include   SCVectEnum_long_long.gen.cpp
+SCVectEnum_long_long.gen.cpp:8: warning: `char id[70]' defined but not used
+c++ -c -g    -DOS_LINUX -Wall -D_EFENCE  -I.. -I/home/baallan/sc01/cca-spec-built/cxx/include   SCVector_void_p.gen.cpp
+SCVector_void_p.gen.cpp:33: warning: `char id[65]' defined but not used
+c++ -c -g    -DOS_LINUX -Wall -D_EFENCE  -I.. -I/home/baallan/sc01/cca-spec-built/cxx/include   SCVector_char_p.gen.cpp
+SCVector_char_p.gen.cpp:33: warning: `char id[65]' defined but not used
+c++ -c -g    -DOS_LINUX -Wall -D_EFENCE  -I.. -I/home/baallan/sc01/cca-spec-built/cxx/include   SCVector_int.gen.cpp
+SCVector_int.gen.cpp:33: warning: `char id[62]' defined but not used
+c++ -c -g    -DOS_LINUX -Wall -D_EFENCE  -I.. -I/home/baallan/sc01/cca-spec-built/cxx/include   SCVector_double.gen.cpp
+SCVector_double.gen.cpp:33: warning: `char id[65]' defined but not used
+c++ -c -g    -DOS_LINUX -Wall -D_EFENCE  -I.. -I/home/baallan/sc01/cca-spec-built/cxx/include   SCVector_long_long.gen.cpp
+SCVector_long_long.gen.cpp:33: warning: `char id[68]' defined but not used
+c++ -c -g    -DOS_LINUX -Wall -D_EFENCE  -I.. -I/home/baallan/sc01/cca-spec-built/cxx/include   Iterated_CmdLineBuilderView_p.gen.cpp
+Iterated_CmdLineBuilderView_p.gen.cpp:14: warning: `char id[79]' defined but not used
+c++ -c -g    -DOS_LINUX -Wall -D_EFENCE  -I.. -I/home/baallan/sc01/cca-spec-built/cxx/include   SCEnumeration_CmdLineBuilderView_p.gen.cpp
+SCEnumeration_CmdLineBuilderView_p.gen.cpp:15: warning: `char id[84]' defined but not used
+c++ -c -g    -DOS_LINUX -Wall -D_EFENCE  -I.. -I/home/baallan/sc01/cca-spec-built/cxx/include   SCVectEnum_CmdLineBuilderView_p.gen.cpp
+SCVectEnum_CmdLineBuilderView_p.gen.cpp:8: warning: `char id[81]' defined but not used
+c++ -c -g    -DOS_LINUX -Wall -D_EFENCE  -I.. -I/home/baallan/sc01/cca-spec-built/cxx/include   SCVector_CmdLineBuilderView_p.gen.cpp
+SCVector_CmdLineBuilderView_p.gen.cpp:33: warning: `char id[79]' defined but not used
+ar -rv libscutil.a *.o
+a - Iterated_char_p.gen.o
+a - Iterated_CmdLineBuilderView_p.gen.o
+a - Iterated_ComponentChangedListener_p.gen.o
+a - Iterated_Connection_p.gen.o
+a - Iterated_double.gen.o
+a - Iterated_gov_o_cca_o_ConnectionEventListener_p.gen.o
+a - Iterated_gov_o_cca_o_PortInfo_p.gen.o
+a - Iterated_gov_o_cca_o_Port_p.gen.o
+a - Iterated_int.gen.o
+a - Iterated_long_long.gen.o
+a - Iterated_UPortStatus_p.gen.o
+a - Iterated_void_p.gen.o
+a - SCEnumeration_char_p.gen.o
+a - SCEnumeration_CmdLineBuilderView_p.gen.o
+a - SCEnumeration_ComponentChangedListener_p.gen.o
+a - SCEnumeration_Connection_p.gen.o
+a - SCEnumeration_double.gen.o
+a - SCEnumeration_gov_o_cca_o_ConnectionEventListener_p.gen.o
+a - SCEnumeration_gov_o_cca_o_PortInfo_p.gen.o
+a - SCEnumeration_gov_o_cca_o_Port_p.gen.o
+a - SCEnumeration_int.gen.o
+a - SCEnumeration_long_long.gen.o
+a - SCEnumeration_UPortStatus_p.gen.o
+a - SCEnumeration_void_p.gen.o
+a - SCVectEnum_char_p.gen.o
+a - SCVectEnum_CmdLineBuilderView_p.gen.o
+a - SCVectEnum_ComponentChangedListener_p.gen.o
+a - SCVectEnum_Connection_p.gen.o
+a - SCVectEnum_double.gen.o
+a - SCVectEnum_gov_o_cca_o_ConnectionEventListener_p.gen.o
+a - SCVectEnum_gov_o_cca_o_PortInfo_p.gen.o
+a - SCVectEnum_gov_o_cca_o_Port_p.gen.o
+a - SCVectEnum_int.gen.o
+a - SCVectEnum_long_long.gen.o
+a - SCVectEnum_UPortStatus_p.gen.o
+a - SCVectEnum_void_p.gen.o
+a - SCVector_char_p.gen.o
+a - SCVector_CmdLineBuilderView_p.gen.o
+a - SCVector_ComponentChangedListener_p.gen.o
+a - SCVector_Connection_p.gen.o
+a - SCVector_double.gen.o
+a - SCVector_gov_o_cca_o_ConnectionEventListener_p.gen.o
+a - SCVector_gov_o_cca_o_PortInfo_p.gen.o
+a - SCVector_gov_o_cca_o_Port_p.gen.o
+a - SCVector_int.gen.o
+a - SCVector_long_long.gen.o
+a - SCVector_UPortStatus_p.gen.o
+a - SCVector_void_p.gen.o
+ranlib libscutil.a
+c++ -g    -DOS_LINUX -Wall -D_EFENCE  -I.. -I/home/baallan/sc01/cca-spec-built/cxx/include   -I.. -o testV testV.cpp \
+	libscutil.a ../util/libcafeutil.a
+./testV
+OK!
+gmake[2]: Leaving directory `/home/baallan/sc01/dccafe-built/cxx/scutil'
+gmake[2]: Entering directory `/home/baallan/sc01/dccafe-built/cxx/stovepipe'
+c++ -I.. -I/home/baallan/sc01/cca-spec-built/cxx/include -c -o stp_cxx.o stp_cxx.cxx
+c++ -I.. -I/home/baallan/sc01/cca-spec-built/cxx/include -c -o StpMap.o StpMap.cxx
+rm -f  libstovepipe.a
+ar r libstovepipe.a stp_cxx.o StpMap.o
+ranlib libstovepipe.a
+cc -O   -c -o testStovepipe.o testStovepipe.c
+c++ -o testStovepipe testStovepipe.o libstovepipe.a ../jc++/libjcpp.a ../util/libcafeutil.a
+Stovepipe picks up only args with a leading "--"
+Namespaces are separated by a single - no white space
+"--" by itself indicates the end of options for Stovepipe:
+
+./testStovepipe --hello world -too-few-dashes --hello-world hello \
+-- -hello- --hello-world notHello
+--hello arg value = "world", --hello-world arg value = "hello"
+namespace:hello,argName:world arg value =  "hello"
+
+
+The same argument used twice gets overwritten,
+options that do not appear in the command line
+but are requested return a C string ptr NULL:
+
+./testStovepipe --hello-world notHello --hello-world hello
+--hello arg value = "(null)", --hello-world arg value = "hello"
+namespace:hello,argName:world arg value =  "hello"
+
+
+Argument values must not begin with a "-" or they will be
+ignored or considered to be further options,
+options that appear in the command line but have
+no associated value return an empty string:
+
+./testStovepipe --hello --world --hello-world -hello
+--hello arg value = "", --hello-world arg value = ""
+namespace:hello,argName:world arg value =  ""
+gmake[2]: Leaving directory `/home/baallan/sc01/dccafe-built/cxx/stovepipe'
+gmake[2]: Entering directory `/home/baallan/sc01/dccafe-built/cxx/dc'
+(cd port;gmake)
+gmake[3]: Entering directory `/home/baallan/sc01/dccafe-built/cxx/dc/port'
+c++ -I/usr/local/mpich/include -I/usr/local/mpich/include/mpi2c++  -fexceptions  -c -g    -DOS_LINUX -Wall -D_EFENCE  -I../.. -I/home/baallan/sc01/cca-spec-built/cxx/include   -I/usr/local/mpich/include -D_CCAMPI DefaultConfigurableParameterFactory.cxx
+c++ -I/usr/local/mpich/include -I/usr/local/mpich/include/mpi2c++  -fexceptions  -c -g    -DOS_LINUX -Wall -D_EFENCE  -I../.. -I/home/baallan/sc01/cca-spec-built/cxx/include   -I/usr/local/mpich/include -D_CCAMPI DefaultParameterPort.cxx
+DefaultParameterPort.cxx:22: warning: `char id[71]' defined but not used
+c++ -I/usr/local/mpich/include -I/usr/local/mpich/include/mpi2c++  -fexceptions  -c -g    -DOS_LINUX -Wall -D_EFENCE  -I../.. -I/home/baallan/sc01/cca-spec-built/cxx/include   -I/usr/local/mpich/include -D_CCAMPI CCA_Block.cxx
+c++ -I/usr/local/mpich/include -I/usr/local/mpich/include/mpi2c++  -fexceptions  -c -g    -DOS_LINUX -Wall -D_EFENCE  -I../.. -I/home/baallan/sc01/cca-spec-built/cxx/include   -I/usr/local/mpich/include -D_CCAMPI DefaultPrintfPort.cxx
+DefaultPrintfPort.cxx:2: warning: `char id[67]' defined but not used
+c++ -I/usr/local/mpich/include -I/usr/local/mpich/include/mpi2c++  -fexceptions  -c -g    -DOS_LINUX -Wall -D_EFENCE  -I../.. -I/home/baallan/sc01/cca-spec-built/cxx/include   -I/usr/local/mpich/include -D_CCAMPI DefaultKeyValuePort.cxx
+c++ -I/usr/local/mpich/include -I/usr/local/mpich/include/mpi2c++  -fexceptions  -c -g    -DOS_LINUX -Wall -D_EFENCE  -I../.. -I/home/baallan/sc01/cca-spec-built/cxx/include   -I/usr/local/mpich/include -D_CCAMPI DefaultMPIService.cxx
+c++ -I/usr/local/mpich/include -I/usr/local/mpich/include/mpi2c++  -fexceptions  -c -g    -DOS_LINUX -Wall -D_EFENCE  -I../.. -I/home/baallan/sc01/cca-spec-built/cxx/include   -I/usr/local/mpich/include -D_CCAMPI DefaultMPIBorrow.cxx
+c++ -I/usr/local/mpich/include -I/usr/local/mpich/include/mpi2c++  -fexceptions  -c -g    -DOS_LINUX -Wall -D_EFENCE  -I../.. -I/home/baallan/sc01/cca-spec-built/cxx/include   -I/usr/local/mpich/include -D_CCAMPI Caffeine_Port_DynamicLink.cxx
+ar ruv libports.a DefaultConfigurableParameterFactory.o DefaultParameterPort.o CCA_Block.o DefaultPrintfPort.o DefaultKeyValuePort.o DefaultMPIService.o DefaultMPIBorrow.o Caffeine_Port_DynamicLink.o
+a - DefaultConfigurableParameterFactory.o
+a - DefaultParameterPort.o
+a - CCA_Block.o
+a - DefaultPrintfPort.o
+a - DefaultKeyValuePort.o
+a - DefaultMPIService.o
+a - DefaultMPIBorrow.o
+a - Caffeine_Port_DynamicLink.o
+ranlib libports.a
+done DefaultConfigurableParameterFactory.o DefaultParameterPort.o CCA_Block.o DefaultPrintfPort.o DefaultKeyValuePort.o DefaultMPIService.o DefaultMPIBorrow.o Caffeine_Port_DynamicLink.o
+gmake[3]: Leaving directory `/home/baallan/sc01/dccafe-built/cxx/dc/port'
+(cd framework;gmake)
+gmake[3]: Entering directory `/home/baallan/sc01/dccafe-built/cxx/dc/framework'
+CCAFE_HOME=../..
+Make sure CCAFE_HOME is set correctly.
+echo CCA_PLLFLAGS = -I/usr/local/mpich/include -D_CCAMPI
+CCA_PLLFLAGS = -I/usr/local/mpich/include -D_CCAMPI
+c++ -I/usr/local/mpich/include -I/usr/local/mpich/include/mpi2c++  -fexceptions  -c -g    -DOS_LINUX -Wall -D_EFENCE  -I../.. -I/home/baallan/sc01/cca-spec-built/cxx/include   -I/u2/baallan/work/caff/cca-spec/cxx/eg/include -I/u2/baallan/work/caff/cca-spec/cxx/eg/ccaComponent \
+  \
+ \
+ \
+-I/home/baallan/sc01/cca-spec-built/cxx/include \
+ \
+ \
+-I/usr/local/mpich/include -D_CCAMPI ComponentFactory.cxx
+ComponentFactory.cxx:2: warning: `char id[67]' defined but not used
+c++ -I/usr/local/mpich/include -I/usr/local/mpich/include/mpi2c++  -fexceptions  -c -g    -DOS_LINUX -Wall -D_EFENCE  -I../.. -I/home/baallan/sc01/cca-spec-built/cxx/include   -I/u2/baallan/work/caff/cca-spec/cxx/eg/include -I/u2/baallan/work/caff/cca-spec/cxx/eg/ccaComponent  -I/usr/local/mpich/include -D_CCAMPI ServicesHelper.cxx
+ServicesHelper.cxx:2: warning: `char id[60]' defined but not used
+c++ -I/usr/local/mpich/include -I/usr/local/mpich/include/mpi2c++  -fexceptions  -c -g    -DOS_LINUX -Wall -D_EFENCE  -I../.. -I/home/baallan/sc01/cca-spec-built/cxx/include   -I/u2/baallan/work/caff/cca-spec/cxx/eg/include -I/u2/baallan/work/caff/cca-spec/cxx/eg/ccaComponent  -I/usr/local/mpich/include -D_CCAMPI ComponentInfo.cxx
+ComponentInfo.cxx:2: warning: `char id[60]' defined but not used
+c++ -I/usr/local/mpich/include -I/usr/local/mpich/include/mpi2c++  -fexceptions  -c -g    -DOS_LINUX -Wall -D_EFENCE  -I../.. -I/home/baallan/sc01/cca-spec-built/cxx/include   -I/u2/baallan/work/caff/cca-spec/cxx/eg/include -I/u2/baallan/work/caff/cca-spec/cxx/eg/ccaComponent  -I/usr/local/mpich/include -D_CCAMPI Gizzard.cxx
+Gizzard.cxx:2: warning: `char id[58]' defined but not used
+c++ -I/usr/local/mpich/include -I/usr/local/mpich/include/mpi2c++  -fexceptions  -c -g    -DOS_LINUX -Wall -D_EFENCE  -I../.. -I/home/baallan/sc01/cca-spec-built/cxx/include   -I/u2/baallan/work/caff/cca-spec/cxx/eg/include -I/u2/baallan/work/caff/cca-spec/cxx/eg/ccaComponent  -I/usr/local/mpich/include -D_CCAMPI ConnectionFramework.cxx
+ConnectionFramework.cxx:2: warning: `char id[70]' defined but not used
+c++ -I/usr/local/mpich/include -I/usr/local/mpich/include/mpi2c++  -fexceptions  -c -g    -DOS_LINUX -Wall -D_EFENCE  -I../.. -I/home/baallan/sc01/cca-spec-built/cxx/include   -I/u2/baallan/work/caff/cca-spec/cxx/eg/include -I/u2/baallan/work/caff/cca-spec/cxx/eg/ccaComponent  -I/usr/local/mpich/include -D_CCAMPI DefaultPortInfo.cxx
+DefaultPortInfo.cxx:14: warning: `char id[65]' defined but not used
+c++ -I/usr/local/mpich/include -I/usr/local/mpich/include/mpi2c++  -fexceptions  -c -g    -DOS_LINUX -Wall -D_EFENCE  -I../.. -I/home/baallan/sc01/cca-spec-built/cxx/include   -I/u2/baallan/work/caff/cca-spec/cxx/eg/include -I/u2/baallan/work/caff/cca-spec/cxx/eg/ccaComponent  -I/usr/local/mpich/include -D_CCAMPI ComponentChangedEvent.cxx
+c++ -I/usr/local/mpich/include -I/usr/local/mpich/include/mpi2c++  -fexceptions  -c -g    -DOS_LINUX -Wall -D_EFENCE  -I../.. -I/home/baallan/sc01/cca-spec-built/cxx/include   -I/u2/baallan/work/caff/cca-spec/cxx/eg/include -I/u2/baallan/work/caff/cca-spec/cxx/eg/ccaComponent  -I/usr/local/mpich/include -D_CCAMPI GizzardComponentChangedEvent.cxx
+GizzardComponentChangedEvent.cxx:2: warning: `char id[78]' defined but not used
+c++ -I/usr/local/mpich/include -I/usr/local/mpich/include/mpi2c++  -fexceptions  -c -g    -DOS_LINUX -Wall -D_EFENCE  -I../.. -I/home/baallan/sc01/cca-spec-built/cxx/include   -I/u2/baallan/work/caff/cca-spec/cxx/eg/include -I/u2/baallan/work/caff/cca-spec/cxx/eg/ccaComponent  -I/usr/local/mpich/include -D_CCAMPI GizzardConnection.cxx
+GizzardConnection.cxx:2: warning: `char id[63]' defined but not used
+ar ruv libdc_fwk.a ComponentFactory.o ServicesHelper.o ComponentInfo.o Gizzard.o ConnectionFramework.o DefaultPortInfo.o ComponentChangedEvent.o GizzardComponentChangedEvent.o GizzardConnection.o
+a - ComponentFactory.o
+a - ServicesHelper.o
+a - ComponentInfo.o
+a - Gizzard.o
+a - ConnectionFramework.o
+a - DefaultPortInfo.o
+a - ComponentChangedEvent.o
+a - GizzardComponentChangedEvent.o
+a - GizzardConnection.o
+ranlib libdc_fwk.a
+done ComponentFactory.o ServicesHelper.o ComponentInfo.o Gizzard.o ConnectionFramework.o DefaultPortInfo.o ComponentChangedEvent.o GizzardComponentChangedEvent.o GizzardConnection.o
+gmake[3]: Leaving directory `/home/baallan/sc01/dccafe-built/cxx/dc/framework'
+(cd distributed;gmake)
+gmake[3]: Entering directory `/home/baallan/sc01/dccafe-built/cxx/dc/distributed'
+c++ -c -g    -DOS_LINUX -Wall -D_EFENCE  -I../.. -I/home/baallan/sc01/cca-spec-built/cxx/include   -D_GNU_SOURCE -D_REENTRANT ConnectionManager.cxx
+c++ -c -g    -DOS_LINUX -Wall -D_EFENCE  -I../.. -I/home/baallan/sc01/cca-spec-built/cxx/include   -D_GNU_SOURCE -D_REENTRANT SocketConnectionManager.cxx
+c++ -c -g    -DOS_LINUX -Wall -D_EFENCE  -I../.. -I/home/baallan/sc01/cca-spec-built/cxx/include   -D_GNU_SOURCE -D_REENTRANT LinewiseClient.cxx
+c++ -c -g    -DOS_LINUX -Wall -D_EFENCE  -I../.. -I/home/baallan/sc01/cca-spec-built/cxx/include   -D_GNU_SOURCE -D_REENTRANT ServerMux.cxx
+c++ -c -g    -DOS_LINUX -Wall -D_EFENCE  -I../.. -I/home/baallan/sc01/cca-spec-built/cxx/include   -D_GNU_SOURCE -D_REENTRANT DataCollectorFactory.cxx
+c++ -c -g    -DOS_LINUX -Wall -D_EFENCE  -I../.. -I/home/baallan/sc01/cca-spec-built/cxx/include   -D_GNU_SOURCE -D_REENTRANT MessageData.cxx
+c++ -c -g    -DOS_LINUX -Wall -D_EFENCE  -I../.. -I/home/baallan/sc01/cca-spec-built/cxx/include   -D_GNU_SOURCE -D_REENTRANT ServerOutOfBandListener.cxx
+c++ -c -g    -DOS_LINUX -Wall -D_EFENCE  -I../.. -I/home/baallan/sc01/cca-spec-built/cxx/include   ClientServerSocket.cxx
+ClientServerSocket.cxx:4: warning: `char id[68]' defined but not used
+c++ -c -g    -DOS_LINUX -Wall -D_EFENCE  -I../.. -I/home/baallan/sc01/cca-spec-built/cxx/include   ProcessorInfo.cxx
+ProcessorInfo.cxx:6: warning: `char id[63]' defined but not used
+ar -rv libdistributed.a ClientServerSocket.o ProcessorInfo.o 
+a - ClientServerSocket.o
+a - ProcessorInfo.o
+ranlib libdistributed.a
+ar -rv libdistthreaded.a ConnectionManager.o SocketConnectionManager.o LinewiseClient.o ServerMux.o DataCollectorFactory.o MessageData.o ServerOutOfBandListener.o
+a - ConnectionManager.o
+a - SocketConnectionManager.o
+a - LinewiseClient.o
+a - ServerMux.o
+a - DataCollectorFactory.o
+a - MessageData.o
+a - ServerOutOfBandListener.o
+ranlib libdistthreaded.a
+done ClientServerSocket.o ProcessorInfo.o
+gmake[3]: Leaving directory `/home/baallan/sc01/dccafe-built/cxx/dc/distributed'
+(cd component;gmake)
+gmake[3]: Entering directory `/home/baallan/sc01/dccafe-built/cxx/dc/component'
+c++ -c -g    -DOS_LINUX -Wall -D_EFENCE  -I../.. -I/home/baallan/sc01/cca-spec-built/cxx/include    -I/home/baallan/sc01/cca-spec-built/cxx/eg/include -I/home/baallan/sc01/cca-spec-built/cxx/eg/ccaComponent -D_EG  Timer.cxx
+Timer.cxx:2: warning: `char id[56]' defined but not used
+c++ -c -g    -DOS_LINUX -Wall -D_EFENCE  -I../.. -I/home/baallan/sc01/cca-spec-built/cxx/include    -I/home/baallan/sc01/cca-spec-built/cxx/eg/include -I/home/baallan/sc01/cca-spec-built/cxx/eg/ccaComponent -D_EG  StarterComponent.cxx
+StarterComponent.cxx:2: warning: `char id[67]' defined but not used
+c++ -c -g    -DOS_LINUX -Wall -D_EFENCE  -I../.. -I/home/baallan/sc01/cca-spec-built/cxx/include    -I/home/baallan/sc01/cca-spec-built/cxx/eg/include -I/home/baallan/sc01/cca-spec-built/cxx/eg/ccaComponent -D_EG  TimeStamper.cxx
+TimeStamper.cxx:2: warning: `char id[62]' defined but not used
+c++ -c -g    -DOS_LINUX -Wall -D_EFENCE  -I../.. -I/home/baallan/sc01/cca-spec-built/cxx/include    -I/home/baallan/sc01/cca-spec-built/cxx/eg/include -I/home/baallan/sc01/cca-spec-built/cxx/eg/ccaComponent -D_EG  PrinterComponent.cxx
+PrinterComponent.cxx:2: warning: `char id[67]' defined but not used
+c++ -c -g    -DOS_LINUX -Wall -D_EFENCE  -I../.. -I/home/baallan/sc01/cca-spec-built/cxx/include    -I/home/baallan/sc01/cca-spec-built/cxx/eg/include -I/home/baallan/sc01/cca-spec-built/cxx/eg/ccaComponent -D_EG  RevalidateTest.cxx
+RevalidateTest.cxx:2: warning: `char id[65]' defined but not used
+ar -rv libcomponent.a Timer.o StarterComponent.o TimeStamper.o PrinterComponent.o RevalidateTest.o 
+a - Timer.o
+a - StarterComponent.o
+a - TimeStamper.o
+a - PrinterComponent.o
+a - RevalidateTest.o
+ranlib libcomponent.a
+rm -f Timer.so Timer.o Timer_wrapper.cxx
+./genDLWrapperStrict Timer &gt; Timer_wrapper.cxx
+./genDLIndex Timer.so create_Timer Timer &gt; Timer.cca
+c++ -c -g    -DOS_LINUX -Wall -D_EFENCE  -I../.. -I/home/baallan/sc01/cca-spec-built/cxx/include    -I/home/baallan/sc01/cca-spec-built/cxx/eg/include -I/home/baallan/sc01/cca-spec-built/cxx/eg/ccaComponent -D_EG  -fPIC Timer.cxx 
+Timer.cxx:2: warning: `char id[56]' defined but not used
+c++ -c -g    -DOS_LINUX -Wall -D_EFENCE  -I../.. -I/home/baallan/sc01/cca-spec-built/cxx/include    -I/home/baallan/sc01/cca-spec-built/cxx/eg/include -I/home/baallan/sc01/cca-spec-built/cxx/eg/ccaComponent -D_EG  -fPIC \
+	 Timer_wrapper.cxx
+Timer_wrapper.cxx:25: warning: `char id[193]' defined but not used
+c++ -shared  -o Timer.so Timer.o Timer_wrapper.o
+rm -f Timer.o Timer_wrapper.o
+rm -f StarterComponent.so StarterComponent.o StarterComponent_wrapper.cxx
+./genDLWrapperStrict StarterComponent &gt; StarterComponent_wrapper.cxx
+./genDLIndex StarterComponent.so create_StarterComponent StarterComponent &gt; StarterComponent.cca
+c++ -c -g    -DOS_LINUX -Wall -D_EFENCE  -I../.. -I/home/baallan/sc01/cca-spec-built/cxx/include    -I/home/baallan/sc01/cca-spec-built/cxx/eg/include -I/home/baallan/sc01/cca-spec-built/cxx/eg/ccaComponent -D_EG  -fPIC StarterComponent.cxx 
+StarterComponent.cxx:2: warning: `char id[67]' defined but not used
+c++ -c -g    -DOS_LINUX -Wall -D_EFENCE  -I../.. -I/home/baallan/sc01/cca-spec-built/cxx/include    -I/home/baallan/sc01/cca-spec-built/cxx/eg/include -I/home/baallan/sc01/cca-spec-built/cxx/eg/ccaComponent -D_EG  -fPIC \
+	 StarterComponent_wrapper.cxx
+StarterComponent_wrapper.cxx:25: warning: `char id[204]' defined but not used
+c++ -shared  -o StarterComponent.so StarterComponent.o StarterComponent_wrapper.o
+rm -f StarterComponent.o StarterComponent_wrapper.o
+rm -f TimeStamper.so TimeStamper.o TimeStamper_wrapper.cxx
+./genDLWrapperSloppy TimeStamper &gt; TimeStamper_wrapper.cxx
+./genDLIndex TimeStamper.so create_TimeStamper TimeStamper &gt; TimeStamper.cca
+c++ -c -g    -DOS_LINUX -Wall -D_EFENCE  -I../.. -I/home/baallan/sc01/cca-spec-built/cxx/include    -I/home/baallan/sc01/cca-spec-built/cxx/eg/include -I/home/baallan/sc01/cca-spec-built/cxx/eg/ccaComponent -D_EG  -fPIC TimeStamper.cxx 
+TimeStamper.cxx:2: warning: `char id[62]' defined but not used
+c++ -c -g    -DOS_LINUX -Wall -D_EFENCE  -I../.. -I/home/baallan/sc01/cca-spec-built/cxx/include    -I/home/baallan/sc01/cca-spec-built/cxx/eg/include -I/home/baallan/sc01/cca-spec-built/cxx/eg/ccaComponent -D_EG  -fPIC \
+	 TimeStamper_wrapper.cxx
+TimeStamper_wrapper.cxx:30: warning: `char id[199]' defined but not used
+c++ -shared  -o TimeStamper.so TimeStamper.o TimeStamper_wrapper.o \
+	/home/baallan/sc01/dccafe-built/cxx/dc/port/libports.a /home/baallan/sc01/dccafe-built/cxx/parameters/libparameters.a /home/baallan/sc01/dccafe-built/cxx/cmd/libcmd.a /home/baallan/sc01/dccafe-built/cxx/jc++/libjcpp.a /home/baallan/sc01/dccafe-built/cxx/util/libcafeutil.a /home/baallan/sc01/dccafe-built/cxx/dc/component/libcomponent.a /home/baallan/sc01/dccafe-built/cxx/dc/framework/libdc_fwk.a /home/baallan/sc01/dccafe-built/cxx/dc/distributed/libdistributed.a
+rm -f TimeStamper.o TimeStamper_wrapper.o
+rm -f PrinterComponent.so PrinterComponent.o PrinterComponent_wrapper.cxx
+./genDLWrapperSloppy PrinterComponent &gt; PrinterComponent_wrapper.cxx
+./genDLIndex PrinterComponent.so create_PrinterComponent PrinterComponent &gt; PrinterComponent.cca
+c++ -c -g    -DOS_LINUX -Wall -D_EFENCE  -I../.. -I/home/baallan/sc01/cca-spec-built/cxx/include    -I/home/baallan/sc01/cca-spec-built/cxx/eg/include -I/home/baallan/sc01/cca-spec-built/cxx/eg/ccaComponent -D_EG  -fPIC PrinterComponent.cxx 
+PrinterComponent.cxx:2: warning: `char id[67]' defined but not used
+c++ -c -g    -DOS_LINUX -Wall -D_EFENCE  -I../.. -I/home/baallan/sc01/cca-spec-built/cxx/include    -I/home/baallan/sc01/cca-spec-built/cxx/eg/include -I/home/baallan/sc01/cca-spec-built/cxx/eg/ccaComponent -D_EG  -fPIC \
+	 PrinterComponent_wrapper.cxx
+PrinterComponent_wrapper.cxx:30: warning: `char id[204]' defined but not used
+c++ -shared  -o PrinterComponent.so PrinterComponent.o PrinterComponent_wrapper.o \
+	/home/baallan/sc01/dccafe-built/cxx/dc/port/libports.a /home/baallan/sc01/dccafe-built/cxx/parameters/libparameters.a /home/baallan/sc01/dccafe-built/cxx/cmd/libcmd.a /home/baallan/sc01/dccafe-built/cxx/jc++/libjcpp.a /home/baallan/sc01/dccafe-built/cxx/util/libcafeutil.a /home/baallan/sc01/dccafe-built/cxx/dc/component/libcomponent.a /home/baallan/sc01/dccafe-built/cxx/dc/framework/libdc_fwk.a /home/baallan/sc01/dccafe-built/cxx/dc/distributed/libdistributed.a
+rm -f PrinterComponent.o PrinterComponent_wrapper.o
+rm -f RevalidateTest.so RevalidateTest.o RevalidateTest_wrapper.cxx
+./genDLWrapperSloppy RevalidateTest &gt; RevalidateTest_wrapper.cxx
+./genDLIndex RevalidateTest.so create_RevalidateTest RevalidateTest &gt; RevalidateTest.cca
+c++ -c -g    -DOS_LINUX -Wall -D_EFENCE  -I../.. -I/home/baallan/sc01/cca-spec-built/cxx/include    -I/home/baallan/sc01/cca-spec-built/cxx/eg/include -I/home/baallan/sc01/cca-spec-built/cxx/eg/ccaComponent -D_EG  -fPIC RevalidateTest.cxx 
+RevalidateTest.cxx:2: warning: `char id[65]' defined but not used
+c++ -c -g    -DOS_LINUX -Wall -D_EFENCE  -I../.. -I/home/baallan/sc01/cca-spec-built/cxx/include    -I/home/baallan/sc01/cca-spec-built/cxx/eg/include -I/home/baallan/sc01/cca-spec-built/cxx/eg/ccaComponent -D_EG  -fPIC \
+	 RevalidateTest_wrapper.cxx
+RevalidateTest_wrapper.cxx:30: warning: `char id[202]' defined but not used
+c++ -shared  -o RevalidateTest.so RevalidateTest.o RevalidateTest_wrapper.o \
+	/home/baallan/sc01/dccafe-built/cxx/dc/port/libports.a /home/baallan/sc01/dccafe-built/cxx/parameters/libparameters.a /home/baallan/sc01/dccafe-built/cxx/cmd/libcmd.a /home/baallan/sc01/dccafe-built/cxx/jc++/libjcpp.a /home/baallan/sc01/dccafe-built/cxx/util/libcafeutil.a /home/baallan/sc01/dccafe-built/cxx/dc/component/libcomponent.a /home/baallan/sc01/dccafe-built/cxx/dc/framework/libdc_fwk.a /home/baallan/sc01/dccafe-built/cxx/dc/distributed/libdistributed.a
+rm -f RevalidateTest.o RevalidateTest_wrapper.o
+done Timer.o StarterComponent.o TimeStamper.o PrinterComponent.o RevalidateTest.o
+gmake[3]: Leaving directory `/home/baallan/sc01/dccafe-built/cxx/dc/component'
+(cd std_iface;gmake)
+gmake[3]: Entering directory `/home/baallan/sc01/dccafe-built/cxx/dc/std_iface'
+done
+gmake[3]: Leaving directory `/home/baallan/sc01/dccafe-built/cxx/dc/std_iface'
+(cd user_iface;gmake)
+gmake[3]: Entering directory `/home/baallan/sc01/dccafe-built/cxx/dc/user_iface'
+(cd ccacmd; gmake)
+gmake[4]: Entering directory `/home/baallan/sc01/dccafe-built/cxx/dc/user_iface/ccacmd'
+c++ -c -g    -DOS_LINUX -Wall -D_EFENCE  -I../../.. -I/home/baallan/sc01/cca-spec-built/cxx/include   CmdActionCCAConnect.cxx
+CmdActionCCAConnect.cxx:3: warning: `char id[65]' defined but not used
+c++ -c -g    -DOS_LINUX -Wall -D_EFENCE  -I../../.. -I/home/baallan/sc01/cca-spec-built/cxx/include   CmdActionCCADisplay.cxx
+CmdActionCCADisplay.cxx:2: warning: `char id[65]' defined but not used
+c++ -c -g    -DOS_LINUX -Wall -D_EFENCE  -I../../.. -I/home/baallan/sc01/cca-spec-built/cxx/include   CmdActionCCAPallet.cxx
+CmdActionCCAPallet.cxx:24: warning: `char id[64]' defined but not used
+c++ -c -g    -DOS_LINUX -Wall -D_EFENCE  -I../../.. -I/home/baallan/sc01/cca-spec-built/cxx/include   CmdActionCCAArena.cxx
+CmdActionCCAArena.cxx:2: warning: `char id[63]' defined but not used
+c++ -c -g    -DOS_LINUX -Wall -D_EFENCE  -I../../.. -I/home/baallan/sc01/cca-spec-built/cxx/include   CmdActionCCAGo.cxx
+CmdActionCCAGo.cxx:2: warning: `char id[60]' defined but not used
+c++ -c -g    -DOS_LINUX -Wall -D_EFENCE  -I../../.. -I/home/baallan/sc01/cca-spec-built/cxx/include   CmdActionCCAConfig.cxx
+CmdActionCCAConfig.cxx:7: warning: `char id[65]' defined but not used
+c++ -c -g    -DOS_LINUX -Wall -D_EFENCE  -I../../.. -I/home/baallan/sc01/cca-spec-built/cxx/include   CmdActionCCAProperties.cxx
+CmdActionCCAProperties.cxx:2: warning: `char id[68]' defined but not used
+c++ -c -g    -DOS_LINUX -Wall -D_EFENCE  -I../../.. -I/home/baallan/sc01/cca-spec-built/cxx/include   CmdActionCCALinks.cxx
+CmdActionCCALinks.cxx:2: warning: `char id[63]' defined but not used
+c++ -c -g    -DOS_LINUX -Wall -D_EFENCE  -I../../.. -I/home/baallan/sc01/cca-spec-built/cxx/include   CmdActionCCAInstantiate.cxx
+CmdActionCCAInstantiate.cxx:2: warning: `char id[69]' defined but not used
+c++ -c -g    -DOS_LINUX -Wall -D_EFENCE  -I../../.. -I/home/baallan/sc01/cca-spec-built/cxx/include   CmdActionCCARemove.cxx
+CmdActionCCARemove.cxx:23: warning: `char id[65]' defined but not used
+c++ -c -g    -DOS_LINUX -Wall -D_EFENCE  -I../../.. -I/home/baallan/sc01/cca-spec-built/cxx/include   CmdActionCCARepository.cxx
+CmdActionCCARepository.cxx:2: warning: `char id[68]' defined but not used
+c++ -c -g    -DOS_LINUX -Wall -D_EFENCE  -I../../.. -I/home/baallan/sc01/cca-spec-built/cxx/include   CmdActionCCAPath.cxx
+CmdActionCCAPath.cxx:2: warning: `char id[66]' defined but not used
+c++ -c -g    -DOS_LINUX -Wall -D_EFENCE  -I../../.. -I/home/baallan/sc01/cca-spec-built/cxx/include   CmdActionCCAShell.cxx
+CmdActionCCAShell.cxx:26: warning: `char id[63]' defined but not used
+c++ -c -g    -DOS_LINUX -Wall -D_EFENCE  -I../../.. -I/home/baallan/sc01/cca-spec-built/cxx/include   -D_RCPATH=\"/usr/local/ccafe/cxx/dc/user_iface/CcaffeineRC\" -o CmdContextCCA.o CmdContextCCA.cxx
+CmdContextCCA.cxx:3: warning: `char id[64]' defined but not used
+c++ -c -g    -DOS_LINUX -Wall -D_EFENCE  -I../../.. -I/home/baallan/sc01/cca-spec-built/cxx/include   CmdActionCCANuke.cxx
+CmdActionCCANuke.cxx:23: warning: `char id[62]' defined but not used
+c++ -c -g    -DOS_LINUX -Wall -D_EFENCE  -I../../.. -I/home/baallan/sc01/cca-spec-built/cxx/include   CmdActionCCADisconnect.cxx
+CmdActionCCADisconnect.cxx:3: warning: `char id[68]' defined but not used
+ar ruv libccacmd.a  CmdActionCCAConnect.o CmdActionCCADisplay.o CmdActionCCAPallet.o CmdActionCCAArena.o CmdActionCCAGo.o CmdActionCCAConfig.o CmdActionCCAProperties.o CmdActionCCALinks.o CmdActionCCAInstantiate.o CmdActionCCARemove.o CmdActionCCARepository.o CmdActionCCAPath.o CmdActionCCAShell.o CmdContextCCA.o CmdActionCCANuke.o CmdActionCCADisconnect.o
+a - CmdActionCCAConnect.o
+a - CmdActionCCADisplay.o
+a - CmdActionCCAPallet.o
+a - CmdActionCCAArena.o
+a - CmdActionCCAGo.o
+a - CmdActionCCAConfig.o
+a - CmdActionCCAProperties.o
+a - CmdActionCCALinks.o
+a - CmdActionCCAInstantiate.o
+a - CmdActionCCARemove.o
+a - CmdActionCCARepository.o
+a - CmdActionCCAPath.o
+a - CmdActionCCAShell.o
+a - CmdContextCCA.o
+a - CmdActionCCANuke.o
+a - CmdActionCCADisconnect.o
+ranlib libccacmd.a
+gmake[4]: Leaving directory `/home/baallan/sc01/dccafe-built/cxx/dc/user_iface/ccacmd'
+c++ -c -g    -DOS_LINUX -Wall -D_EFENCE  -I../.. -I/home/baallan/sc01/cca-spec-built/cxx/include    DefaultBuilderModel.cxx
+DefaultBuilderModel.cxx:2: warning: `char id[66]' defined but not used
+c++ -c -g    -DOS_LINUX -Wall -D_EFENCE  -I../.. -I/home/baallan/sc01/cca-spec-built/cxx/include    Link.cxx
+Link.cxx:2: warning: `char id[54]' defined but not used
+c++ -c -g    -DOS_LINUX -Wall -D_EFENCE  -I../.. -I/home/baallan/sc01/cca-spec-built/cxx/include    CmdLineBuilderViewForHuman.cxx
+CmdLineBuilderViewForHuman.cxx:2: warning: `char id[77]' defined but not used
+c++ -c -g    -DOS_LINUX -Wall -D_EFENCE  -I../.. -I/home/baallan/sc01/cca-spec-built/cxx/include    CmdLineBuilderViewForGUI.cxx
+CmdLineBuilderViewForGUI.cxx:10: warning: `char id[75]' defined but not used
+c++ -c -g    -DOS_LINUX -Wall -D_EFENCE  -I../.. -I/home/baallan/sc01/cca-spec-built/cxx/include    CmdLineBuilderViewMux.cxx
+CmdLineBuilderViewMux.cxx:9: warning: `char id[72]' defined but not used
+c++ -c -g    -DOS_LINUX -Wall -D_EFENCE  -I../.. -I/home/baallan/sc01/cca-spec-built/cxx/include    CmdLineBuilderController2.cxx
+CmdLineBuilderController2.cxx:49: warning: `char id[94]' defined but not used
+c++ -I/usr/local/mpich/include -I/usr/local/mpich/include/mpi2c++  -fexceptions  -c -DMAINCmdLineBuilderController2 -g    -DOS_LINUX -Wall -D_EFENCE  -I../.. -I/home/baallan/sc01/cca-spec-built/cxx/include   \
+         -I/usr/local/mpich/include -D_CCAMPI  -D_HAVE_BLAS -D_HAVE_LAPACK \
+	forceIsisBlasLapackLink.cxx -o forceIsisBlasLapackLink.o
+c++ -c -g    -DOS_LINUX -Wall -D_EFENCE  -I../.. -I/home/baallan/sc01/cca-spec-built/cxx/include    CmdLineClient.cxx
+CmdLineClient.cxx:2: warning: `char id[60]' defined but not used
+rm -f libccafeBM.a
+ar ruv libccafeBM.a DefaultBuilderModel.o Link.o
+a - DefaultBuilderModel.o
+a - Link.o
+ranlib libccafeBM.a
+c++ -I/usr/local/mpich/include -I/usr/local/mpich/include/mpi2c++  -fexceptions  -c -DMAINCmdLineBuilderController2 -g    -DOS_LINUX -Wall -D_EFENCE  -I../.. -I/home/baallan/sc01/cca-spec-built/cxx/include   \
+         -I/usr/local/mpich/include -D_CCAMPI  \
+	CmdLineBuilderController2.cxx -o CmdLineBuilderController2_MAIN.o
+CmdLineBuilderController2.cxx:145: warning: `char id[98]' defined but not used
+c++ -I/usr/local/mpich/include -I/usr/local/mpich/include/mpi2c++  -fexceptions  -DMAINCmdLineBuilderController2 -g    -DOS_LINUX -Wall -D_EFENCE  -I../.. -I/home/baallan/sc01/cca-spec-built/cxx/include   \
+           \
+	CmdLineBuilderController2_MAIN.o DefaultBuilderModel.o Link.o CmdLineBuilderViewForHuman.o CmdLineBuilderViewForGUI.o CmdLineBuilderViewMux.o CmdLineBuilderController2.o forceIsisBlasLapackLink.o CmdLineClient.o ../../scutil/libscutil.a ../../cmd/libcmd.a ../../dc/user_iface/ccacmd/libccacmd.a ../../dc/framework/libdc_fwk.a ../../dc/distributed/libdistributed.a ../../dc/component/libcomponent.a ../../dc/port/libports.a ../../parameters/libparameters.a  /home/baallan/sc01/cca-spec-built/cxx/lib/libcca.a ../../gnu/getopt/libgetCCAFEopt.a ../../jc++/libjcpp.a ../../scutil/libscutil.a ../../util/libcafeutil.a ../../stovepipe/libstovepipe.a \
+	  \
+	-g /usr/local/mpich/lib/libmpich.a      	\
+	-lieee /usr/local/lib/liblapack.a /usr/local/lib/libblas.a -lm -Wl,-rpath,/home/baallan/sc01/dccafe-built/cxx/dc/component -rdynamic -ldl \
+	-lg2c  -ldl  \
+	-o ccafe
+/usr/local/gcc-2.95.3/lib/gcc-lib/i686-pc-linux-gnu/2.95.3/libg2c.a(open.o): In function `f_open':
+/usr/local/src/gcc-2.95.3/libf2c/libI77/open.c:213: the use of `tempnam' is dangerous, better use `mkstemp'
+ln -s ccafe CmdLineBuilderController2.exe
+ln -s ccafe demo
+c++ -I/usr/local/mpich/include -I/usr/local/mpich/include/mpi2c++  -fexceptions  -c -g    -DOS_LINUX -Wall -D_EFENCE  -I../.. -I/home/baallan/sc01/cca-spec-built/cxx/include    \
+-I/usr/local/mpich/include -D_CCAMPI  \
+CmdLineClientMain.cxx -o CmdLineClientMain.o
+CmdLineClientMain.cxx:2: warning: `char id[86]' defined but not used
+rm -f -f ccafe-client
+rm -f -f CmdLineClient.exe ccafe-client demo-client
+c++ -I/usr/local/mpich/include -I/usr/local/mpich/include/mpi2c++  -fexceptions  -g    -DOS_LINUX -Wall -D_EFENCE  -I../.. -I/home/baallan/sc01/cca-spec-built/cxx/include           \
+	CmdLineClientMain.o DefaultBuilderModel.o Link.o CmdLineBuilderViewForHuman.o CmdLineBuilderViewForGUI.o CmdLineBuilderViewMux.o CmdLineBuilderController2.o forceIsisBlasLapackLink.o CmdLineClient.o   ../../scutil/libscutil.a ../../cmd/libcmd.a ../../dc/user_iface/ccacmd/libccacmd.a ../../dc/framework/libdc_fwk.a ../../dc/distributed/libdistributed.a ../../dc/component/libcomponent.a ../../dc/port/libports.a ../../parameters/libparameters.a  /home/baallan/sc01/cca-spec-built/cxx/lib/libcca.a ../../gnu/getopt/libgetCCAFEopt.a ../../jc++/libjcpp.a ../../scutil/libscutil.a ../../util/libcafeutil.a ../../stovepipe/libstovepipe.a \
+	  \
+	-g /usr/local/mpich/lib/libmpich.a             \
+	-lieee /usr/local/lib/liblapack.a /usr/local/lib/libblas.a -lm -Wl,-rpath,/home/baallan/sc01/dccafe-built/cxx/dc/component -rdynamic -ldl \
+	-lg2c  -ldl  \
+	-o ccafe-client
+/usr/local/gcc-2.95.3/lib/gcc-lib/i686-pc-linux-gnu/2.95.3/libg2c.a(open.o): In function `f_open':
+/usr/local/src/gcc-2.95.3/libf2c/libI77/open.c:213: the use of `tempnam' is dangerous, better use `mkstemp'
+ln -s ccafe-client CmdLineClient.exe
+ln -s ccafe-client demo-client
+gmake[3]: Leaving directory `/home/baallan/sc01/dccafe-built/cxx/dc/user_iface'
+gmake[2]: Leaving directory `/home/baallan/sc01/dccafe-built/cxx/dc'
+gmake[2]: Entering directory `/home/baallan/sc01/dccafe-built/cxx/lib'
+rm -f scratch/*.a scratch/*.o scratch/arinput
+rm -f *.o *.a *.so *~ scratch/arinput
+rm -f scratch/arinput libccafeCore.a
+/bin/cp ../dc/user_iface/libccafeBM.a ../dc/framework/libdc_fwk.a ../dc/component/libcomponent.a ../dc/port/libports.a ../parameters/libparameters.a ../jc++/libjcpp.a ../scutil/libscutil.a ../util/libcafeutil.a scratch
+ar -M &lt; scratch/arinput
+ranlib libccafeCore.a
+gmake noscratch
+gmake[3]: Entering directory `/home/baallan/sc01/dccafe-built/cxx/lib'
+rm -f scratch/*.a scratch/*.o scratch/arinput
+gmake[3]: Leaving directory `/home/baallan/sc01/dccafe-built/cxx/lib'
+gmake[2]: Leaving directory `/home/baallan/sc01/dccafe-built/cxx/lib'
+make[1]: Leaving directory `/home/baallan/sc01/dccafe-built/cxx'
+MAIN BUILD COMPLETED. You should have a runnable framework.
+BUILDING EXPERIMENTS. If this crashes, nothing to worry about.
+if [ -d chez-rob/protoBS ] ; then \
+	(cd chez-rob/protoBS; make lib) \
+fi
+make[1]: Entering directory `/home/baallan/sc01/dccafe-built/chez-rob/protoBS'
+c++ -c -g -I/home/baallan/sc01/cca-spec-built/cxx/include -I/home/baallan/sc01/cca-spec-built/cxx/eg/include -I/home/baallan/sc01/cca-spec-built/cxx/eg/ccaComponent -D_EG -I/home/baallan/sc01/dccafe-built/cxx  CcaffeineAbstractFramework.cxx
+c++ -c -g -I/home/baallan/sc01/cca-spec-built/cxx/include -I/home/baallan/sc01/cca-spec-built/cxx/eg/include -I/home/baallan/sc01/cca-spec-built/cxx/eg/ccaComponent -D_EG -I/home/baallan/sc01/dccafe-built/cxx  ComponentProxy.cxx
+c++ -c -g -I/home/baallan/sc01/cca-spec-built/cxx/include -I/home/baallan/sc01/cca-spec-built/cxx/eg/include -I/home/baallan/sc01/cca-spec-built/cxx/eg/ccaComponent -D_EG -I/home/baallan/sc01/dccafe-built/cxx  DefaultStringList.cxx
+c++ -c -g -I/home/baallan/sc01/cca-spec-built/cxx/include -I/home/baallan/sc01/cca-spec-built/cxx/eg/include -I/home/baallan/sc01/cca-spec-built/cxx/eg/ccaComponent -D_EG -I/home/baallan/sc01/dccafe-built/cxx  CcafeCCAException.cxx
+c++ -c -g -I/home/baallan/sc01/cca-spec-built/cxx/include -I/home/baallan/sc01/cca-spec-built/cxx/eg/include -I/home/baallan/sc01/cca-spec-built/cxx/eg/ccaComponent -D_EG -I/home/baallan/sc01/dccafe-built/cxx  CcaffeineBuilderService.cxx
+c++ -c -g -I/home/baallan/sc01/cca-spec-built/cxx/include -I/home/baallan/sc01/cca-spec-built/cxx/eg/include -I/home/baallan/sc01/cca-spec-built/cxx/eg/ccaComponent -D_EG -I/home/baallan/sc01/dccafe-built/cxx  DefaultComponentID.cxx
+rm -f  libprotobs.a
+ar rv libprotobs.a CcaffeineAbstractFramework.o ComponentProxy.o DefaultStringList.o CcafeCCAException.o CcaffeineBuilderService.o DefaultComponentID.o
+a - CcaffeineAbstractFramework.o
+a - ComponentProxy.o
+a - DefaultStringList.o
+a - CcafeCCAException.o
+a - CcaffeineBuilderService.o
+a - DefaultComponentID.o
+ranlib libprotobs.a
+make[1]: Leaving directory `/home/baallan/sc01/dccafe-built/chez-rob/protoBS'
+TESTING EXPERIMENTS. If this crashes, nothing to worry about.
+if [ -d chez-rob/protoBS ] ; then \
+	(cd chez-rob/protoBS; make test) \
+fi
+make[1]: Entering directory `/home/baallan/sc01/dccafe-built/chez-rob/protoBS'
+c++ -c -g -I/home/baallan/sc01/cca-spec-built/cxx/include -I/home/baallan/sc01/cca-spec-built/cxx/eg/include -I/home/baallan/sc01/cca-spec-built/cxx/eg/ccaComponent -D_EG -I/home/baallan/sc01/dccafe-built/cxx  testAbstractFwk.cxx
+/usr/local/mpich/bin/mpiCC -g -o testAbstractFwk testAbstractFwk.o \
+	CcaffeineAbstractFramework.o ComponentProxy.o DefaultStringList.o CcafeCCAException.o CcaffeineBuilderService.o DefaultComponentID.o ../../cxx/gnu/getopt/libgetCCAFEopt.a ../../cxx/dc/user_iface/libccafeBM.a ../../cxx/dc/framework/libdc_fwk.a ../../cxx/dc/component/libcomponent.a ../../cxx/dc/port/libports.a ../../cxx/parameters/libparameters.a ../../cxx/jc++/libjcpp.a ../../cxx/scutil/libscutil.a ../../cxx/util/libcafeutil.a  -ldl
+./testAbstractFwk
+# factory added {/home/rob/cca/dccafe/cxx/dc/component/PrinterComponent.so}:{create_PrinterComponent PrinterComponent} as PrinterComponent
+
+# factory added {/home/rob/cca/dccafe/cxx/dc/component/RevalidateTest.so}:{create_RevalidateTest RevalidateTest} as RevalidateTest
+
+# factory added {/home/rob/cca/dccafe/cxx/dc/component/StarterComponent.so}:{create_StarterComponent StarterComponent} as StarterComponent
+
+# factory added {/home/rob/cca/dccafe/cxx/dc/component/TimeStamper.so}:{create_TimeStamper TimeStamper} as TimeStamper
+
+# factory added {/home/rob/cca/dccafe/cxx/dc/component/Timer.so}:{create_Timer Timer} as Timer
+
+ComponentFactory::initPallet called twice!
+For all I know it might have worked!
+c++ -c -g -I/home/baallan/sc01/cca-spec-built/cxx/include -I/home/baallan/sc01/cca-spec-built/cxx/eg/include -I/home/baallan/sc01/cca-spec-built/cxx/eg/ccaComponent -D_EG -I/home/baallan/sc01/dccafe-built/cxx  testBuilderService.cxx
+/usr/local/mpich/bin/mpiCC -g -o testBuilderService testBuilderService.o \
+	CcaffeineAbstractFramework.o ComponentProxy.o DefaultStringList.o CcafeCCAException.o CcaffeineBuilderService.o DefaultComponentID.o ../../cxx/gnu/getopt/libgetCCAFEopt.a ../../cxx/dc/user_iface/libccafeBM.a ../../cxx/dc/framework/libdc_fwk.a ../../cxx/dc/component/libcomponent.a ../../cxx/dc/port/libports.a ../../cxx/parameters/libparameters.a ../../cxx/jc++/libjcpp.a ../../cxx/scutil/libscutil.a ../../cxx/util/libcafeutil.a  -Wl,-rpath, -rdynamic -ldl 
+./testBuilderService
+# factory added {/home/rob/cca/dccafe/cxx/dc/component/PrinterComponent.so}:{create_PrinterComponent PrinterComponent} as PrinterComponent
+
+# factory added {/home/rob/cca/dccafe/cxx/dc/component/RevalidateTest.so}:{create_RevalidateTest RevalidateTest} as RevalidateTest
+
+# factory added {/home/rob/cca/dccafe/cxx/dc/component/StarterComponent.so}:{create_StarterComponent StarterComponent} as StarterComponent
+
+# factory added {/home/rob/cca/dccafe/cxx/dc/component/TimeStamper.so}:{create_TimeStamper TimeStamper} as TimeStamper
+
+# factory added {/home/rob/cca/dccafe/cxx/dc/component/Timer.so}:{create_Timer Timer} as Timer
+
+ComponentFactory::initPallet called twice!
+there are 5 available classes:
+PrinterComponent
+RevalidateTest
+StarterComponent
+TimeStamper
+Timer
+Instantiated CCAFFEINE.print0
+Instantiated CCAFFEINE.start0
+Here are the component instances in the arena:
+
+Component instance 0: test0
+
+	Provides Ports:
+	   Instance Name 	Class Name
+	0) cProps 		gov.cca.ComponentProperties
+
+	Uses Ports:
+	   Instance Name 	Class Name
+	0) myBS 		gov.cca.BuilderService
+
+Component instance 1: start0
+
+	Provides Ports:
+	   Instance Name 	Class Name
+	0) cProps 		gov.cca.ComponentProperties
+	2) go_port 		GoPort
+
+	Uses Ports:
+	   Instance Name 	Class Name
+	0) pSvc 		gov.cca.PrintfService
+	2) out0 		StringConsumerPort
+
+Component instance 2: print0
+
+	Provides Ports:
+	   Instance Name 	Class Name
+	0) cProps 		gov.cca.ComponentProperties
+	2) printer_port 		StringConsumerPort
+
+	Uses Ports:
+	   Instance Name 	Class Name
+	0) pSvc 		gov.cca.PrintfService
+Printer says the string is: Foobar!
+
+
+Self Connection Test:
+
+My name is: CCAFFEINE.test0, printer name is: CCAFFEINE.print0
+Printer says the string is: Hello CCA World
+make[1]: Leaving directory `/home/baallan/sc01/dccafe-built/chez-rob/protoBS'
+<a href="#config">configure output</a> and <a href="#build">build output</a>.
+</pre>
+</body>
+</html>

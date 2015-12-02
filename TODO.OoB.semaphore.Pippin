@@ -1,0 +1,78 @@
+[Having been duly chastised that this is not in fact
+anything to do with a semaphore, but just a shared
+variable service, the rest of it still stands.
+Substitute "Shared Variable" or "dynamic distributed
+registry" anywhere that semaphore appears.
+
+So here's my mental picture of a feature we want in the
+overall system. Very likely it has an immediate mapping in
+java and needs a mapping in C++:
+
+Manifestations of a specific instance:
+
+	Any component in the main thread advertises that it uses an 
+	(OutOfBand/Semaphore)Service port (SS port).
+	When the component uses this SS port, it calls
+	the SS interface to see if it has received any
+	messages in the intervening time.  In the example below, the
+	component is interested in 4 messages it defines:
+	stop - obvious definition.
+	update - do some parallel viz render update, the user has become
+		interested in the latest computation.
+	steer - suck in new algorithm control parameters from the component's
+		default file or whereever.
+	checkpoint - spend some time dumping state to disk.
+
+		e.g. 
+		ss=gizzard.getPort("SS");
+		// sign up the messages we want to be able to receive.
+		ss.acceptMessage("stop");
+		ss.acceptMessage("update");
+		ss.acceptMessage("steer");
+		ss.acceptMessage("checkpoint");
+		// somewhere later in the code:
+                int quit=0
+		while (!quit) {
+			if (ss.msg_received("steer")) {
+				// reread parameter file
+			}
+			// compute some huge thing.
+			// check viz request
+			if (ss.msg_received("update")) {
+				// call cumulvs port to viz something	
+			}
+			// check disk request
+			if ( ss.msg_received("checkpoint")) {
+				// write file
+			}
+			quit = ss.msg_received("quit");
+		}
+	Now that's interesting, maybe, but it takes at least 1 other thread
+	in the C++ framework to implement msg_received (or some other more
+	tastefully named function of equivalent form. A side effect of the
+	msg_received command is that it clears the flag being checked.
+
+	So how to implement something that provides this service, hmm.
+	In the framwork this could/should manifest as a "special component",
+	one with a global portion (fully hidden) that manages the thread,
+	listens out of band, and holds received messages and a "component portion"
+	with multiple instances that provides the SS interface described above.
+	Probably this could be done all in one C++ class if it's simplest that way.
+	The "component portion" would manifest as a regular component in the
+	pallet and gui. It provides the SS interface for the message recipient.
+	It might also provide a batch of differently named GoPorts (send-stop,send-steer...),
+	one for each message accepted by the component it is wired to. 
+	The gui rendering would be the usual batch of go buttons except that
+	they bind to the out of band message stuff.
+
+	The purpose of the multiple "component portions" is to hide all the
+	irrelevant messages from the component using the SS port, aka to help
+	in sorting messages. There is a one-using-component assumption.
+	The component checking for a message is known by a tag the "component
+	portion" adds when looking into the global portion to search for
+	messages.
+
+	Alternatively, since the message service is assumed 1:1, the gizzard
+	of each component could provide SS and it could also register the
+	send-XXX ports on the using component. (Our first example of a
+	framework decorating a component with more ports.)

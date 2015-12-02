@@ -1,0 +1,29 @@
+#!/bin/sh
+export Tcl="@TCLSH@"
+if [ "x$1" = "x" ] ; then
+  echo "simplify-bld requires an input file argument"
+  exit 1
+fi
+if [ "x$Tcl" = "x" ] ; then
+	echo 'tclsh not found';
+	echo 'Please rerun configure with \"--with-tclsh=/path/to/your/tclsh\" added'
+	exit 1;
+fi
+
+if [ -f @pkgdatadir@/simplify-bld.tcl ] ; then
+	Simp=@pkgdatadir@/simplify-bld.tcl;
+fi
+if [ -f @CCAFE_RPM_pkgdatadir@/simplify-bld.tcl ] ; then
+	Simp=@CCAFE_RPM_pkgdatadir@/simplify-bld.tcl;
+fi
+if [ -f @bindir@/simplify-bld.tcl ] ; then
+	Simp=@bindir@/simplify-bld.tcl;
+fi
+
+if [ 'x$Simp' = 'x' ] ; then
+	echo 'simplify-bld.tcl not found in pwd';
+	exit 1;
+fi
+
+exec $Tcl $Simp -- $*
+exit 0

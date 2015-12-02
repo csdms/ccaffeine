@@ -1,0 +1,139 @@
+Authors: Ben Allan (with inspiration from Jeembo Kohl)
+
+What: A general, extensible makefile/configure pattern for HPC components.
+
+Scope: Integrating multiple packages under gmake or make+configure.
+
+Derived from this: CCA component makefile pattern.
+
+Assumptions: 
+1 A make which supports include statements or equivalent is available.
+2 Linking another HPC package requires lots of annoying
+    include, link, and -D flags that only it knows.
+3 Winders is not an HPC platform.
+
+
+
+The general makefile pattern proposed is:
+
+Makefile -
+Used to build in a local directory, typically including
+a relative path definition of the local package root like
+ISIS_HOME= ../.. and its local Makefile.Rules
+{e.g. "include $(ISIS_HOME)/Makefile.Rules"}
+
+
+Makefile.conf - 
+(aka make.options in isis)
+Makefile.conf is kept at the top of a local tree
+exclusively for local consumption.  It contains what is
+purported to be all of the external configurations that
+the user has to define before the package will build.
+Typical examples: MPI_ROOT, CCA_ROOT, ESI_ROOT ISIS_ROOT,
+JAVA_HOME get defined here.  Most of these are "home"
+or <external-package>_ROOT variables that indicate where
+external dependencies are installed. Ideally, this file
+is generated from a Makefile.conf.in by configure. In most
+cases, configure would need switches like
+
+    ./configure --with-esi=/usr/local/esi0.5 --with-cca=/home/luser/cca \
+        --with-mpi=/usr/local/mpich1.1.2
+
+Configuring every package requires defining the external
+package locations. (duh!, but how annoyingly redundant. that's unix.)
+A good Makefile.conf includes examples (in comments or "ifeq") of
+where the required external packages are commonly found.
+
+
+Makefile.Rules -
+Kept at top of a local tree for local consumption
+only, but definitions are independent of the directory
+location within the local tree. Typically Makefile.Rules
+or equivalent is included by Makefile as described
+above.  Makefile.Rules is where you include *another* package's
+MakeIncl.<package> file, because you depend on that
+package.  Since it is for local consumption only, the name
+of Makefile.Rules can be different to suit your package.
+
+
+MakeIncl.<package> -
+for external consumption only, and found in the root
+directory of <package>. This file exists
+to be included in the Makefile.Rules(or equivalent)
+of other, unknown, packages which depend on this package
+at some distant location in the future.
+As such, conditions apply:
+
+1) for MakeIncl.<package> to be intelligible, 
+the outside environment or an outer scope Makefile.conf must have a
+definition for <package>_ROOT before including MakeIncl.<package>.
+
+2) The MakeIncl.<package> begins with comments that document
+its external package dependencies. 
+
+3) MakeIncl.<package> must *not* define rules or metarules e.g.
+.c.o:
+    $(CC) .......
+lib::
+    ....
+nor can it define dependencies.
+
+4) MakeIncl.<package> must *not* define common tool aliases, e.g.
+CC=... or CXX=... or F77=...
+that will mess up the choices already defined by the makefile
+which includes MakeIncl.<package>. If you feel morally bound
+to say something about a compiler, name it as
+<package>_CXX=...
+This is conceivably necessary if you are providing only headers
+and binary library for c++ dependent on templates, exceptions, etc
+which are compiler/linker specific.
+
+When these conditions are met, the MakeIncl.<package> then provides:
+
+Absolute path definitions to the static or dynamically linked libraries
+supplied by <package>. e.g. 
+FOO_LIB=$(FOO_ROOT)/lib/libFoo.a
+Note: avoid writing
+FOO_LIB= -L$(FOO_ROOT)/lib -lFoo 
+which causes no end of trouble for complex package builds in messy
+software environments).
+
+Defines for including headers e.g. 
+FOO_INC= -I$(FOO_ROOT)/include
+
+Other definitions needed to cope with the package. There's
+usually several variations on a large HPC library, so we
+might have here, for examples
+PVM_ARCH=...
+FOO_INC_SERIAL=-I$(FOO_ROOT)/serial/include
+
+
+
+I hope by now you've probably thought, "Well, Duh! why's
+he being so long winded about the obvious?" If it's not
+obvious, find an HPC app that depends on 5 or more independent
+libraries (with interdependencies among themselves) and
+see just what a mess there is in configuring it. Or,
+if there isn't a mess take a look at how LONG their
+configure/makefile is and think about how much work it must
+be to maintain.
+
+
+Proposed CCA Makefile pattern:
+all of the above, plus we assume that for each installed
+cca-compliant <package> there is:
+$(<package>_ROOT)/ccaComponent/MakeIncl.<package>_Component
+
+Examples:
+I consider the following packages for ccaffeine purposes:
+copper/esi
+copper/isis
+dccafe
+cca-spec01
+viz-stv
+mpich
+java
+
+Unfortunately not all the packages are so polite
+about providing makefile support to larger builds.
+BLAS,LAPACK,java come to mind.

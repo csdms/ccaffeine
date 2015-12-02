@@ -1,0 +1,113 @@
+CCAFE_HOME = ../../../..
+ 
+include $(CCAFE_HOME)/Makefile.Rules
+
+SED= sed
+
+# hand written code
+UTEST= \
+ComponentFactoryEventImplementation.cc \
+ComponentInstanceAddedEventImplementation.cc \
+ComponentInstanceAddRequestEventImplementation.cc \
+ComponentInstanceDeleteRequestEventImplementation.cc \
+ComponentInstanceDeletedEventImplementation.cc \
+ContextConnectionEventImplementation.cc \
+ContextEventImplementation.cc \
+PortActivityEventImplementation.cc \
+PortDefinitionEventImplementation.cc
+
+
+# the types of eventprocessor we generate
+PROC_TYPES_Y = \
+ComponentFactory.y \
+ComponentInstanceAdded.y \
+ComponentInstanceAddRequest.y \
+ComponentInstanceDeleted.y \
+ComponentInstanceDeleteRequest.y \
+ContextConnection.y \
+PortActivity.y \
+PortDefinition.y
+
+# convert dummies *.y to event processors
+PROC_TYPES_CC= $(PROC_TYPES_Y:%.y=%EventProcessor.cc)
+PROC_TYPES_HH= $(PROC_TYPES_Y:%.y=%EventProcessor.hh)
+PROC_TYPES= $(PROC_TYPES_Y:%.y=%)
+
+SRC= \
+$(PROC_TYPES_CC) $(UTEST) ContextEventListenerWrap.cc
+
+OBJ=$(SRC:%.cc=%.o)
+
+.SUFFIXES:
+.SUFFIXES: .cc .o
+
+all: build
+
+.cc.o:
+	$(MPICXX) -c $(CXXFLAGS)  $<
+
+build: $(OBJ)
+
+genproc: DATAEventProcessor.cc.sed DATAEventProcessor.hh.sed
+	@echo "Generating EventProcessors for $(PROC_TYPES)"
+	@for i in $(PROC_TYPES) ; do \
+		$(RM) $$i; \
+		echo '/* GENERATED FILE. Do not edit. DATAEventProcessor.cc.sed */' \
+			> $${i}EventProcessor.cc; \
+		echo '/* GENERATED FILE. Do not edit. DATAEventProcessor.hh.sed */' \
+			> $${i}EventProcessor.hh; \
+		cat DATAEventProcessor.hh.sed | \
+			$(SED) -e "s;DATA;$$i;g"  \
+			>> $${i}EventProcessor.hh; \
+		cat DATAEventProcessor.cc.sed | \
+			$(SED) -e "s;DATA;$$i;g"  \
+			>> $${i}EventProcessor.cc; \
+	done
+	@echo "Generating EventProcessors done."
+
+LLIB= \
+../ContextEventManager.o \
+../../../framework/PropertyStrings.o \
+../../../framework/OpqSupportPort.o \
+../../../../util/libcafeutil.a
+
+LOBJ=\
+ComponentFactoryEventProcessor.o \
+ComponentInstanceAddedEventProcessor.o \
+ComponentInstanceAddRequestEventProcessor.o \
+ComponentInstanceDeletedEventProcessor.o \
+ComponentInstanceDeleteRequestEventProcessor.o \
+ContextConnectionEventProcessor.o \
+PortActivityEventProcessor.o \
+PortDefinitionEventProcessor.o \
+ComponentInstanceAddedEventImplementation.o \
+ComponentInstanceAddRequestEventImplementation.o \
+ComponentInstanceDeletedEventImplementation.o \
+ComponentInstanceDeleteRequestEventImplementation.o \
+ContextConnectionEventImplementation.o \
+PortActivityEventImplementation.o \
+PortDefinitionEventImplementation.o \
+ComponentFactoryEventImplementation.o \
+ContextEventImplementation.o \
+ContextEventListenerWrap.o
+
+src-list:
+	@echo "DC_LIST_CXX += \\" >> ../../../src-list
+	@for i in $(SRC) ; do \
+                echo "$(srcdir)/cxx/dc/services/ContextEventManager/eventCons/$$i \\" >> ../../../src-list ; \
+        done
+	@echo "" >> ../../../src-list
+	@echo "updated src-list from dc/services/ContextEventManager/eventCons"
+
+check: 
+	$(CXX) $(CXXFLAGS) test.cc -o test.x \
+		$(LOBJ) $(LLIB)
+
+# ComponentFactoryEventImplementation.o ContextEventImplementation.o $(LLIB)
+
+
+genclean:
+	-$(RM) $(PROC_TYPES_CC) $(PROC_TYPES_HH)
+
+lclean clean:
+	-$(RM) *.o

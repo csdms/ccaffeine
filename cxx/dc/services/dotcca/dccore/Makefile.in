@@ -1,0 +1,89 @@
+CCAFE_HOME=../../../..
+buildroot=../../../../..
+
+zeroth: first
+
+include $(CCAFE_HOME)/Makefile.Rules
+VPATH := $(srcdir)/cxx/dc/services/dotcca/dccore
+include $(CCAFE_HOME)/MakeIncl.CCAFE_Component
+
+CXXSRC=DotCCAComponentCore.cpp
+
+VGFLAGS= --leak-check=yes  --show-reachable=yes
+VG=valgrind
+
+LIBS = ../treeReader/ComponentData.o
+XMLLIBS = ../treeReader/*.o $(XMLLIB)
+LOCALFLAGS=$(XMLINC) $(XMLFLAGS)
+
+first all: lib
+
+bins: ctest
+
+lint:
+	codewizard $(CXXFLAGS) $(LOCALFLAGS) -I. -c DotCCAComponentCore.cpp
+
+lib:
+	$(CXX) $(CXXFLAGS) $(LOCALFLAGS) -c DotCCAComponentCore.cpp
+
+test ctest: test.$(XMLBUILD)
+
+dtest: dc.$(XMLBUILD).x
+	-$(VG) $(VGFLAGS) ./dc.$(XMLBUILD).x ../examples/oldDotCCA Timer.cca
+	-$(VG) $(VGFLAGS) ./dc.$(XMLBUILD).x ../examples/oldDotCCA StarterComponent.cca
+	-$(VG) $(VGFLAGS) ./dc.$(XMLBUILD).x ../examples LinearFunction.depl.cca
+
+# test w/out libxml2
+test.: dc..x
+	@echo "########### Timer.cca (old classic fmt)"
+	-./dc..x ../examples/oldDotCCA Timer.cca
+	@echo "########### StarterComponent.cca (old babel fmt)"
+	-./dc..x ../examples/oldDotCCA StarterComponent.cca
+
+# test w/libxml2
+test.xmlbuild: dc.xmlbuild.x
+	@echo "########### Timer.cca (old classic fmt)"
+	-./dc.xmlbuild.x ../examples/oldDotCCA Timer.cca
+	@echo "########### StarterComponent.cca (old babel fmt)"
+	-./dc.xmlbuild.x ../examples/oldDotCCA StarterComponent.cca
+	@echo "########### ccafe1.StarterComponent (babel xml fmt)"
+	-./dc.xmlbuild.x ../examples ccafe1.StarterComponent-v0.1.xml
+	@echo "########### LinearFunction.depl.cca (new fmt)"
+	-./dc.xmlbuild.x ../examples LinearFunction.depl.cca
+	@echo "########### xmlscl.depl.cca (newer fmt)"
+	-./dc.xmlbuild.x ../examples xmlscl.depl.cca
+
+dc..x:
+	$(CXX) -DDotCCAComponentCore_MAIN $(CXXFLAGS) $(LOCALFLAGS) \
+		-o dc..x DotCCAComponentCore.cpp $(LIBS)
+
+dc.xmlbuild.x:
+	$(CXX) -DDotCCAComponentCore_MAIN $(CXXFLAGS) $(LOCALFLAGS) \
+		-o dc.xmlbuild.x DotCCAComponentCore.cpp $(XMLLIBS)
+
+%.i : %.cpp
+	$(CXX) -E $(CXXFLAGS) $(LOCALFLAGS) -DDotCCAComponentCore_MAIN  $< > $@
+
+src-list:
+	@echo "DC_LIST_CXX += \\" >> ../../../src-list
+	@for i in $(CXXSRC) ; do \
+                echo "$(srcdir)/cxx/dc/services/dotcca/dccore/$$i \\" >> ../../../src-list ; \
+        done
+	@echo "" >> ../../../src-list
+	@echo "updated src-list from dc/services/dotcca/dccore"
+
+
+clean: 
+	$(RM) -f *.o *.exe core.* *.x emake.log
+
+depend:
+	$(DEPEND) $(CXXFLAGS) $(LOCALFLAGS) $(CXXSRC)
+
+depend-sys:
+	$(DEPENDSYS) $(CXXFLAGS) $(LOCALFLAGS) -DDotCCAComponentCore_MAIN $(CXXSRC)
+
+ifneq "x$(TARGET)" "xclean"
+ifneq "x$(TARGET)" "xdistclean"
+include Makefile.depends
+endif
+endif

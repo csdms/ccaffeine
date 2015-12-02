@@ -1,0 +1,77 @@
+
+# $Id: Makefile.in,v 1.16 2006/08/04 18:39:14 baallan Exp $
+
+CCAFE_HOME=../../..
+buildroot=../../../..
+VPATH := $(srcdir)/cxx/dc/user_iface/ccacmd
+
+zeroth: first
+
+include $(CCAFE_HOME)/Makefile.Rules
+
+%.o : %.cxx
+	$(CXX) -c $(CXXFLAGS) $<
+
+CXXSRC = \
+CmdActionCCAPortProperties.cxx \
+CmdActionCCAConnect.cxx \
+CmdActionCCADisplay.cxx \
+CmdActionCCAPallet.cxx \
+CmdActionCCAArena.cxx \
+CmdActionCCAGo.cxx \
+CmdActionCCAConfig.cxx \
+CmdActionCCAProperties.cxx \
+CmdActionCCALinks.cxx \
+CmdActionCCAInstantiate.cxx \
+CmdActionCCARemove.cxx \
+CmdActionCCARepository.cxx \
+CmdActionCCAPath.cxx \
+CmdActionCCAShell.cxx \
+CmdContextCCA.cxx \
+CmdContextCCAMPI.cxx \
+CmdActionCCANuke.cxx \
+CmdActionCCADisconnect.cxx \
+CmdActionCCADebug.cxx \
+CmdActionCCANoDebug.cxx
+
+
+OBJS = $(CXXSRC:%.cxx=%.o)
+LIB= libccacmd.a
+
+first all : lib
+
+lib $(LIB): $(OBJS)
+	@-$(RM)  $(LIB)
+	ar ruv $(LIB)  $(OBJS)
+	$(RANLIB) $(LIB)
+
+CmdContextCCA.o:  CmdContextCCA.cxx CmdContextCCA.h
+	$(CXX) -c $(CXXFLAGS)  -o $@ $<
+
+CmdContextCCAMPI.o: CmdContextCCAMPI.cxx CmdContextCCAMPI.h
+	$(CXX) -c $(CXXFLAGS)  -D_CCAMPI -o $@ $<
+
+src-list:
+	@echo "DC_LIST_CXX += \\" >> ../../src-list
+	@for i in $(CXXSRC) ; do \
+                echo "$(srcdir)/cxx/dc/user_iface/ccacmd/$$i \\" >> ../../src-list ; \
+        done
+	@echo "" >> ../../src-list
+	@echo "updated src-list from dc/user_iface/ccacmd"
+
+clean : 
+	@-$(RM) $(OBJS) *~ \#* $(LIB) *.u
+
+depend:
+	$(DEPEND) $(CXXFLAGS) $(CXXSRC)
+
+depend-sys:
+	$(DEPENDSYS) $(CXXFLAGS) $(CXXSRC)
+
+ifneq "x$(TARGET)" "xclean"
+ifneq "x$(TARGET)" "xdistclean"
+include Makefile.depends
+endif
+endif
+
+

@@ -1,0 +1,7 @@
+This is a very minor patch release relative to the
+May10 snapshot to work around:
+- An error in the cca-spec-neo installation. An example input script used in an
+obscure corner of Ccaffeine (ccafe/cxx/dc/neo/test,mpiTest)
+contained a hardcoded path.
+- An error in BABEL 0.9.2, whereby the env variable SIDL_DEBUG_DLOPEN
+got renamed sidl_DEBUG_DLOPEN.

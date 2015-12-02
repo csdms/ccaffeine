@@ -1,0 +1,58 @@
+for fall 2002:
+Make fwk ports w/dummies into components that go with fwk and have no real binding.
+Get 'service factory' api draft in place in classic space.
+Get services for gui invocation going.
+
+------------------------
+old list
+ In my mind we have several fuzzy categories like
+ Services, components, frameworks, guis, wire protocols, and
+ deployment.
+ Please add/annotate/update/sign-up.
+
+ - Interrupt/semaphore service.  i.e (Stop Thread + listener) (Ben/Rob).
+ - About button service. (Student)
+ - Help service. (Student)
+ - Dialog service. (conditional, hierarchical). (Student/Ben)
+ - Container service (esi example). (Rob?)
+ - Container service GUI rendering. (Student)
+ - gui human factors design/commercial builders investigation/SCIRUN theft? (Steve?)
+ - port property hint string usage standard proposals (Ben/Student).
+ - component property hint string usage standard (Ben/Student).
+ - framework properties string usage standard (Ben/Student).
+ - data blob component (Ben/Rob/Lori/Craig).
+ - build-script reader/editor/replayer (parameterizable) GUI. (Student/Ben)
+ - parameter-substitution support in Cmd parser. (Ben)
+ - handle bug reports.
+
+
+Done list:
+
+5/17/2000
+ - CPLANT port 
+ - Log Output service 
+ - May 17 demo for real 
+
+5/18/2000
+ - ParameterPort service w/new events.
+ - Clean out the old "Direct" port classes.
+
+6/7/2000
+ - DynamicLoad/repository/remote build&link service. (Ben)
+ - Configure script. (Ben)
+
+6/28/2000
+ - Doc++-ify all the cxx headers (mostly). (Ben)
+ - Javadoc improve all the java classes (Ben)
+ - Safe exit protocol(stop locking linux up)/service Apparently done. (colin).
+ - Symbol table service; larger framework-factory issue. (Ben)
+ - Buffered reader in c++. (Rob)
+
+9/2000
+ - namespaces in c++. (Ben)
+ - 0.5 spec compliance. (Ben/Rob)
+
+10/2000
+ - Purify/refcount (cdelete,cfree,creference,cdecrement, interface/port to describe these) (Ben/Student)
+ - namespaces in c++. (Rob, Ben. summer-student)
+ - 0.5 spec compliance. (Rob)

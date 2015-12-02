@@ -1,0 +1,172 @@
+Notes on the changes (composed 12.18.03, committed jan 15,04.
+
+RCS file: /cvs/ccaffeine/repository/dccafe/Makefile.install.in,v
+added ParameterPortFactoryTest to installation lists
+
+===================================================================
+RCS file: /cvs/ccaffeine/repository/dccafe/configure,v
+changes following configure.in
+
+===================================================================
+RCS file: /cvs/ccaffeine/repository/dccafe/configure.in,v
+added ParameterPortFactoryTest.sidl and src/testBabelParameterPortFactory
+to generated lists.
+
+===================================================================
+RCS file: /cvs/ccaffeine/repository/dccafe/cxx/dc/babel/babel-cca/AllBabelCCA.hh,v
+added ParameterPortWrap classes to cvs.
+
+===================================================================
+cvs server: cxx/dc/babel/babel-cca/BabelCCAHelpers.hh is a new entry, no comparison available
+new utility functions.
+
+===================================================================
+RCS file: /cvs/ccaffeine/repository/dccafe/cxx/dc/babel/babel-cca/BuilderServicePC.hh,vretrieving revision 1.3
+got rid of unuseful typedef
+
+===================================================================
+RCS file: /cvs/ccaffeine/repository/dccafe/cxx/dc/babel/babel-cca/Makefile,v
+Added BasicParameterPortWrap_Impl to target list
+
+===================================================================
+Index: cxx/dc/babel/babel-cca/Makefile.babel
+Added compilation test target.
+
+
+===================================================================
+cvs server: cxx/dc/babel/babel-cca/ParameterPortFactoryPC.hh is a new entry, no comparison available
+cvs server: cxx/dc/babel/babel-cca/ParameterPortPC.hh is a new entry, no comparison available
+new port conversions.
+
+===================================================================
+RCS file: /cvs/ccaffeine/repository/dccafe/cxx/dc/babel/babel-cca/ccafe.sidl.in,v
+getting rid of old stubs for stringmapdialogservice that were never 
+implemented or really even requested.
+
+===================================================================
+RCS file: /cvs/ccaffeine/repository/dccafe/cxx/dc/babel/babel-cca/ccaffeine_Services_Impl.cc,v
+Added getWrapped function.
+Added handling of corner case getPort on self-provided opq port
+that needs babel wrapper.
+Added code to remove dead references from conversions list.
+Added utility function for exception handling according to spec.
+Added binding support for parameter port.
+                                                                                
+===================================================================
+RCS file: /cvs/ccaffeine/repository/dccafe/cxx/dc/babel/babel-cca/ccaffeine_ports_BuilderService_Impl.cc,v
+removing dead includes.
+
+===================================================================
+RCS file: /cvs/ccaffeine/repository/dccafe/cxx/dc/babel/babel-cca/ccaffeine_ports_ParameterDialogServiceWrap_Impl.cc,v
+Fixed some FIXMEs.
+
+===================================================================
+RCS file: /cvs/ccaffeine/repository/dccafe/cxx/dc/babel/babel-cca/ccaffeine_ports_ParameterPortFactoryWrap_Impl.cc,v
+Fixed most of the stubs marked FIXME that cause compiler whines.
+Still some voidreturn fixmes that need attention.
+
+===================================================================
+RCS file: /cvs/ccaffeine/repository/dccafe/cxx/dc/babel/babel-cca/ccaffeine_ports_ParameterPortFactoryWrap_Impl.hh,v
+cxx/dc/babel/babel-cca/ccaffeine_ports_ParameterPortWrap_Impl.cc
+Filled out most of the stubs.
+
+===================================================================
+RCS file: /cvs/ccaffeine/repository/dccafe/cxx/dc/babel/babel-cca/ccaffeine_ports_ParameterPortWrap_Impl.hh,v
+
+===================================================================
+RCS file: /cvs/ccaffeine/repository/dccafe/cxx/dc/babel/ccafe-bind/BabelHelper.cc,v
+added stl-to-sidl_array converter functions.
+
+===================================================================
+RCS file: /cvs/ccaffeine/repository/dccafe/cxx/dc/babel/ccafe-bind/BabelOpaquePort.cc,v
+retrieving revision 1.2
+Implementation based on the default opq impl.
+
+===================================================================
+RCS file: /cvs/ccaffeine/repository/dccafe/cxx/dc/babel/ccafe-bind/FactorySvcComponent/BabelFactoryService.cc,v
+expanded typedefs to real class names.
+
+===================================================================
+RCS file: /cvs/ccaffeine/repository/dccafe/cxx/dc/babel/ccafe-bind/FactorySvcComponent/BabelFactoryService.hh,v
+expanded typedefs to real class names.
+
+===================================================================
+RCS file: /cvs/ccaffeine/repository/dccafe/cxx/dc/babel/component/Makefile,v
+added ParameterPortFactoryTest.
+
+===================================================================
+RCS file: /cvs/ccaffeine/repository/dccafe/cxx/dc/babel/component/ParameterDialogServiceTest/Makefile,v
+cleanup.
+
+===================================================================
+RCS file: /cvs/ccaffeine/repository/dccafe/cxx/dc/babel/component/ParameterPortFactoryTest/Makefile,v
+Lots of cleanup.
+
+
+===================================================================
+RCS file: /cvs/ccaffeine/repository/dccafe/cxx/dc/babel/component/ParameterPortFactoryTest/ccafe1_ParameterPortFactoryTest_Impl.cc,v
+Expanded testing. typo repair.
+
+===================================================================
+RCS file: /cvs/ccaffeine/repository/dccafe/cxx/dc/classic/ccafe-bind/ClassicOpaquePort.cc,v
+retrieving revision 1.2
+Refactored to use opq default implementation.
+
+===================================================================
+RCS file: /cvs/ccaffeine/repository/dccafe/cxx/dc/classic/ccafe-bind/ClassicServices.cc,v
+detypedefed, updated for new OpaquePort
+
+===================================================================
+RCS file: /cvs/ccaffeine/repository/dccafe/cxx/dc/classic/ccafe-bind/ClassicServices.hh,v
+factored the different overloadings of getPort into a single internal
+function. detypedefed.
+
+===================================================================
+RCS file: /cvs/ccaffeine/repository/dccafe/cxx/dc/classic/ccafe-bind/ClassicServicesHelper.cc,v
+got rid of extraneous include.
+
+===================================================================
+RCS file: /cvs/ccaffeine/repository/dccafe/cxx/dc/component/OPPFTest.cxx,v
+retrieving revision 1.1
+diff -r1.1 OPPFTest.cxx
+Classic wrapper for testing opq parameterport interfaces.
+
+===================================================================
+RCS file: /cvs/ccaffeine/repository/dccafe/cxx/dc/export/AllExport.hh,v
+getting rid of typedefs for sanity purposes. a -D argument will get
+them back.
+
+===================================================================
+RCS file: /cvs/ccaffeine/repository/dccafe/cxx/dc/export/ccafeopq.hh,v
+updated ccafeopq::Port to allow opqports that are of multiple
+kinds. With neo, opq, and classic sharing most of their interface
+definitions at the function signature level, this is needed.
+
+===================================================================
+RCS file: /cvs/ccaffeine/repository/dccafe/cxx/dc/export/paramPorts.hh,v
+changed to conform to voted sidl.
+
+===================================================================
+RCS file: /cvs/ccaffeine/repository/dccafe/cxx/dc/framework/Gizzard.h,v
+Added parameterportfactory support. some of the code needs to go
+into the bindings.
+
+===================================================================
+RCS file: /cvs/ccaffeine/repository/dccafe/cxx/dc/framework/Makefile,v
+updated test targets.
+
+===================================================================
+RCS file: /cvs/ccaffeine/repository/dccafe/cxx/dc/framework/testComponentFactory.cxx,v
+RCS file: /cvs/ccaffeine/repository/dccafe/cxx/dc/framework/testConnectionFwk.cxx,v
+Added parameterport test to tests.
+
+===================================================================
+RCS file: /cvs/ccaffeine/repository/dccafe/cxx/dc/neo/ccafe-bind/NeoServices.cc,v
+untypedefed so i can see what the heck is going on with
+cast errors.
+
+===================================================================
+RCS file: /cvs/ccaffeine/repository/dccafe/cxx/dc/port/OpqParameterPortFactory.cxx,v
+RCS file: /cvs/ccaffeine/repository/dccafe/cxx/dc/port/OpqParameterPort.cxx,v
+updates to match sidl standard. still needs work.
+

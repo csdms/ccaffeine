@@ -1,0 +1,32 @@
+CMPT_NAME = TestMPI
+NAME_SPACE = ccafe6
+FQ_CMPT_NAME = $(NAME_SPACE).$(CMPT_NAME)
+LIBSUFFIX=$(VER_SUFFIX)$(PROGRAM_SUFFIX)$(CCAFE_SHLIB_SUFFIX)
+CMPT_EXTRA_CXXFLAGS=-I$(CCAFE_ROOT)/cxx/dc/babel.12/babel-cca/server
+
+ifeq "$(OS_ARCH)" "OS_AIX"
+
+#picky
+OTHER_LINK_OBJ = \
+-L$(CCAFE_ROOT)/lib \
+-L$(CCASPEC_LIB_L_DIR_SHORT) \
+$(CCASPEC_LIB_L_SHORT) \
+-L$(BABEL_ROOT)/lib \
+-lsidl
+#allow undefined
+OTHER_LINK_OBJ = 
+
+
+else
+
+OTHER_LINK_OBJ = \
+-Wl,-rpath,$(CCASPEC_LIB_L_DIR_SHORT) \
+-Wl,-rpath,$(CCASPEC_LIB_L_SHORT) \
+-L$(CCAFE_ROOT)/lib \
+-Wl,-rpath,$(CCAFE_RPM_ROOT)/lib \
+-Wl,-rpath,$(CCAFE_RPM_ROOT)/cca/lib \
+-L$(BABEL_ROOT)/lib \
+-Wl,-rpath,$(BABEL_ROOT)/lib \
+-lsidl
+
+endif

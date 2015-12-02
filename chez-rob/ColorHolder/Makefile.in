@@ -1,0 +1,143 @@
+# Makefile generated from Makefile.in
+# makefile for simple hello world example component.
+# Created 10/2000, Ben Allan, Sandia National Labs.
+
+SHELL=/bin/sh
+
+COLHLDR_MAJOR_VERSION=@COLHLDR_MAJOR_VERSION@
+COLHLDR_MINOR_VERSION=@COLHLDR_MINOR_VERSION@
+COLHLDR_PATCH_LEVEL=@COLHLDR_PATCH_LEVEL@
+COLHLDR_VERSION=@COLHLDR_VERSION@
+
+#
+# If the 'make' on a particular system does not support
+# 'include MakeIncl.*' statements, then the contents of the 
+# included files can be pasted into this file in place
+# of the include statement.
+
+# We need to know where CCA is -- this is system specific.
+# Customarily it should be /usr/local/cca-spec.
+CCA_ROOT= @CCA_ROOT@
+
+# Get the vars we need to build with CCA by including its
+# public build variable definitions.
+include $(CCA_ROOT)/MakeIncl.CCA_Component
+
+# where we are
+COLHLDR_ROOT=@COLHLDR_ROOT@
+# where we might be installed, if installed.
+COLHLDR_INSTALL_ROOT=@COLHLDR_INSTALL_ROOT@
+
+include $(COLHLDR_ROOT)/MakeIncl.COLHLDR_Component
+
+# MPI Location
+
+MPI_ROOT = @MPI_ROOT@
+MPI_INCLUDE = -I$(MPI_ROOT)/include
+
+# CCAFFEINE Location
+
+CCAFFEINE_ROOT=@CCAFFEINE_ROOT@
+
+# bring in caffeine
+CCAFE_ROOT = $(CCAFFEINE_ROOT)
+include $(CCAFFEINE_ROOT)/MakeIncl.CCAFE_Component
+
+# petition the ccaffeine folks to get their act together
+# about exporting ports more cleanly.
+COLHLDR_CCAFE_LIBS= $(CCAFE_PLIBS)
+
+CXX = codewizard
+CXX = insure
+CXX = @CXX@
+
+CXXFLAGS = $(EG_CXXFLAGS) $(CCA_INC) $(EG_INC) $(MPI_INCLUDE) $(CCAFE_INC) $(COLHLDR_CXX_FLAGS)
+
+SRC= ColorHolder.cxx ColorHolder_wrapper.cxx CCA_ColorBlock.cxx
+HDR = ColorHolder.h ColorHolder_wrapper.h CCA_ColorBlock.h
+OBJ= ColorHolder.o ColorHolder_wrapper.o CCA_ColorBlock.o
+SOBJ= ColorHolder.so.o ColorHolder_wrapper.so.o CCA_ColorBlock.so.o
+
+# local names of the hello world component library files
+COLHLDR_LIB=libColorHolder.a
+COLHLDR_SOLIB=libColorHolder.so
+
+all: lib solib test
+
+ARB_TYPE_BLOCK_DIR = ../ArbTypeHolder
+ARB_TYPE_BLOCK_CXX = $(ARB_TYPE_BLOCK_DIR)/ArbTypeBlock.cxx.sed
+ARB_TYPE_BLOCK_H = $(ARB_TYPE_BLOCK_DIR)/ArbTypeBlock.h.sed
+
+CCA_ColorBlock.h : $(ARB_TYPE_BLOCK_H)
+	sed -e 's/@@Type@@/Color/g; s/@@TypeName@@/Color/g' <$(ARB_TYPE_BLOCK_H) >CCA_ColorBlock.h
+
+CCA_ColorBlock.cxx : $(ARB_TYPE_BLOCK_CXX)
+	sed -e 's/@@Type@@/Color/g; s/@@TypeName@@/Color/g' <$(ARB_TYPE_BLOCK_CXX) >CCA_ColorBlock.cxx
+
+
+ARB_TYPE_HOLDER_DIR = ../ArbTypeHolder
+ARB_TYPE_HOLDER_CXX = $(ARB_TYPE_HOLDER_DIR)/ArbTypeHolder.cxx.sed
+ARB_TYPE_HOLDER_H = $(ARB_TYPE_HOLDER_DIR)/ArbTypeHolder.h.sed
+
+ColorHolder.cxx : $(ARB_TYPE_HOLDER_CXX)
+	sed -e 's/@@Type@@/Color/g; s/@@TypeName@@/Color/g' <$(ARB_TYPE_HOLDER_CXX) >ColorHolder.cxx
+
+ColorHolder.h : $(ARB_TYPE_HOLDER_H)
+	sed -e 's/@@Type@@/Color/g; s/@@TypeName@@/Color/g' <$(ARB_TYPE_HOLDER_H) >ColorHolder.h
+
+ColorHolder.o: $(SRC) $(HDR)
+	$(CXX) -c $(CXXFLAGS) $(COLHLDR_INC) ColorHolder.cxx
+
+ColorHolder_wrapper.i: $(SRC) $(HDR)
+	$(CXX) -E $(CXXFLAGS) $(COLHLDR_INC) ColorHolder_wrapper.cxx > ColorHolder_wrapper.i
+
+ColorHolder_wrapper.o: $(SRC) $(HDR)
+	$(CXX) -c $(CXXFLAGS) $(COLHLDR_INC) ColorHolder_wrapper.cxx
+
+ColorHolder.so.o: $(SRC)
+	$(CXX) -c $(CCA_SHLIB_CFLAGS) $(COLHLDR_INC) $(CXXFLAGS) \
+		-o ColorHolder.so.o ColorHolder.cxx
+
+ColorHolder_wrapper.so.o: $(SRC) $(HDR)
+	$(CXX) -c $(CCA_SHLIB_CFLAGS) $(COLHLDR_INC) $(CXXFLAGS) \
+		-o ColorHolder_wrapper.so.o ColorHolder_wrapper.cxx
+
+lib: $(OBJ)
+	-/bin/rm $(COLHLDR_LIB)
+	ar ruv $(COLHLDR_LIB) $(OBJ)
+	$(RANLIB) $(COLHLDR_LIB)
+
+solib:  $(SOBJ)
+	$(CCA_SHLIB_LD) $(CCA_SHLIB_LDFLAGS) -o $(COLHLDR_SOLIB) $(SOBJ)
+	-$(RM) $*.so.o
+
+# simplest test.
+test: DH_Test.cxx $(COLHLDR_LIB)
+	@echo CCAFE_PLIBS = $(CCAFE_PLIBS)
+	$(CXX) $(CCA_INC) $(COLHLDR_CXX_FLAGS) $(COLHLDR_INC) \
+	        DH_Test.cxx -o DH_Test \
+		$(COLHLDR_LIB) $(CCAFE_PLIBS) $(CCA_LIB) $(COLHLDR_MPI_LIB)
+	./DH_Test
+	@echo 'Simplest test passed.'
+
+DH_Test.i:
+	$(CXX) -E $(CCA_INC) $(COLHLDR_INC) $(COLHLDR_CXX_FLAGS) DH_Test.cxx  \
+		$(COLHLDR_LIB) $(CCAFE_PLIBS) $(CCA_LIB)  > DH_Test.i
+
+# 
+clean:
+	-/bin/rm *.o *.a *.so *.i tca.log tca.map ColorHolder.cxx ColorHolder.h
+
+distclean: clean
+	-/bin/rm config.status config.log Makefile MakeIncl.COLHLDR_Component \
+		COLHLDRConfig*.sh ColorHolder.cca .ix* DH_Test
+
+# rules for making configure, autoconf 2.13 (possibly 2.12) or later.
+configure: configure.in
+	-/bin/rm configure
+	autoconf configure.in | sed -e 's;# $$Header;# Source;' > configure
+	chmod a+x configure
+
+test-configure: configure
+	./configure
+

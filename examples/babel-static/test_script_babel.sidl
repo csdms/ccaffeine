@@ -1,0 +1,87 @@
+//
+// nothing in this file needs changing
+// unless for some reason you want to rename
+// package test_script_babel in your application.
+// In that case, fixing all the impl files in 
+// directory src is your job. sed can do most of it
+// correctly.
+//
+package test_script_babel version 0.0 {
+
+	class StringMap {
+
+		/** return true if key exists in map. */
+		bool has(in string key);
+
+		/** return value of key. if key is not defined in the map,
+			has side effect of defining the key with the empty
+			string value before returning the empty string.
+		*/
+		string get(in string key);
+
+		/** add or change the value for a key */
+		void set(in string key, in string value);
+
+		/** remove the key and its value, if it is there. */
+		void erase(in string key);
+
+		/** ugly c++ pointer returned; type in c++
+			'std::map<std::string, std::string> *'
+		    This pointer will be valid until the underlying
+			babel object (which contains the underlying
+			c++ object) is destroyed.
+		 */
+		opaque getUnderlyingStdMap();
+	}
+
+	class BabelMain implements-all ccaffeine.BabelMain
+	{
+		int invokeGo(in string component, in string port, in gov.cca.ComponentID c , in gov.cca.Services services, in gov.cca.ports.BuilderService bs);
+
+	/** This function handles the configuring of 
+		parameters when all we know is the
+		info available from a ccaffeine script (which hides 
+		parameter and port types).
+		If component port and config information were 
+		ubiquitous at code generation time, this wouldn't be needed.
+		@param compName name of the component being configured.
+		@param port name of the port being configured.
+		@param comp ComponentID of the component being configured.
+		@param bs BuilderService controlling the frame.
+		@param services Services of the component/driver 
+			doing the parameter setting.
+		@param values  map of keys and values to assign.
+	*/
+		void setParameters(in string component, in string port,
+				in gov.cca.ComponentID c, 
+				in gov.cca.ports.BuilderService bs, 
+				in gov.cca.Services services,
+				in StringMap sm);
+
+	/** This function returns a stringified version of a parameter value.
+	*/
+		string getParameterValue(in gov.cca.ComponentID c , in string portName, in string var, in gov.cca.Services services, in gov.cca.ports.BuilderService bs);
+
+	}
+
+	class PrivateRepository implements-all gov.cca.ports.ComponentRepository,
+		ccaffeine.ports.ComponentFactory
+	{
+		// gov.cca.Component createComponentInstanceSimple(in string className);
+		// gov.cca.Component createComponentInstance(in string className, in gov.cca.TypeMap props);
+		// void destroyComponentInstance(in string className, in gov.cca.Component c);
+		void addDescription(in string className, in string classAlias);
+	}
+
+	class ComponentClassDescription implements-all gov.cca.ComponentClassDescription
+	{
+		void initialize(in string className, in string classAlias);
+	}
+	
+	class Exception extends sidl.SIDLException implements-all gov.cca.CCAException 
+	{
+		void setType(in gov.cca.CCAExceptionType t);
+	}
+
+}
+

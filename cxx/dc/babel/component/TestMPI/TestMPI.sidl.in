@@ -1,0 +1,14 @@
+// TestMPI.sidl is a configure-generated file.
+
+@CCAFE6_SIDL_START_0@
+@CCAFE6_SIDL_START_1@
+    
+/** Test mpiborrow and mpiservice.
+*/
+class TestMPI implements-all gov.cca.Component, gov.cca.ComponentRelease,
+	gov.cca.ports.GoPort
+{
+
+} // end class TestMPI
+
+} // end namespace

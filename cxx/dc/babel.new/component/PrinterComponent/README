@@ -1,0 +1,3 @@
+Makefile.cmpt is the only file you need to touch in order to create a
+different component inside the Ccaffeine tree.  At least for simple
+cases this is true.

@@ -1,0 +1,15 @@
+// GUIServiceTest.sidl is a configure generated file.
+
+
+@CCAFE5_SIDL_START_0@
+@CCAFE5_SIDL_START_1@
+
+  /** When the GoPort is hit send a guiservice message.
+	note there is no answerer on the java end, but
+	we look for the string.
+   * string. */
+  class GUIServiceTest implements-all gov.cca.Component, 
+    gov.cca.ports.GoPort {
+  }
+}
+

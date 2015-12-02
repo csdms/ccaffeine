@@ -1,0 +1,31 @@
+All you really need to change is test-input.scr.in
+and MakeIncl.user to do your actions and point at your components.
+
+The babel code skeleton here knows nothing about
+the specific components mentioned in test-input.scr.in.
+The Makefile skeleton here knows nothing about components
+except what it is told in MakeIncl.user or derives
+from the .cca files.
+
+How we do it:
+
+1) bld2babel-cpp processes the input script test-input.scr
+and extracts the commands that manipulate BuilderService as well as
+the component information (most headers, most libraries)
+from the .depl.cca files needed to build a batch-oriented executable.
+You need the latest (2/2005) version of genCCASCL.sh to build
+your .cca files and you need to feed into genCCASCL.sh
+the library and header information.
+
+2) bld2babel-cpp is not yet psychic, so if the headers
+for specific ports are needed, you may need to add
+a line (such as that for StringConsumerPort) in the input file.
+
+3) bld2babel-cpp is not yet psychic, so if the libraries
+for specific ports are needed, you may need to add
+a line (such as that for StringConsumerPort) in the MakeIncl.user
+
+4) The compile and link are handled with babel-libtool to keep
+the dynamic linking flags consistent with those used in building
+the cca-spec and ccaffeine libraries. This could be done
+otherwise for a specific platform.

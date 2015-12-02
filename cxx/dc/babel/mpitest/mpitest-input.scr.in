@@ -1,0 +1,52 @@
+# test input for code generator
+!header {// test of a header comment for PrivateRepository}
+!header {#include <iostream>}
+!header {#include "util/noSeekMPI.h"}
+!header {#include <mpi.h>}
+!header {#include "dc/babel/component/StringConsumerPort/server/ccafe3.hh"}
+!header {#include "dc/babel/component/PrinterComponent/server/ccafe0.hh"}
+!header {#include "dc/babel/component/StarterComponent/server/ccafe1.hh"}
+!header {#include "dc/babel/component/ParameterPortFactoryTest/server/ccafe4.hh"}
+
+path append @libdir@
+# basic test
+repository get ccafe0.PrinterComponent
+repository get ccafe1.StarterComponent
+!code {std::cerr << "####### Creating printer #########" << std::endl;}
+instantiate ccafe0.PrinterComponent p1
+!code {std::cerr << "####### Creating starter #########" << std::endl;}
+instantiate ccafe1.StarterComponent s1
+display component s1
+display component p1
+!code {std::cerr << "####### Connecting to printer #########" << std::endl;}
+connect s1 output p1 string
+!code {std::cerr << "####### Running starter s1 #########" << std::endl;}
+go s1 go
+# 
+repository get ccafe4.ParameterPortFactoryTest
+!code {std::cerr << "Creating ParameterPortFactoryTest " << std::endl; }
+instantiate ccafe4.ParameterPortFactoryTest c1
+go c1 go
+!code {std::cerr << "####### Setting fVar once " << std::endl; }
+parameter c1 PP_1 fVar 23.5
+!code {std::cerr << "####### Setting dVar once " << std::endl; }
+configure c1 PP_1 dVar 22.5
+!code { // }
+
+!code {std::cerr << "####### fVar = " << }
+parameter c1 PP_1 fVar 
+!code {std::cerr << std::endl << "####### dVar = " << }
+configure c1 PP_1 dVar
+!code {std::cerr << std::endl; }
+!code {std::cerr << "####### Setting fVar twice " << std::endl; }
+parameter c1 PP_1 fVar 24.5
+!code {std::cerr << "####### fVar = " << }
+parameter c1 PP_1 fVar 
+!code {std::cerr << std::endl; }
+!code {std::cerr << "####### Setting dVar twice " << std::endl; }
+configure c1 PP_1 dVar 25.5
+!code {std::cerr << "####### dVar = " << }
+configure c1 PP_1 dVar
+!code {std::cerr << std::endl; }
+!code {std::cerr << "####### Shutting down #########" << std::endl;}
+eof

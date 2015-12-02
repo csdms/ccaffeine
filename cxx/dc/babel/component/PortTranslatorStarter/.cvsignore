@@ -1,0 +1,12 @@
+.babel-symlink
+*.scl
+PortTranslatorStarter.sidl
+client
+server
+.depend
+.dirs-made
+.gen-babel
+.lib-local-installed
+.make-babel
+.uncruft
+*.cca

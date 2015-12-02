@@ -1,0 +1,59 @@
+CCAFE_HOME=../../..
+
+buildroot=../../../..
+
+include $(CCAFE_HOME)/Makefile.Rules
+VPATH := $(srcdir)/cxx/dc/classic/ccafe-bind
+
+ifeq "$(NEO_CCA_INSTALLED)" "1"
+NEO_INCLUDE=$(NEOCCA_INC)
+else
+NEO_INCLUDE=
+endif
+
+CXXFLAGS_LOCAL = $(CXXFLAGS) $(NEO_INCLUDE)
+
+DIRS = 
+
+LIB = libClsCcafe.a
+SRC = \
+ClassicGoPortPC.cc \
+ClassicGoPortWrap.cc \
+ClassicOpaqueGoPort.cc ClassicServices.cc \
+ClassicPortInfo.cc ClassicOpaquePort.cc \
+ClassicServicesHelper.cc ClassicComponentWrapper.cc
+
+OBJ = ${SRC:.cc=.o}
+
+all: .dirs-made $(LIB)
+
+%.o : %.cc
+	$(CXX) -c $(CXXFLAGS_LOCAL) $(CCA_PLLFLAGS) $<
+
+%.i : %.cc
+	$(CXX) -c -E $(CXXFLAGS_LOCAL) $(CCA_PLLFLAGS) $< > $@
+
+$(LIB) : $(OBJ)
+	$(AR) r $(LIB) $(OBJ)
+	$(RANLIB) $(LIB)
+
+$(DIRS) .dirs-made : 
+	if [ -n "$(DIRS)" ]; then mkdir $(DIRS);fi
+	touch .dirs-made
+
+src-list:
+	@echo "DC_LIST_CXX += \\" >> ../../src-list
+	@for i in $(SRC) ; do \
+                echo "$(srcdir)/cxx/dc/classic/ccafe-bind/$$i \\" >> ../../src-list ; \
+        done
+	@echo "" >> ../../src-list
+	@echo "updated src-list from dc/classic/ccafe-bind"
+
+clean: 
+	-$(RM) $(OBJ) .dirs-made $(LIB) .depend shr.o *.u
+
+.depend depend: 
+	$(DEPEND) $(CXXFLAGS_LOCAL) $(CCA_PLLFLAGS) $(SRC)
+	touch .depend
+
+

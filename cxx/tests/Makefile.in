@@ -1,0 +1,493 @@
+# $Revision: 1.2 $
+# $Author: baallan $
+
+# In case it wasn't obvious, this is a gnu make
+# file. It is very unlikely to work with other makes
+# as it uses, include, vpath, and text substitutions.
+# It picks test codes out of the main source tree
+# to build and link here.
+#
+# This keeps the source tree clean and the test targets
+# all in one place.
+#
+
+
+CCAFE_HOME = ..
+
+include ../Makefile.Rules
+buildroot=../..
+VPATH := $(srcdir)/cxx/tests
+
+HIDELIBTOOL=
+
+ifeq "x$(CLASSIC_CCA_INSTALLED)" "x1"
+CLASSIC_BINS=\
+testComponentFactory.x \
+testConnectionFwk.x \
+testBS.x
+endif
+
+ifeq "x$(NEO_CCA_INSTALLED)" "x1"
+include $(EGNEO_CONFIG)
+include $(NEOTESTPARAMETER_CONFIG)
+endif
+
+ifneq "x$(TARGET)" "xclean"
+
+ifeq "x$(BABEL_CCA_INSTALLED)" "x1"
+ifeq "x$(CCA_USEMPI)" "x1"
+CMPT=mpitest
+include ../dc/$(BABEL_BINDING_DIRS)/mpitest/src/src-list-driver
+endif
+CMPT=test
+include ../dc/$(BABEL_BINDING_DIRS)/test/src/src-list-driver
+CMPT=
+endif
+
+ifeq "x$(NEO_CCA_INSTALLED)" "x1"
+NEO_BINS=neo-custom-driver.x
+NEO_BINS_MPI=neo-custom-driver-mpi.x
+LOCAL_NEOLINK=$(CSNLFLAGS)
+include ../dc/neo/test/src-list-driver
+ifeq "x$(CCA_USEMPI)" "x1"
+include ../dc/neo/mpitest/src-list-driver
+endif
+CMPT_LIST_OBJ_neotest=$(addsuffix .lo, $(addprefix ../obj/, $(notdir $(basename $(CMPT_LIST_CXX_neotest) ) ) ) )
+CMPT_LIST_OBJ_neompitest=$(addsuffix .lo, $(addprefix ../obj/, $(notdir $(basename $(CMPT_LIST_CXX_neompitest) ) ) ) )
+endif
+
+endif
+
+LIBTOOL= $(BABEL_LIBTOOL)
+
+LOCAL_CFLAGS= \
+-Dlint \
+$(INCLUDES) \
+$(CFLAGS) 
+
+LOCAL_CXXFLAGS= \
+-Dlint \
+$(INCLUDES) \
+$(CXXFLAGS) \
+$(CCAFE_PTHREADS_FLAGS)
+
+####################################
+
+FWK_LIB=../obj/$(CCAFE_LIBTOOL_LIB)
+FWK_LIB=$(libdir)/$(CCAFE_LIBTOOL_LIB)
+
+ifeq "x$(CCA_USEMPI)" "x1"
+MPI_TEST_BINS= \
+$(NEO_BINS_MPI) \
+babel-custom-driver-mpi.x
+endif
+
+TEST_BINS = \
+cmd-test1.x cmd-test2.x \
+stringtools-test1.x \
+io-test1.x \
+getccafeopt-test0.x getccafeopt-test1.x \
+events-test1.x \
+
+TEST_BINS_XML = \
+treereader-test1.x
+
+POST_INSTALL_TEST_BINS = \
+babel-custom-driver.x \
+$(CLASSIC_BINS) \
+$(NEO_BINS) \
+$(MPI_TEST_BINS)
+
+
+LOCAL_TEST_SRCS = cmd-test1.cxx cmd-test2.cxx 
+
+####################################
+all: tests
+
+x:
+	@echo $(NEO_PRERUN)
+
+tests: $(NOISE) tests-$(XMLBUILD) $(TEST_BINS)
+
+post-install-bins: $(POST_INSTALL_TEST_BINS)
+
+post-install-tests: post-install-bins
+	@echo "Using components installed in $(pkgdatadir)/components"
+	@for i in $(POST_INSTALL_TEST_BINS); do \
+		echo "running $$i" ; \
+		$(LIBTOOL) --mode=execute ./$$i $(pkgdatadir)/components >& $$i.out; \
+	done
+
+tests-:
+	@echo libxml2 not configured in. skipping xml tests.
+
+tests-xmlbuild: treereader-test1.x
+
+cmd-test1.x: 
+	@echo "assembling $@"
+	$(HIDELIBTOOL)$(LIBTOOL) --mode=link --tag=CXX $(HIDECOMPILE) \
+		$(MPICXX) $(CCASPEC_LIBTOOL_LINK_FLAGS) $(LOCAL_CXXFLAGS) \
+		-o cmd-test1.x $(srcdir)/cxx/tests/cmd-test1.cxx \
+		$(FWK_LIB) $(LOCAL_NEOLINK)
+	$(NEO_PRERUN) ./cmd-test1.x >& ./cmd-test1.x.out
+
+cmd-test2.x: 
+	@echo "assembling $@"
+	$(HIDELIBTOOL)$(LIBTOOL) --mode=link --tag=CXX $(HIDECOMPILE) \
+		$(MPICXX) $(CCASPEC_LIBTOOL_LINK_FLAGS) $(LOCAL_CXXFLAGS) \
+		-o cmd-test2.x $(srcdir)/cxx/tests/cmd-test2.cxx \
+		$(FWK_LIB) $(LOCAL_NEOLINK)
+	$(NEO_PRERUN) ./cmd-test2.x >& ./cmd-test2.x.out
+
+typemap-test1.x:
+	@echo "assembling $@"
+	$(HIDELIBTOOL)$(LIBTOOL) --mode=compile --tag=CXX $(HIDECOMPILE) \
+		$(MPICXX) -c -DUTIL_TYPEMAP_MAIN $(CCASPEC_LIBTOOL_COMPILEFLAGS) \
+		$(LOCAL_CXXFLAGS) \
+		-o TypeMap.lo \
+		$(srcdir)/cxx/util/TypeMap.cxx 
+	$(HIDELIBTOOL)$(LIBTOOL) --mode=link --tag=CXX $(HIDECOMPILE) \
+		$(MPICXX) $(CCASPEC_LIBTOOL_LINK_FLAGS) $(LOCAL_CXXFLAGS) \
+		-o typemap-test1.x TypeMap.lo \
+		$(FWK_LIB) $(LOCAL_NEOLINK)
+	$(NEO_PRERUN) ./typemap-test1.x >& typemap-test1.x.out
+	
+treereader-test1.x:
+	@echo "assembling $@"
+	$(HIDELIBTOOL)$(LIBTOOL) --mode=compile --tag=CXX $(HIDECOMPILE) \
+		$(MPICXX) -c -DComponentData_MAIN $(CCASPEC_LIBTOOL_COMPILEFLAGS) \
+		$(LOCAL_CXXFLAGS) -o ComponentData.lo \
+		$(srcdir)/cxx/dc/services/dotcca/treeReader/ComponentData.cpp
+	$(HIDELIBTOOL)$(LIBTOOL) --mode=link --tag=CXX $(HIDECOMPILE) \
+		$(MPICXX) $(CCASPEC_LIBTOOL_LINK_FLAGS) $(LOCAL_CXXFLAGS) \
+		-o treereader-test1.x ComponentData.lo
+	$(NEO_PRERUN) ./treereader-test1.x >& treereader-test1.x.out
+
+
+stringtools-test1.x:
+	@echo "assembling $@"
+	$(HIDELIBTOOL)$(LIBTOOL) --mode=compile --tag=CXX $(HIDECOMPILE) \
+		$(MPICXX) -c $(CCASPEC_LIBTOOL_COMPILEFLAGS) $(LOCAL_CXXFLAGS) \
+		-o testStringTools.lo \
+		$(srcdir)/cxx/util/testStringTools.cc 
+	$(HIDELIBTOOL)$(LIBTOOL) --mode=link --tag=CXX $(HIDECOMPILE) \
+		$(MPICXX) $(CCASPEC_LIBTOOL_LINK_FLAGS) $(LOCAL_CXXFLAGS) \
+		-o stringtools-test1.x \
+		testStringTools.lo ../obj/StringTools.lo
+	$(NEO_PRERUN) ./stringtools-test1.x >& stringtools-test1.x.out
+
+io-test1.x:
+	@echo "assembling $@"
+	$(HIDELIBTOOL)$(LIBTOOL) --mode=compile --tag=CXX $(HIDECOMPILE) \
+		$(MPICXX) -c $(CCASPEC_LIBTOOL_COMPILEFLAGS) $(LOCAL_CXXFLAGS) \
+		-o testIO.lo \
+		$(srcdir)/cxx/util/testIO.cc
+	$(HIDELIBTOOL)$(LIBTOOL) --mode=link --tag=CXX $(HIDECOMPILE) \
+		$(MPICXX) $(CCASPEC_LIBTOOL_LINK_FLAGS) $(LOCAL_CXXFLAGS) \
+		-o io-test1.x testIO.lo ../obj/IO.lo
+	$(NEO_PRERUN) ./io-test1.x >& io-test1.x.out
+
+getccafeopt-test0.x:
+	@echo "assembling $@"
+	$(HIDELIBTOOL)$(LIBTOOL) --mode=compile --tag=CXX $(HIDECOMPILE) \
+		$(CC) -c -DTEST $(CCASPEC_LIBTOOL_COMPILEFLAGS) \
+		$(LOCAL_CFLAGS) \
+		-o getCCAFEopt.lo \
+		$(srcdir)/cxx/gnu/getopt/getCCAFEopt.c 
+	$(HIDELIBTOOL)$(LIBTOOL) --mode=link --tag=CXX $(HIDECOMPILE) \
+		$(MPICXX) $(CCASPEC_LIBTOOL_LINK_FLAGS) $(LOCAL_CXXFLAGS) \
+		-o getccafeopt-test0.x \
+		getCCAFEopt.lo ../obj/getCCAFEopt1.lo
+	$(NEO_PRERUN) ./getccafeopt-test0.x -a b -c d >& getccafeopt-test0.x-1.out
+	$(NEO_PRERUN) ./getccafeopt-test0.x -a b -c d -d >& getccafeopt-test0.x-2.out
+
+getccafeopt-test1.x:
+	@echo "assembling $@"
+	$(HIDELIBTOOL)$(LIBTOOL) --mode=compile --tag=CXX $(HIDECOMPILE) \
+		$(CC) -c -DTEST $(CCASPEC_LIBTOOL_COMPILEFLAGS) \
+		$(LOCAL_CFLAGS) \
+		-o getCCAFEopt1.lo \
+		$(srcdir)/cxx/gnu/getopt/getCCAFEopt1.c 
+	$(HIDELIBTOOL)$(LIBTOOL) --mode=link --tag=CXX $(HIDECOMPILE) \
+		$(MPICXX) $(CCASPEC_LIBTOOL_LINK_FLAGS) $(LOCAL_CXXFLAGS) \
+		-o getccafeopt-test1.x \
+		getCCAFEopt1.lo ../obj/getCCAFEopt.lo
+	$(NEO_PRERUN) ./getccafeopt-test1.x -a b -c d >& getccafeopt-test1.x-1.out
+	$(NEO_PRERUN) ./getccafeopt-test1.x -a b -c d -d 2 >& getccafeopt-test1.x-2.out
+
+events-test1.x:
+	@echo "assembling $@"
+	$(HIDELIBTOOL)$(LIBTOOL) --mode=compile --tag=CXX $(HIDECOMPILE) \
+		$(MPICXX) -c -DTEST $(CCASPEC_LIBTOOL_COMPILEFLAGS) \
+		$(LOCAL_CXXFLAGS) \
+		-o events-test1.lo \
+		$(srcdir)/cxx/dc/services/ContextEventManager/eventCons/test.cc
+	$(HIDELIBTOOL)$(LIBTOOL) --mode=link --tag=CXX $(HIDECOMPILE) \
+		$(MPICXX) $(CCASPEC_LIBTOOL_LINK_FLAGS) $(LOCAL_CXXFLAGS) \
+		-o events-test1.x events-test1.lo \
+		$(FWK_LIB) $(LOCAL_NEOLINK)
+	$(NEO_PRERUN) ./events-test1.x >& events-test1.x.out
+
+testComponentFactory.x:
+	@echo "assembling $@"
+	$(HIDELIBTOOL)$(LIBTOOL) --mode=compile --tag=CXX $(HIDECOMPILE) \
+		 $(MPICXX) -c $(CCASPEC_LIBTOOL_COMPILEFLAGS) $(LOCAL_CXXFLAGS) \
+		 -o testComponentFactory.lo \
+		 $(srcdir)/cxx/dc/framework/testComponentFactory.cxx
+	$(HIDELIBTOOL)$(LIBTOOL) --mode=link --tag=CXX $(HIDECOMPILE) \
+		 $(MPICXX) $(CCASPEC_LIBTOOL_LINK_FLAGS) $(LOCAL_CXXFLAGS) \
+		 -o testComponentFactory.x testComponentFactory.lo \
+		 $(FWK_LIB) $(LOCAL_NEOLINK)
+	@echo "after installing, make post-install-tests to check $@"
+	
+testConnectionFwk.x:
+	@echo "assembling $@"
+	$(HIDELIBTOOL)$(LIBTOOL) --mode=compile --tag=CXX $(HIDECOMPILE) \
+		 $(MPICXX) -c $(CCASPEC_LIBTOOL_COMPILEFLAGS) $(LOCAL_CXXFLAGS) \
+		 -o testConnectionFwk.lo \
+		 $(srcdir)/cxx/dc/framework/testConnectionFwk.cxx
+	$(HIDELIBTOOL)$(LIBTOOL) --mode=link --tag=CXX $(HIDECOMPILE) \
+		$(MPICXX) $(CCASPEC_LIBTOOL_LINK_FLAGS) $(LOCAL_CXXFLAGS) \
+		-o testConnectionFwk.x testConnectionFwk.lo \
+		$(FWK_LIB) $(LOCAL_NEOLINK)
+	@echo "after installing, make post-install-tests to check $@"
+	
+testBS.x:
+	@echo "assembling $@"
+	$(HIDELIBTOOL)$(LIBTOOL) --mode=compile --tag=CXX $(HIDECOMPILE) \
+		$(MPICXX) -c $(CCASPEC_LIBTOOL_COMPILEFLAGS) $(LOCAL_CXXFLAGS) \
+			-o testBS.lo \
+			$(srcdir)/cxx/dc/framework/testBS.cxx
+	$(HIDELIBTOOL)$(LIBTOOL) --mode=link --tag=CXX $(HIDECOMPILE) \
+		$(MPICXX) $(CCASPEC_LIBTOOL_LINK_FLAGS) $(LOCAL_CXXFLAGS) \
+			-o testBS.x testBS.lo \
+			$(FWK_LIB) $(LOCAL_NEOLINK)
+	@echo "after installing, make post-install-tests to check $@"
+	
+### neo driver generated
+neo-custom-driver.x: neo-custom-driver.x-$(NEO_CCA_INSTALLED)
+
+neo-custom-driver.x-1: $(CMPT_LIST_OBJ_neotest)
+	@echo "assembling neo-custom-driver.x"
+	$(HIDELIBTOOL)$(LIBTOOL) --mode=compile --tag=CXX $(HIDECOMPILE) \
+		$(MPICXX) -c $(CCASPEC_LIBTOOL_COMPILEFLAGS) $(LOCAL_CXXFLAGS) \
+			-o neo-custom-driver.lo \
+			$(DRIVER_SRC_neotest)
+	$(HIDELIBTOOL)$(LIBTOOL) --mode=link --tag=CXX $(HIDECOMPILE) \
+		$(MPICXX) $(CCASPEC_LIBTOOL_LINK_FLAGS) $(LOCAL_CXXFLAGS) \
+			-o neo-custom-driver.x \
+			neo-custom-driver.lo \
+			$(CMPT_LIST_OBJ_neotest) \
+			$(EGNEO_STATIC_LIB) \
+			$(NEOTESTPARAMETER_STATIC_LIB) \
+			$(FWK_LIB) $(LOCAL_NEOLINK)
+	-$(NEO_PRERUN) ./neo-custom-driver.x >& neo-custom-driver.x.out
+	
+### mpi neo driver generated
+neo-custom-driver-mpi.x: neo-custom-driver-mpi.x-$(NEO_CCA_INSTALLED)
+
+neo-custom-driver-mpi.x-1: $(CMPT_LIST_OBJ_neompitest)
+	@echo "assembling neo-custom-driver-mpi.x"
+	$(HIDELIBTOOL)$(LIBTOOL) --mode=compile --tag=CXX $(HIDECOMPILE) \
+		$(MPICXX) -c $(CCASPEC_LIBTOOL_COMPILEFLAGS) \
+			$(CCA_PLLFLAGS) $(LOCAL_CXXFLAGS) \
+			-o neo-custom-driver-mpi.lo \
+			$(srcdir)/cxx/dc/neo/mpitest/mpiDriver.cc
+	$(HIDELIBTOOL)$(LIBTOOL) --mode=link --tag=CXX $(HIDECOMPILE) \
+		$(MPICXX) $(CCASPEC_LIBTOOL_LINK_FLAGS) \
+			$(CCA_PLLFLAGS) $(LOCAL_CXXFLAGS) \
+			-o neo-custom-driver-mpi.x \
+			neo-custom-driver-mpi.lo \
+			$(CMPT_LIST_OBJ_neompitest) \
+			$(CMPT_COMPLIBS_neompitest) \
+			$(FWK_LIB) $(LOCAL_NEOLINK)
+	@echo "neo-custom-driver-mpi.x built. Run it with your mpirun or queue."
+	
+# do nothing rules if no neo
+neo-custom-driver.x-0 neo-custom-driver.x- neo-custom-driver-mpi.x-0 neo-custom-driver-mpi.x-:
+
+# serial babel driver
+babel-custom-driver.x: babel-custom-driver.x-$(BABEL_CCA_INSTALLED)
+
+test_CMPT_COMPLIBS_link= \
+$(addprefix $(libdir)/lib, $(addsuffix $(VER_SUFFIX)$(PROGRAM_SUFFIX).la, $(test_CMPT_COMPLIBS)))
+test_CXX_OBJ=  \
+$(addprefix ../obj/, $(addsuffix .lo, $(basename $(notdir $(test_CMPT_LIST_CXX) ))))
+test_CC_OBJ=  \
+$(addprefix ../obj/, $(notdir $(test_CMPT_LIST_CC:%.c=%.lo)))
+
+libbabel-custom-driver.la: $(test_CXX_OBJ) $(test_CC_OBJ)
+	@echo "assembling babel driver library libbabel-custom-driver"
+	$(HIDELIBTOOL)$(LIBTOOL) --mode=link --tag=CXX $(HIDECOMPILE) \
+		$(MPICXX) $(CCASPEC_LIBTOOL_LINK_FLAGS) $(LOCAL_CXXFLAGS) \
+		$(test_CMPT_CXXFLAGS) \
+		$(test_CXX_OBJ) $(test_CC_OBJ) \
+		-o $@ \
+		-rpath `pwd`
+
+babel-custom-driver.x-1: libbabel-custom-driver.la
+	@echo "assembling babel-custom-driver.x"
+	$(HIDELIBTOOL)$(LIBTOOL) --mode=compile --tag=CXX $(HIDECOMPILE) \
+		$(MPICXX) -c $(CCASPEC_LIBTOOL_COMPILEFLAGS) $(LOCAL_CXXFLAGS) \
+		$(test_CMPT_CXXFLAGS) \
+		-o babel-custom-driver.lo \
+		$(srcdir)/cxx/dc/$(BABEL_BINDING_DIR)/test/src/driver.cc
+	$(HIDELIBTOOL)$(LIBTOOL) --mode=link --tag=CXX $(HIDECOMPILE) \
+		$(MPICXX) $(CCASPEC_LIBTOOL_LINK_FLAGS) $(LOCAL_CXXFLAGS) \
+		$(test_CMPT_CXXFLAGS) \
+		-o babel-custom-driver.x \
+		babel-custom-driver.lo \
+		libbabel-custom-driver.la \
+		$(test_CMPT_COMPLIBS_link) \
+		$(FWK_LIB) $(LOCAL_NEOLINK)
+	$(HIDELIBTOOL)$(LIBTOOL) --mode=link --tag=CXX $(HIDECOMPILE) \
+		$(MPICXX) -all-static $(CCASPEC_LIBTOOL_LINK_FLAGS) $(LOCAL_CXXFLAGS) \
+		$(test_CMPT_CXXFLAGS) \
+		-o babel-custom-driver-static.x \
+		babel-custom-driver.lo \
+		libbabel-custom-driver.la \
+		$(test_CMPT_COMPLIBS_link) \
+		$(FWK_LIB) $(LOCAL_NEOLINK)
+	-$(LIBTOOL) --mode=execute ./babel-custom-driver-static.x >& babel-custom-driver-static.x.out
+	-$(LIBTOOL) --mode=execute ./babel-custom-driver.x >& babel-custom-driver.x.out
+	
+babel-custom-driver.x-0 babel-custom-driver.x-:
+
+# mpi babel driver
+babel-custom-driver-mpi.x: babel-custom-driver-mpi.x-$(BABEL_CCA_INSTALLED)
+
+mpitest_CMPT_COMPLIBS_link= \
+$(addprefix ../obj/lib, $(addsuffix $(VER_SUFFIX)$(PROGRAM_SUFFIX).la, $(mpitest_CMPT_COMPLIBS)))
+mpitest_CXX_OBJ=  \
+$(addprefix ../obj/, $(addsuffix .lo, $(basename $(notdir $(mpitest_CMPT_LIST_CXX) ))))
+mpitest_CC_OBJ=  \
+$(addprefix ../obj/, $(notdir $(mpitest_CMPT_LIST_CC:%.c=%.lo)))
+
+libbabel-custom-driver-mpi.la: $(mpitest_CXX_OBJ) $(mpitest_CC_OBJ)
+	@echo "assembling babel driver library libbabel-custom-driver-mpi"
+	$(HIDELIBTOOL)$(LIBTOOL) --mode=link --tag=CXX $(HIDECOMPILE) \
+		$(MPICXX) $(CCASPEC_LIBTOOL_LINK_FLAGS) $(LOCAL_CXXFLAGS) \
+		$(mpitest_CMPT_CXXFLAGS) \
+		$(mpitest_CXX_OBJ) $(mpitest_CC_OBJ) \
+		-o $@ \
+		-rpath `pwd`
+
+babel-custom-driver-mpi.x-1: libbabel-custom-driver-mpi.la
+	@echo "assembling babel-custom-driver-mpi.x"
+	$(HIDELIBTOOL)$(LIBTOOL) --mode=compile --tag=CXX $(HIDECOMPILE) \
+		$(MPICXX) -c $(CCASPEC_LIBTOOL_COMPILEFLAGS) $(LOCAL_CXXFLAGS) \
+		$(mpitest_CMPT_CXXFLAGS) \
+		-o babel-custom-driver-mpi.lo \
+		$(srcdir)/cxx/dc/$(BABEL_BINDING_DIR)/mpitest/src/driver.cc
+	$(HIDELIBTOOL)$(LIBTOOL) --mode=link --tag=CXX $(HIDECOMPILE) \
+		$(MPICXX) $(CCASPEC_LIBTOOL_LINK_FLAGS) $(LOCAL_CXXFLAGS) \
+		$(mpitest_CMPT_CXXFLAGS) \
+		-o babel-custom-driver-mpi.x \
+		babel-custom-driver-mpi.lo \
+		libbabel-custom-driver-mpi.la \
+		$(mpitest_CMPT_COMPLIBS_link) \
+		$(FWK_LIB) $(LOCAL_NEOLINK)
+	-$(LIBTOOL) --mode=execute ./babel-custom-driver-mpi.x >& babel-custom-driver-mpi.x.out
+	
+babel-custom-driver-mpi.x-0 babel-custom-driver-mpi.x-:
+
+####################################
+# suffix rules:
+
+%.lo : %.c
+	@echo $@ ...
+	$(HIDELIBTOOL)$(LIBTOOL) --mode=compile $(HIDECOMPILE) --tag=CXX $(CC) -c $(CCASPEC_LIBTOOL_COMPILEFLAGS) $(LOCAL_CFLAGS) $(CMPT_CFLAGS) -o $@ -I$(<D) $<
+
+
+%.lo : %.cxx
+	@echo $@ ...
+	$(HIDELIBTOOL)$(LIBTOOL) --mode=compile $(HIDECOMPILE) --tag=CXX $(MPICXX) -c $(CCASPEC_LIBTOOL_COMPILEFLAGS) $(LOCAL_CXXFLAGS) $(CMPT_CXXFLAGS) -o $@ -I$(<D) $<
+
+%.lo : %.cc
+	@echo $@ ...
+	$(HIDELIBTOOL)$(LIBTOOL) --mode=compile $(HIDECOMPILE) --tag=CXX $(MPICXX) -c $(CCASPEC_LIBTOOL_COMPILEFLAGS) $(LOCAL_CXXFLAGS) $(CMPT_CXXFLAGS) -o $@ -I$(<D) $<
+
+%.lo : %.C
+	@echo $@ ...
+	$(HIDELIBTOOL)$(LIBTOOL) --mode=compile $(HIDECOMPILE) --tag=CXX $(MPICXX) -c $(CCASPEC_LIBTOOL_COMPILEFLAGS) $(LOCAL_CXXFLAGS) $(CMPT_CXXFLAGS) -o $@ -I$(<D) $<
+
+%.lo : %.cpp
+	@echo $@ ...
+	$(HIDELIBTOOL)$(LIBTOOL) --mode=compile $(HIDECOMPILE) --tag=CXX $(MPICXX) -c $(CCASPEC_LIBTOOL_COMPILEFLAGS) $(LOCAL_CXXFLAGS) $(CMPT_CXXFLAGS) -o $@ -I$(<D) $<
+
+####################################
+# make debugging
+
+vpath:
+	@echo $(VPATH)
+	@echo $(pkgdatadir)
+
+noise:
+	@$(RM) objlist
+	@echo $(VPATH)
+	@echo "C_SUPPORT_OBJ =" >> objlist
+	@echo $(C_SUPPORT_OBJ) >> objlist
+	@echo "CXX_SUPPORT_OBJ =" >> objlist
+	@echo $(CXX_SUPPORT_OBJ) >> objlist
+	@for i in $(BABEL_COMPONENT_LIST) $(BABEL_PORTS) DUMMY; do \
+		if test "x$$i" = "xDUMMY"; then \
+			continue; \
+		fi ; \
+		$(MAKE) CMPT=$$i component-noise ; \
+		echo "============= babel c named $$i done"; \
+	done
+
+component-noise:
+	@echo "For $(CMPT) CMPT_LIST_CC_OBJ = ">> objlist
+	@echo $(CMPT_LIST_CC_OBJ) >> objlist
+	@echo "For $(CMPT) CMPT_LIST_CXX_OBJ = ">> objlist
+	@echo $(CMPT_LIST_CXX_OBJ) >> objlist
+
+####################################
+# housekeeping
+
+clean:
+	$(LIBTOOL) --mode=clean $(HIDECOMPILE) $(RM) *.lo *.la objlist depline *.x *.out *.diff core* *.o
+
+distclean: clean
+	$(RM) Makefile.depends
+
+####################################
+# dependency checking
+
+babel_src_list:
+	@echo $(CMPT_LIST_CXX) $(CMPT_LIST_CC) >> .babel_src_list
+
+depend:
+	@$(RM) .babel_src_list
+	@for i in $(BABEL_COMPONENT_LIST) $(BABEL_PORTS) DUMMY; do \
+		if test "x$$i" = "xDUMMY"; then \
+			continue; \
+		fi ; \
+		$(MAKE) CMPT=$$i babel_src_list ; \
+		echo "============= babel c named $$i done"; \
+	done
+	$(DEPEND) $(LOCAL_CXXFLAGS) $(LOCAL_TEST_SRCS)
+	cat Makefile.depends |sed -e 's%.o:%.lo:%g' > Makefile.depend
+	cp -f Makefile.depend Makefile.depends
+	$(RM) Makefile.depend
+
+depend-sys:
+	@$(RM) .babel_src_list
+	@for i in $(BABEL_COMPONENT_LIST) $(BABEL_PORTS) DUMMY; do \
+		if test "x$$i" = "xDUMMY"; then \
+			continue; \
+		fi ; \
+		$(MAKE) CMPT=$$i babel_src_list ; \
+		echo "============= babel c named $$i done"; \
+	done
+	(blist=`cat .babel_src_list`; \
+	$(DEPENDSYS) $(LOCAL_CXXFLAGS) $(BABEL_COMPONENT_INCLUDES) \
+		$$blist $(C_SUPPORT_SRC) $(CXX_SUPPORT_SRC) )
+	cat Makefile.depends |sed -e 's%.o:%.lo:%g' > Makefile.depend
+	cp -f Makefile.depend Makefile.depends
+	$(RM) Makefile.depend
+
+.PHONY: $(TEST_BINS) $(TEST_BINS_XML)
+
+

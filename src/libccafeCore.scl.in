@@ -1,0 +1,26 @@
+<?xml version="1.0"?> 
+<!-- date=Wed Jun  9 16:25:39 PDT 2004 -->
+<!-- builder=jpkenny@kenny-laptop -->
+<scl>
+  <!-- NOT libccaffeine.so!! <library uri="/home/jpkenny/install/ccafe-May10_2004/lib/libccaffeine_0_5_0.so" -->
+  <library uri="@pkglibdir@/libccafeCore.so" 
+	scope="global" 
+	resolution="now" > 
+    <class name="ccaffeine.Services" desc="ior/impl" />
+    <class name="ccaffeine.ports.ParameterPortWrap" desc="ior/impl" />
+    <class name="ccaffeine.ServiceRegistryWrap" desc="ior/impl" />
+    <class name="ccaffeine.AbstractFramework" desc="ior/impl" />
+    <class name="ccaffeine.ConnectionEventService" desc="ior/impl" />
+    <class name="ccaffeine.CCAException" desc="ior/impl" />
+    <class name="ccaffeine.ports.ConnectionEvent" desc="ior/impl" />
+    <class name="ccaffeine.TypeMismatchException" desc="ior/impl" />
+    <class name="ccaffeine.ports.PortTranslator" desc="ior/impl" />
+    <class name="ccaffeine.ports.BasicParameterPortWrap" desc="ior/impl" />
+    <class name="ccaffeine.ConnectionID" desc="ior/impl" />
+    <class name="ccaffeine.ports.ParameterPortFactoryWrap" desc="ior/impl" />
+    <class name="ccaffeine.ComponentID" desc="ior/impl" />
+    <class name="ccaffeine.ComponentClassDescription" desc="ior/impl" />
+    <class name="ccaffeine.ports.BuilderService" desc="ior/impl" />
+    <class name="ccaffeine.TypeMap" desc="ior/impl" />
+  </library>
+</scl>

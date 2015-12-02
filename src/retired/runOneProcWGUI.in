@@ -1,0 +1,64 @@
+#! @SHELL@
+# this is a simple example with the default input script CcaffeineRC
+progname=`echo $0 | sed -e 's%.*/%%g'`
+HAVE_MPI=@USEMPI@
+MPIRUN="@MPIRUN@ -np 1"
+if test "x$HAVE_MPI" = "x0" ; then
+  MPIRUN=""
+fi
+MPI_IS_MPD=@MPI_IS_MPD@
+if test "x$MPI_IS_MPD" = "x1"; then
+  mpdbin=@MPI_BIN@
+else
+  mpdbin=""
+fi
+
+bindir=@bindir@
+libdir=@libdir@
+pkglibdir=@pkglibdir@
+pkgdatadir=@pkgdatadir@
+binsuffix=@PROGRAM_SUFFIX@
+client=$bindir/ccafe-client$binsuffix
+gui=$bindir/runGUI$binsuffix
+
+CURDIR=`pwd`
+if test ! -w $CURDIR ; then
+  echo "$progname: You must be in a directory you can write to before running this."
+  exit 1;
+fi
+
+if test "x$MPI_IS_MPD" = "x1"; then
+  if test ! -f ~/.mpd.conf; then
+    echo "$progname: You forgot to set up ~/.mpd.conf. Exiting."
+    echo "           You can make one by running $bindir/setupMPD"
+    exit 1
+  fi
+  echo "Whacking all present MPI mpd device jobs..."
+  $mpdbin/mpdallexit
+  echo "Restarting mpd"
+  $mpdbin/mpd -b
+  sleep 2
+  $mpdbin/mpdtrace
+  MFILE=""
+fi
+
+
+SIDL_DLL_PATH=$libdir;export SIDL_DLL_PATH
+MPI_HOST=localhost;export MPI_HOST # no clue, but sometimes needed
+echo "Proceeding with env vars:"
+echo "# LD_LIBRARY_PATH=$LD_LIBRARY_PATH"
+echo "# SIDL_DLL_PATH=$SIDL_DLL_PATH"
+echo "# MPI_HOST=$MPI_HOST"
+UIPORT=3314
+
+echo "######################"
+echo "$MPIRUN $client --type server --ccafe-io2tty --port $UIPORT \
+  --ccafe-outputdir $CURDIR --ccafe-rc $pkgdatadir/CcaffeineRC &"
+$MPIRUN $client --type server --ccafe-io2tty --port $UIPORT \
+  --ccafe-outputdir $CURDIR --ccafe-rc $pkgdatadir/CcaffeineRC &
+sleep 2
+echo "$gui --builderPort $UIPORT"
+echo "######################"
+$gui --builderPort $UIPORT
+exit 0
+

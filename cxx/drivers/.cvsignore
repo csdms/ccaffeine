@@ -1,0 +1,5 @@
+Makefile
+*.lo
+.libs
+.client-lo
+ccafe-*

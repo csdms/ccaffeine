@@ -1,0 +1,41 @@
+buildroot=../..
+srcdir=@fullpathsrcdir@
+VPATH := $(srcdir)/cxx/port
+
+all:
+	@touch .allbuild.complete
+	@echo done
+depend:
+	@echo done
+clean:
+	@echo done
+
+bins:
+	@touch .binbuild.complete
+
+GEN_DIRS= test test-dox test-data
+
+CXXHDR=Collective.h
+
+cdoc: dclean doc dox
+
+gen:
+	@echo "gen port done"
+
+# note -A will kill us in the next target
+doc:
+	if [ ! -d test ] ; then mkdir test; fi
+	-doc++ -p -b -H -j -d test $(CXXHDR)
+
+dox:
+	if [ ! -d test-dox ] ; then mkdir test-dox; fi
+	-doxygen ../../doc/DoxyCollective
+
+test-data: 
+	if [ ! -d test-data ] ; then mkdir test-data; fi
+	-(cd data-interfaces; doxygen ../../../doc/DoxyData)
+
+src-list:
+
+dclean:
+	-$(RM) -r $(GEN_DIRS)

@@ -1,0 +1,103 @@
+CCAFE_HOME=../../..
+include $(CCAFE_HOME)/Makefile.Rules
+
+BABEL = $(CCASPEC_BABEL_BABEL)
+
+DIRS = 
+
+# not in use.
+#SUBDIRS = FactorySvcComponent
+SUBDIRS =
+
+BABEL_HOME = $(BABEL_ROOT)
+
+SIDL_LIB_DIR = $(CCASPEC_BABEL_libdir)
+
+BOOST_INCLUDE = $(BOOST_INC)
+
+CLASSIC_HOME = $(CLASSIC_CCA_ROOT)
+CCAFE_INCLUDE = -I$(CCAFE_HOME) 
+
+CCA_SERVER_DIR = $(CCASPEC_BABEL_XML_REPOSITORY)
+
+
+# CXXFLAGS = -g $(BABEL_INCLUDE) $(CCAFE_INCLUDE) $(BOOST_INCLUDE)
+BABL_INCLUDE = -I$(CCASPEC_BABEL_includedir) $(BABEL_CCA_INC) -I.
+LOCAL_FLAGS= $(BABL_INCLUDE)
+
+LIB = libBblCcafe.a
+SRC = BabelOpaqueComponentFactory.cc BabelOpaqueTypeMap.cc BabelOpaqueGoPort.cc BabelComponentWrapper.cc \
+BabelOpaquePort.cc BabelHelper.cc BabelOpaqueServiceProvider.cc
+
+OBJ = ${SRC:.cc=.o}
+
+all: $(LIB) all-subdirs
+
+src-list:
+	@echo "DC_LIST_CXX += \\" >> ../../src-list
+	@for i in $(SRC) ; do \
+		echo "$(CCAFE_ROOT)/cxx/dc/babel/ccafe-bind/$$i \\" >> ../../src-list ; \
+	done
+	@echo "" >> ../../src-list
+	@echo "updated src-list from dc/babel/ccafe-bind"
+
+%.o : %.cc
+	$(CXX) -c $(CXXFLAGS) $(LOCAL_FLAGS) $<
+
+$(LIB) : $(OBJ) 
+	$(AR) r $(LIB) $(OBJ)
+	$(RANLIB) $(LIB)
+
+$(DIRS) .dirs-made : 
+	if [ -n "$(DIRS)" ]; then mkdir $(DIRS);fi
+	touch .dirs-made
+
+clean: clean-subdirs
+	-$(RM) -r client server *.o *.u tester .dirs-made \
+		.gen-babel .make-babel .uncruft .depend $(LIB)
+
+distclean: clean distclean-subdirs
+	$(RM) $(LIB)
+
+gen:
+
+.depend depend: depend-subdirs
+	-$(DEPEND) $(CXXFLAGS) $(LOCAL_FLAGS) $(SRC)
+	touch .depend
+
+Makefile.depends:
+	touch Makefile.depends
+
+
+ifneq "x$(SUBDIRS)" "x"
+all-subdirs:
+	for i in $(SUBDIRS) ; do \
+		$(RM) $$i/.make.ok ; \
+		cd $$i; $(MAKE) $@ ; \
+		if ! test -f $$i/.make.ok; then \
+			exit 1; \
+		fi; \
+	done
+
+clean-subdirs:
+	for i in $(SUBDIRS) /dev/null; do if ! (cd $$i;$(MAKE) clean);then exit -1;fi done
+
+distclean-subdirs:
+	for i in $(SUBDIRS) /dev/null; do if ! (cd $$i;$(MAKE) clean);then exit -1;fi done
+
+depend-subdirs: 
+	for i in $(SUBDIRS) /dev/null; do if ! (cd $$i;$(MAKE) depend);then exit -1;fi done
+
+install-subdirs: 
+	for i in $(SUBDIRS) /dev/null; do if ! (cd $$i;$(MAKE) install);then exit -1;fi done
+
+else
+all-subdirs clean-subdirs depend-subdirs:
+	@echo "no subdirs to do for $@."
+endif
+
+ifneq "x$(TARGET)" "xclean"
+ifneq "x$(TARGET)" "xdistclean"
+include Makefile.depends
+endif
+endif

@@ -1,0 +1,24 @@
+# file to hide useful configurable thread bits in that control the build.
+# (insert hacks here)
+
+ifeq "x$(CCAFE_THREADS)" "x1"
+
+ifeq "$(TOOLS)" "gnu"
+# used when compiling source that does threads.
+CCAFE_PTHREADS_FLAGS = -D_GNU_SOURCE -D_REENTRANT
+# used when compiling source that needs to see sensible threads headers,
+# but not itself threaded.
+CCAFE_PTHREADS_INC_FLAGS = -D_GNU_SOURCE
+endif
+
+ifeq "$(TOOLS)" "solaris"
+# a shot in the dark
+CCAFE_PTHREADS_FLAGS= -D_REENTRANT
+endif
+
+else
+
+CCAFE_PTHREADS_FLAGS=
+CCAFE_PTHREADS_INC_FLAGS=
+
+endif

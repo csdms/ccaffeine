@@ -1,0 +1,31 @@
+# The mpi that was used, if any, for ccaffeine is listed below
+# The multiplicity of variables is needed to cope
+# with buggy versions of mpich c++ wrappers.
+MPI= @MPI@
+MPI_HOME= @MPI_HOME@
+MPI_ARCH= @MPI_ARCH@
+MPICC= @MPICC@
+MPICXX= @MPICXX@
+MPI_LD= @MPI_LD@
+MPIRUN= @MPIRUN@
+MPI_LDFLAGS= @MPI_LDFLAGS@
+MPILIB= @MPILIB@
+# transitional crud
+MPI_LIBDIR= @MPI_LIBDIR@
+MPI_INC_ODD= @MPI_INC_ODD@
+MPI_SO_LIBDIR= @MPI_SO_LIBDIR@
+MPILD_SO_FLAGS= @MPILD_SO_FLAGS@
+# user specified config values
+MPIPRERUN= @MPIPRERUN@ 
+MPIF77= @MPIF77@ 
+MPIF90= @MPIF90@ 
+MPI_INC= @MPI_INC@ 
+MPI_BIN= @MPI_BIN@ 
+MPI_STATIC_LIBS= @MPI_STATIC_LIBS@ 
+MPI_STATIC_LDFLAGS= @MPI_STATIC_LDFLAGS@ 
+MPI_SO_LIBS= @MPI_SO_LIBS@ 
+MPI_SO_LDFLAGS= @MPI_SO_LDFLAGS@ 
+MPI_CFLAGS= @MPI_CFLAGS@ 
+MPI_FFLAGS= @MPI_FFLAGS@ 
+MPI_CXXFLAGS= @MPI_CXXFLAGS@ 
+

@@ -1,0 +1,49 @@
+
+CCAFE_HOME = ..
+
+include $(CCAFE_HOME)/Makefile.Rules
+
+
+CCAHDR = $(CCA_CXX_HOME)/include/cca.h $(CCA_CXX_HOME)/ports/*.h
+
+CCAFEHDR=\
+$(CCAFE_HOME)/cmd/*.h \
+$(CCAFE_HOME)/dc/component/*.h \
+$(CCAFE_HOME)/dc/distributed/*.h \
+$(CCAFE_HOME)/dc/framework/*.h \
+$(CCAFE_HOME)/dc/port/*.h \
+$(CCAFE_HOME)/dc/std_iface/*.h \
+$(CCAFE_HOME)/dc/user_iface/*.h \
+$(CCAFE_HOME)/dc/user_iface/ccacmd/*.h \
+$(CCAFE_HOME)/dc/user_iface/gui/*.h \
+$(CCAFE_HOME)/gnu/*.h \
+$(CCAFE_HOME)/gnu/getopt/*.h \
+$(CCAFE_HOME)/jc++/*.h \
+$(CCAFE_HOME)/jc++/lang/*.h \
+$(CCAFE_HOME)/jc++/util/*.h \
+$(CCAFE_HOME)/jc++/test/*.h \
+$(CCAFE_HOME)/jc++/io/*.h \
+$(CCAFE_HOME)/parameters/*.h \
+$(CCAFE_HOME)/port/*.h \
+$(CCAFE_HOME)/sc99/*.h \
+$(CCAFE_HOME)/util/*.h
+
+CXXHDR= $(CCAHDR) $(CCAFEHDR)
+
+all: doc $(DOXYGENTARG)
+
+# note -A will kill us in the next target
+doc: 
+	-doc++ -p -b -H -j -d $(CCAFE_HOME)/doc $(CXXHDR)
+
+dox:
+	if [ ! -d ../dox ] ; then mkdir ../dox; fi
+	$(DOXYGEN) ../../src/DoxyConfig
+
+depend:
+	@echo done
+
+clean:
+	-$(RM) *.html *.gif *.db *.tex *.class *.ps *.pnm *.eps *.aux *.dvi *.log .*html core
+	-if [ -d ../dox ] ; then $(RM) -r ../dox ; fi
+

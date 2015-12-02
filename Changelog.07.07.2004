@@ -1,0 +1,24 @@
+Feature change for classic migration to neo:
+- Generic classic ports can be tagged via portinfo as being
+exportable to neo components. (Note this does not need to be
+done for special components that are bound in the ccaffeine
+opaque layer, like "GoPort".
+If a port implementation
+is castable to both neo::cca::Port * and classic::gov::cca::Port *,
+then we can inform the framework this is the case
+by adding property key "SupportsKind" and value "c++-cca-spec-neo"
+in the createPortInfo(n,t,props) call.
+char *props[3]; 
+props[2]=0; props[0]="SupportsKind"; props[1]="c++-cca-spec-neo"
+pi=createPortInfo(n,t,props)
+addProvidesPort(this,pi);
+
+Bug fix for all builderservice implementations:
+- The BuilderService call to get connections on a list of components
+was (due to an error elsewhere) providing only the connections
+in which the component was the user. Now any connection touching
+any component in the list is included, per the specification.
+Thanks to Maria Liu for reporting the problem.
+
+
+

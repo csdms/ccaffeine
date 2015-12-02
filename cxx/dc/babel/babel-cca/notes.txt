@@ -1,0 +1,17 @@
+Signature for CCAException is different for decaf than ccaffeine, but
+they should be identical.
+
+No imple for COmponentClassDescription
+
+decaf::ports::ConnectionEvent::initialize: does not properly copy a
+TypeMap.
+
+
+Probably suboptimal:
+	TypeMap clone_();
+	//(gkk) NOTE: Added underscore to method name.
+	//(gkk)       Java complains about overridding its Object.clone() method
+
+
+Can only have one listener for one kind of eventtype.  This is implied
+by the fact that removal is predicated on (sent letter to Gary).

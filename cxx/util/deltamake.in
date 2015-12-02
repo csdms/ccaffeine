@@ -1,0 +1,21 @@
+#!/bin/sh
+# should we #! @CCAFE_BASH@ here instead?
+srcdir=@fullpathsrcdir@
+objdir=@ccafepwd@
+if test "x$1" = "x"; then
+	suffix=""
+else
+	suffix="/$1"
+fi
+
+if test "x$2" = "x"; then
+	cd $srcdir$suffix
+	find . -name Makefile.in -exec $objdir/cxx/util/deltamake {} $objdir$suffix \;
+else
+	src=`dirname $1`
+	if ! `cmp -s $1 $2/$src/Makefile` ; then
+		echo "COMPARE: $1, $2/$src/Makefile"
+		diff $1 $2/$src/Makefile
+	fi
+fi
+exit 0

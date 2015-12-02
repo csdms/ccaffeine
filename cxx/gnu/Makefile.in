@@ -1,0 +1,17 @@
+
+first: all
+
+CCAFE_HOME = ..
+
+include $(CCAFE_HOME)/Makefile.Rules
+
+all:	something
+
+src-list:
+	(cd getopt; $(MAKE) $@)
+
+something:
+	(cd getopt; $(MAKE))
+
+clean:
+	(cd getopt; $(MAKE) clean)

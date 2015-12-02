@@ -1,0 +1,66 @@
+<xml>
+<!-- 
+Intent is to expand on this file as time goes by.
+  For now just enough to keep dccafe happy in replacing .cca format with
+  an xml format twice as complicated.
+ -->
+<!-- 
+For an example of the least format to replace classic, see the file end.
+ -->
+<componentDeployment name="FooComponent" uniqueID="baallan@146.246.248.16#7.25.2003.dbg:/FooComponent" palletClassAlias="Foo_SalesPitch">
+  <!-- create function is create_FooComponent -->
+    <environment language="c++" framework="ccaffeine" cca_pattern_binding="classic" os="linux"> 
+        <library loading="dynamic" 
+                 name="libclassicFoo.so"
+                 location="/home/baallan/mycomplibs"
+                 global="true" lazy="false"/>
+        <frameworkOptions></frameworkOptions>
+        <environmentVariables>
+            <variable name="FOO_COMP_DEBUG" value="1" optional="true"/>
+        </environmentVariables>
+        <dependencies>
+            <library name="libpetsc.so"/>
+            <service name="ssh"/>
+        </dependencies>
+    </environment>
+</componentDeployment>
+<!-- babel component example. -->
+<!-- if babel requires ccaffeine ports, framework changes to "ccaffeine". -->
+<!-- cca_pattern_binding might have scirun or aces sidl alternatives. -->
+<componentDeployment
+   name="BarComponent"
+   uniqueID="baallan@146.246.248.16#7.25.2003.dbg:/BarComponent"
+   palletClassAlias="Bar_SalesPitch">
+    <environment 
+        language="c"
+        framework="any"
+        cca_pattern_binding="sidl-babel" 
+        os="linux"
+    > 
+        <library loading="dynamic"
+                 name="libBarComponent.so" 
+                 location="/home/baallan/mycomplibs" />
+        <frameworkOptions></frameworkOptions>
+        <environmentVariables></environmentVariables>
+        <dependencies></dependencies>
+    </environment>
+</componentDeployment>
+<!-- skinny classic component example -->
+<!-- create function is create_FooComponentLite -->
+<!-- wrapper will have to make palletClassAlias same as name -->
+<!-- ccaffeine will make rosyi assumptions about env.lang and env.fwk -->
+<!-- -->
+<componentDeployment 
+  name="FooComponentLite" 
+>
+    <environment 
+        cca_pattern_binding="classic" 
+    > 
+        <library loading="dynamic" 
+                 name="libclassicFooLite.so"
+                 location="/home/baallan/mycomplibs"
+        />
+    </environment>
+</componentDeployment>
+<!-- -->
+</xml>

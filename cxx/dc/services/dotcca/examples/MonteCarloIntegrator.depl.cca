@@ -1,0 +1,11 @@
+<componentDeployment
+   name="MonteCarloIntegrator"
+   uniqueID="norris@196.128.3.2#9.17.2003.dbg:/MonteCarloIntegrator"
+   palletClassAlias="integrators_MonteCarlo">
+   <environment> 
+      <ccaSpec binding="babel"/>
+      <library loading="dynamic"
+               name="libIntegrator-component-f90.so" 
+               location="/home/norris/cca/tutorial/src/components/integrators/f90/lib" />
+    </environment>
+</componentDeployment>

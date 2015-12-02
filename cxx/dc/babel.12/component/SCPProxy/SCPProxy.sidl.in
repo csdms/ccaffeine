@@ -1,0 +1,11 @@
+// SCPProxy.sidl is a configure-generated file.
+
+@CCAFE0_SIDL_START_0@
+@CCAFE0_SIDL_START_1@
+    
+  /**  When a string is set on this component, it prints it out on another. */
+  class SCPProxy implements-all gov.cca.Component,  
+    ccafe3.StringConsumerPort {
+  }
+  
+}

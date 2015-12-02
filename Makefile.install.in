@@ -1,0 +1,1009 @@
+
+# an install script in make. oy vey.
+# ben allan, snl/ca january 2003
+# re the new neo binding: the framework
+# exports nothing to do with neo (except where we found it)
+# to component writers. They use the cca-spec-neo *only* now.
+#
+# The problem with this is that *classic* component writers
+# really must cease to exist, else they suck in neo headers
+# when they suck in polluted classic implementation headers.
+#
+@SET_MAKE@
+SHELL=@SHELL@
+# gnu cp with --parents is required
+srcdir = @srcdir@
+FAKEGNUCP=$(srcdir)/config/cpparents.sh
+FAKEPUSHD=$(srcdir)/config/ccafe_pushd.sh
+
+USEMPI=@USEMPI@
+# babel is now required for classic and neo users,
+# just to get libtool.
+HAVE_BABEL=@HAVE_BABEL@
+HAVE_TCL=@HAVE_TCL@
+BABEL_SRC_TREE=@BABEL_BINDING_DIRS@
+ifeq "X$(HAVE_BABEL)" "X1"
+include @BABEL_CCA_CONFIG@
+PYTHON_VERSION=$(CCASPEC_BABEL_PYTHON_VERSION)
+endif
+LIBTOOL= @BABEL_LIBTOOL@
+LIBTOOL_FINISHFLAGS=$(CCASPEC_LIBTOOL_FINISHFLAGS)
+HIDELIBTOOL=@HIDELIBTOOL@
+CCAFE_PRELOAD_LIB=@CCAFE_PRELOAD_LIB@
+BUILT_PRELOAD_LIB=@BUILT_PRELOAD_LIB@
+CCAFE_LIBTOOL_LIB=@CCAFE_LIBTOOL_LIB@
+BUILT_LIBTOOL_LIB=@BUILT_LIBTOOL_LIB@
+CCAFE_LIBTOOL_DRIVER_LIB=@CCAFE_LIBTOOL_DRIVER_LIB@
+BUILT_LIBTOOL_DRIVER_LIB=@BUILT_LIBTOOL_DRIVER_LIB@
+CCAFE_BABEL_LIBTOOL_LIB=@CCAFE_BABEL_LIBTOOL_LIB@
+BUILT_BABEL_LIBTOOL_LIB=@BUILT_BABEL_LIBTOOL_LIB@
+
+LN_S=@LN_S@
+INSTALL=@INSTALL@
+INSTALL_DATA=@INSTALL_DATA@
+INSTALL_ROOT=@CCAFE_INSTALL_ROOT@
+DEST_INSTALL_ROOT = $(DESTDIR)$(INSTALL_ROOT)
+BUILD_ROOT=@CCAFE_ROOT@
+CCAFE_ROOT = $(BUILD_ROOT)
+ifeq "X$(BUILD_ROOT)" "X$(srcdir)"
+BUILD_INPLACE=1
+else
+BUILD_INPLACE=0
+endif
+
+HAVE_JAVA=@HAVE_JAVA@
+HAVE_CLASSIC=@HAVE_CLASSIC@
+HAVE_NEO=@HAVE_NEO@
+
+HAVE_XML=@HAVE_XML@
+ifeq "X$(HAVE_XML)" "X1"
+XMLBUILD=xmlbuild
+else
+XMLBUILD=
+endif
+
+PKG_NAME=@PKG_NAME@
+PROGRAM_SUFFIX=@PROGRAM_SUFFIX@
+VER_SUFFIX=@VER_SUFFIX@
+SHLIB_SUFFIX=@CCAFE_SHLIB_SUFFIX@
+
+top_srcdir = @top_srcdir@
+# VPATH = @srcdir@
+prefix = $(DESTDIR)@prefix@
+exec_prefix = $(DESTDIR)@exec_prefix@
+
+bindir = $(DESTDIR)@bindir@
+sbindir = $(DESTDIR)@sbindir@
+libexecdir = $(DESTDIR)@libexecdir@
+datadir = $(DESTDIR)@datarootdir@
+datadir = $(DESTDIR)@datadir@
+docdir = $(DESTDIR)@datadir@/doc
+sysconfdir = $(DESTDIR)@sysconfdir@
+sharedstatedir = $(DESTDIR)@sharedstatedir@
+localstatedir = $(DESTDIR)@localstatedir@
+libdir = $(DESTDIR)@libdir@
+infodir = $(DESTDIR)@infodir@
+mandir = $(DESTDIR)@mandir@
+includedir = $(DESTDIR)@includedir@
+oldincludedir = /usr/include
+pkgdatadir = $(datadir)/@PKG_NAME@
+pkgdocdir = $(datadir)/doc/@PKG_NAME@
+pkglibdir = $(libdir)/@PKG_NAME@
+pkgincludedir = $(includedir)/@PKG_NAME@
+transform=@program_transform_name@
+# top_builddir = .
+
+# Python install stuff
+BABEL_CCA_ROOT = @BABEL_CCA_ROOT@
+BABEL_ROOT = @BABEL_ROOT@
+#CCAFE_BUILD_PY = @CCAFE_BUILD_PY@
+CCAFE_BUILD_PY = 1
+INSTALL_PY=@INSTALL_PYTHON@
+# end Python install
+
+
+
+
+# this is not a version that installs docs, since
+# our doc tree is at present a total mess.
+
+
+
+INSTALL_DIRS = \
+$(bindir) \
+$(exec_prefix)/cca \
+$(exec_prefix)/cca/$(PKG_NAME) \
+$(libdir) \
+$(includedir) \
+$(datadir) \
+$(pkglibdir) \
+$(pkgdatadir) \
+$(pkgdatadir)/bin \
+$(pkgdatadir)/components \
+$(pkgdatadir)/xml
+
+CCAFE_CLASSIC_INSTALL_INCLUDE_SUBDIRS= \
+dc/classic \
+dc/classic/ccafe-bind \
+dc/component
+ifeq "X$(HAVE_NEO)" "X1"
+CCAFE_CLASSIC_INSTALL_INCLUDE_SUBDIRS += dc/neo dc/neo/ccafe-bind
+endif
+
+# esi
+# scutil
+# dc/services/gui retired
+INSTALL_INCLUDE_SUBDIRS= \
+cmd \
+dc \
+dc/distributed \
+dc/export \
+dc/export/events \
+dc/export/connectionevents \
+dc/framework \
+dc/services \
+dc/port \
+dc/user_iface \
+dc/user_iface/ccacmd \
+gnu \
+gnu/getopt \
+jc++ \
+jc++/util \
+jc++/lang \
+jc++/io \
+parameters \
+port \
+stovepipe \
+util
+
+# begin of lots of babel-dependent stuff 1
+ifeq "X$(HAVE_BABEL)" "X1"
+
+ifeq "X$(USEMPI)" "X1"
+CCAFE_BABEL_INSTALL_INCLUDE_SUBDIRS_MPI= \
+dc/$(BABEL_SRC_TREE)/component/TestMPI \
+dc/$(BABEL_SRC_TREE)/component/TestMPI/server \
+dc/$(BABEL_SRC_TREE)/component/MPIComponent \
+dc/$(BABEL_SRC_TREE)/component/MPIComponent/server
+endif
+
+CCAFE_BABEL_INSTALL_INCLUDE_SUBDIRS= \
+dc/babel \
+dc/$(BABEL_SRC_TREE)/ccafe-bind \
+dc/$(BABEL_SRC_TREE)/component \
+dc/$(BABEL_SRC_TREE)/component/PrinterComponent \
+dc/$(BABEL_SRC_TREE)/component/PrinterComponent/server \
+dc/$(BABEL_SRC_TREE)/component/SimpleProxyTest \
+dc/$(BABEL_SRC_TREE)/component/SimpleProxyTest/server \
+dc/$(BABEL_SRC_TREE)/component/GUIServiceTest \
+dc/$(BABEL_SRC_TREE)/component/GUIServiceTest/server \
+dc/$(BABEL_SRC_TREE)/component/SCPProxy \
+dc/$(BABEL_SRC_TREE)/component/SCPProxy/server \
+dc/$(BABEL_SRC_TREE)/component/StarterComponent \
+dc/$(BABEL_SRC_TREE)/component/StarterComponent/server \
+dc/$(BABEL_SRC_TREE)/component/StringConsumerPort \
+dc/$(BABEL_SRC_TREE)/component/StringConsumerPort/server \
+dc/$(BABEL_SRC_TREE)/component/BasicParameterPortTest \
+dc/$(BABEL_SRC_TREE)/component/BasicParameterPortTest/server \
+dc/$(BABEL_SRC_TREE)/component/GoComponent \
+dc/$(BABEL_SRC_TREE)/component/GoComponent/server \
+dc/$(BABEL_SRC_TREE)/component/ConnectionEventServiceTest \
+dc/$(BABEL_SRC_TREE)/component/ConnectionEventServiceTest/server \
+dc/$(BABEL_SRC_TREE)/component/ServiceRegistryTest \
+dc/$(BABEL_SRC_TREE)/component/ServiceRegistryTest/server \
+dc/$(BABEL_SRC_TREE)/component/ParameterPortFactoryTest \
+dc/$(BABEL_SRC_TREE)/component/ParameterPortFactoryTest/server \
+dc/$(BABEL_SRC_TREE)/babel-cca \
+dc/$(BABEL_SRC_TREE)/babel-cca/server \
+$(CCAFE_BABEL_INSTALL_INCLUDE_SUBDIRS_MPI)
+
+CCAFE_BABEL_WCLASSIC_INSTALL_INCLUDE_SUBDIRS = \
+dc/$(BABEL_SRC_TREE)/component/PortTranslatorStarter \
+
+endif
+# end of lots of babel-dependent stuff 1
+
+CCAFE_CLASSIC_INSTALL_INCLUDE_SUBDIRS_WITH_HEADERS= \
+dc/classic/ccafe-bind \
+dc/component
+ifeq "X$(HAVE_NEO)" "X1"
+CCAFE_CLASSIC_INSTALL_INCLUDE_SUBDIRS_WITH_HEADERS += dc/neo dc/neo/ccafe-bind
+endif
+
+# esi
+# scutil
+# dc/services/gui retired
+INSTALL_INCLUDE_SUBDIRS_WITH_HEADERS= \
+cmd \
+dc/distributed \
+dc/export \
+dc/export/events \
+dc/export/connectionevents \
+dc/framework \
+dc/port \
+dc/user_iface \
+dc/user_iface/ccacmd \
+gnu/getopt \
+jc++ \
+jc++/util \
+jc++/lang \
+jc++/io \
+parameters \
+port \
+stovepipe \
+util
+
+# begin of lots of babel-dependent stuff 2
+ifeq "X$(HAVE_BABEL)" "X1"
+
+ifeq "X$(USEMPI)" "X1"
+CCAFE_BABEL_INSTALL_INCLUDE_SUBDIRS_WITH_HEADERS_MPI= \
+dc/$(BABEL_SRC_TREE)/component/TestMPI \
+dc/$(BABEL_SRC_TREE)/component/TestMPI/server \
+dc/$(BABEL_SRC_TREE)/component/MPIComponent \
+dc/$(BABEL_SRC_TREE)/component/MPIComponent/server
+endif
+CCAFE_BABEL_INSTALL_INCLUDE_SUBDIRS_WITH_HEADERS= \
+dc/$(BABEL_SRC_TREE)/ccafe-bind \
+dc/$(BABEL_SRC_TREE)/component/PrinterComponent \
+dc/$(BABEL_SRC_TREE)/component/PrinterComponent/server \
+dc/$(BABEL_SRC_TREE)/component/SCPProxy \
+dc/$(BABEL_SRC_TREE)/component/SCPProxy/server \
+dc/$(BABEL_SRC_TREE)/component/GUIServiceTest \
+dc/$(BABEL_SRC_TREE)/component/GUIServiceTest/server \
+dc/$(BABEL_SRC_TREE)/component/SimpleProxyTest \
+dc/$(BABEL_SRC_TREE)/component/SimpleProxyTest/server \
+dc/$(BABEL_SRC_TREE)/component/StarterComponent \
+dc/$(BABEL_SRC_TREE)/component/StarterComponent/server \
+dc/$(BABEL_SRC_TREE)/component/StringConsumerPort \
+dc/$(BABEL_SRC_TREE)/component/StringConsumerPort/server \
+dc/$(BABEL_SRC_TREE)/component/BasicParameterPortTest \
+dc/$(BABEL_SRC_TREE)/component/BasicParameterPortTest/server \
+dc/$(BABEL_SRC_TREE)/component/GoComponent \
+dc/$(BABEL_SRC_TREE)/component/GoComponent/server \
+dc/$(BABEL_SRC_TREE)/component/ParameterPortFactoryTest \
+dc/$(BABEL_SRC_TREE)/component/ParameterPortFactoryTest/server \
+dc/$(BABEL_SRC_TREE)/component/ConnectionEventServiceTest \
+dc/$(BABEL_SRC_TREE)/component/ConnectionEventServiceTest/server \
+dc/$(BABEL_SRC_TREE)/component/ServiceRegistryTest \
+dc/$(BABEL_SRC_TREE)/component/ServiceRegistryTest/server \
+dc/$(BABEL_SRC_TREE)/babel-cca \
+dc/$(BABEL_SRC_TREE)/babel-cca/server \
+$(CCAFE_BABEL_INSTALL_INCLUDE_SUBDIRS_WITH_HEADERS_MPI)
+
+CCAFE_BABEL_WCLASSIC_INSTALL_INCLUDE_SUBDIRS_WITH_HEADERS= \
+dc/$(BABEL_SRC_TREE)/component/PortTranslatorStarter \
+
+ifeq "X$(USEMPI)" "X1"
+INSTALL_SIDL_MPI= \
+cxx/dc/$(BABEL_SRC_TREE)/component/MPIComponent/MPIComponent.sidl \
+cxx/dc/$(BABEL_SRC_TREE)/component/TestMPI/TestMPI.sidl
+endif
+INSTALL_SIDL= \
+cxx/dc/$(BABEL_SRC_TREE)/babel-cca/ccafe.sidl \
+cxx/dc/$(BABEL_SRC_TREE)/component/StringConsumerPort/StringConsumerPort.sidl \
+cxx/dc/$(BABEL_SRC_TREE)/component/PrinterComponent/PrinterComponent.sidl \
+cxx/dc/$(BABEL_SRC_TREE)/component/SimpleProxyTest/SimpleProxyTest.sidl \
+cxx/dc/$(BABEL_SRC_TREE)/component/SCPProxy/SCPProxy.sidl \
+cxx/dc/$(BABEL_SRC_TREE)/component/GUIServiceTest/GUIServiceTest.sidl \
+cxx/dc/$(BABEL_SRC_TREE)/component/PortTranslatorStarter/PortTranslatorStarter.sidl \
+cxx/dc/$(BABEL_SRC_TREE)/component/ParameterPortFactoryTest/ParameterPortFactoryTest.sidl \
+cxx/dc/$(BABEL_SRC_TREE)/component/StarterComponent/StarterComponent.sidl \
+cxx/dc/$(BABEL_SRC_TREE)/component/BasicParameterPortTest/BasicParameterPortTest.sidl \
+cxx/dc/$(BABEL_SRC_TREE)/component/GoComponent/GoComponent.sidl \
+cxx/dc/$(BABEL_SRC_TREE)/component/ConnectionEventServiceTest/ConnectionEventServiceTest.sidl \
+cxx/dc/$(BABEL_SRC_TREE)/component/ServiceRegistryTest/ServiceRegistryTest.sidl \
+$(INSTALL_SIDL_MPI)
+
+ifeq "X$(USEMPI)" "X1"
+INSTALL_XML_DIRS_MPI= \
+cxx/dc/$(BABEL_SRC_TREE)/component/MPIComponent/server \
+cxx/dc/$(BABEL_SRC_TREE)/component/TestMPI/server 
+endif
+INSTALL_XML_DIRS= \
+cxx/dc/$(BABEL_SRC_TREE)/babel-cca/server \
+cxx/dc/$(BABEL_SRC_TREE)/component/StringConsumerPort/server \
+cxx/dc/$(BABEL_SRC_TREE)/component/PrinterComponent/server \
+cxx/dc/$(BABEL_SRC_TREE)/component/SimpleProxyTest/server \
+cxx/dc/$(BABEL_SRC_TREE)/component/GUIServiceTest/server \
+cxx/dc/$(BABEL_SRC_TREE)/component/SCPProxy/server \
+cxx/dc/$(BABEL_SRC_TREE)/component/StarterComponent/server \
+cxx/dc/$(BABEL_SRC_TREE)/component/BasicParameterPortTest/server \
+cxx/dc/$(BABEL_SRC_TREE)/component/GoComponent/server \
+cxx/dc/$(BABEL_SRC_TREE)/component/ParameterPortFactoryTest/server \
+cxx/dc/$(BABEL_SRC_TREE)/component/ConnectionEventServiceTest/server \
+cxx/dc/$(BABEL_SRC_TREE)/component/ServiceRegistryTest/server \
+$(INSTALL_XML_DIRS_MPI)
+
+INSTALL_WCLASSIC_XML_DIRS= \
+cxx/dc/$(BABEL_SRC_TREE)/component/PortTranslatorStarter/server \
+
+endif
+# end of lots of babel-dependent stuff 1
+
+CCAFE_SHARED_LIB=@CCAFE_SHARED_LIB@
+CCAFE_STATIC_LIB=@CCAFE_STATIC_LIB@
+CCAFE_STATIC_DRIVER_LIB=@CCAFE_STATIC_DRIVER_LIB@
+BUILT_SHARED_LIB=@BUILT_SHARED_LIB@
+BUILT_STATIC_LIB=@BUILT_STATIC_LIB@
+BUILT_STATIC_DRIVER_LIB=@BUILT_STATIC_DRIVER_LIB@
+
+
+OLD_CCAFE_BABEL_INSTALL_LIBS=\
+cxx/lib/libccaffeine$(VER_SUFFIX)$(PROGRAM_SUFFIX)$(SHLIB_SUFFIX) \
+cxx/lib/libccaffeine$(VER_SUFFIX)$(PROGRAM_SUFFIX).a
+
+
+#PDSTest 
+CCAFE_CLASSIC_INSTALL_CCA_COMPONENTS= \
+Timer \
+ComplicatedStarterComponent \
+StarterComponent \
+ComplicatedPrinterComponent \
+PrinterComponent \
+TimeStamper \
+BSTest \
+GoTest \
+GoThreadComponent
+
+# begin of lots of babel-dependent stuff 3
+ifeq "X$(HAVE_BABEL)" "X1"
+
+ifeq "X$(USEMPI)" "X1"
+CCAFE_BABEL_INSTALL_CCA_COMPONENTS_MPI= \
+libTestMPI \
+libMPIComponent
+endif
+CCAFE_BABEL_INSTALL_CCA_COMPONENTS= \
+libStringConsumerPort \
+libPrinterComponent \
+libStarterComponent \
+libSimpleProxyTest \
+libSCPProxy \
+libGUIServiceTest \
+libBasicParameterPortTest \
+libGoComponent \
+libParameterPortFactoryTest \
+libConnectionEventServiceTest \
+libServiceRegistryTest \
+$(CCAFE_BABEL_INSTALL_CCA_COMPONENTS_MPI)
+
+CCAFE_BABEL_WCLASSIC_INSTALL_CCA_COMPONENTS= \
+libPortTranslatorStarter \
+
+ADAPTER_COMPONENT = \
+cxx/lib/libclassicBabelFactoryService$(VER_SUFFIX)$(PROGRAM_SUFFIX)$(SHLIB_SUFFIX)
+DOADAPTER=0
+
+endif
+# end of lots of babel-dependent stuff 3
+
+#items with conflict from cxx/dc/component
+INSTALL_CCA_META_MORPH= \
+StarterComponent \
+PrinterComponent
+
+# cxx/dc/component/PDSTest
+INSTALL_CCA_META= \
+cxx/dc/component/TimeStamper \
+cxx/dc/component/ComplicatedPrinterComponent \
+cxx/dc/component/ComplicatedStarterComponent \
+cxx/dc/component/BSTest \
+cxx/dc/component/GoTest \
+cxx/dc/component/Timer \
+cxx/dc/component/GoThreadComponent
+
+# begin of lots of babel-dependent stuff 4
+ifeq "X$(HAVE_BABEL)" "X1"
+
+
+ifeq "X$(USEMPI)" "X1"
+CCAFE_BABEL_INSTALL_CCA_META_MPI= \
+cxx/dc/$(BABEL_SRC_TREE)/component/MPIComponent/MPIComponent \
+cxx/dc/$(BABEL_SRC_TREE)/component/TestMPI/TestMPI
+endif
+CCAFE_BABEL_INSTALL_CCA_META= \
+cxx/dc/$(BABEL_SRC_TREE)/component/StringConsumerPort/StringConsumerPort \
+cxx/dc/$(BABEL_SRC_TREE)/component/PrinterComponent/PrinterComponent \
+cxx/dc/$(BABEL_SRC_TREE)/component/GUIServiceTest/GUIServiceTest \
+cxx/dc/$(BABEL_SRC_TREE)/component/SCPProxy/SCPProxy \
+cxx/dc/$(BABEL_SRC_TREE)/component/SimpleProxyTest/SimpleProxyTest \
+cxx/dc/$(BABEL_SRC_TREE)/component/StarterComponent/StarterComponent \
+cxx/dc/$(BABEL_SRC_TREE)/component/BasicParameterPortTest/BasicParameterPortTest \
+cxx/dc/$(BABEL_SRC_TREE)/component/GoComponent/GoComponent \
+cxx/dc/$(BABEL_SRC_TREE)/component/ParameterPortFactoryTest/ParameterPortFactoryTest \
+cxx/dc/$(BABEL_SRC_TREE)/component/ConnectionEventServiceTest/ConnectionEventServiceTest \
+cxx/dc/$(BABEL_SRC_TREE)/component/ServiceRegistryTest/ServiceRegistryTest \
+$(CCAFE_BABEL_INSTALL_CCA_META_MPI)
+
+CCAFE_BABEL_WCLASSIC_INSTALL_CCA_META= \
+cxx/dc/$(BABEL_SRC_TREE)/component/PortTranslatorStarter/PortTranslatorStarter \
+
+endif
+# end of lots of babel-dependent stuff 4
+
+# install in share/pkg including subdir
+SHARE_FILES= \
+src/ccafeConfig.sh \
+src/MakeIncl.CCAFE \
+$(srcdir)/src/EmptyRC \
+cxx/dc/user_iface/CcaffeineRC
+
+# begin of lots of babel-dependent stuff 5
+ifeq "X$(HAVE_BABEL)" "X1"
+
+SHARE_EXAMPLE_FILES= \
+examples/babel-static/config/cca_comp_flags.m4 \
+examples/babel-static/config/ccafe_pushd.m4 \
+examples/babel-static/config/ccafe_pushd.sh \
+examples/babel-static/config/config.guess \
+examples/babel-static/config/config.sub \
+examples/babel-static/config/install-sh \
+examples/babel-static/config/llnl_libxml.m4 \
+examples/babel-static/config/ccafe_ccafe_config.m4 \
+examples/babel-static/config/ccafe_config_args.m4 \
+examples/babel-static/Makefile.in \
+examples/babel-static/configure.ac \
+examples/babel-static/MakeIncl.user \
+examples/babel-static/INSTALL \
+examples/babel-static/configure \
+examples/babel-static/src/test_script_babel_ComponentClassDescription_Impl.hh \
+examples/babel-static/src/test_script_babel_ComponentClassDescription_Impl.cc \
+examples/babel-static/src/test_script_babel_PrivateRepository_Impl.hh \
+examples/babel-static/src/test_script_babel_PrivateRepository_Impl.cc \
+examples/babel-static/src/test_script_babel_BabelMain_Impl.hh \
+examples/babel-static/src/test_script_babel_BabelMain_Impl.cc \
+examples/babel-static/src/Makefile.in \
+examples/babel-static/src/test_script_babel_Exception_Impl.hh \
+examples/babel-static/src/test_script_babel_Exception_Impl.cc \
+examples/babel-static/src/driver.cc \
+examples/babel-static/src/test_script_babel_StringMap_Impl.hh \
+examples/babel-static/src/test_script_babel_StringMap_Impl.cc \
+examples/babel-static/acsite.m4 \
+examples/babel-static/test-input.scr.in \
+examples/babel-static/test_script_babel.sidl \
+examples/babel-static/reconfigure.in \
+examples/babel-static/HOWTO_CUSTOMIZE.txt \
+
+endif
+# end of lots of babel-dependent stuff 5
+
+SHARE_EXAMPLE_FILES += \
+examples/classic-static/ExampleStaticFactory.cxx \
+examples/classic-static/ExampleStaticFactory.h \
+examples/classic-static/configure \
+examples/classic-static/config/cca_comp_flags.m4 \
+examples/classic-static/config/ccafe_pushd.m4 \
+examples/classic-static/config/ccafe_pushd.sh \
+examples/classic-static/config/config.guess \
+examples/classic-static/config/config.sub \
+examples/classic-static/config/install-sh \
+examples/classic-static/config/llnl_libxml.m4 \
+examples/classic-static/config/ccafe_ccafe_config.m4 \
+examples/classic-static/config/ccafe_config_args.m4 \
+examples/classic-static/run \
+examples/classic-static/StaticCmdLineClientMain.cxx \
+examples/classic-static/test.rc \
+examples/classic-static/README.txt \
+examples/classic-static/Makefile.in \
+examples/classic-static/configure.ac \
+examples/classic-static/acsite.m4 \
+examples/classic-static/reconfigure.in \
+examples/configureHints \
+examples/README.txt
+
+SHARE_PATH_FILES= \
+cxx/MakeIncl.CCAFE_Component \
+cxx/MakeIncl.CCAFE_MPI \
+cxx/Makefile.Vars \
+cxx/Makefile.Static \
+cxx/Makefile.Rules \
+Makefile.pthreads \
+Makefile.dl \
+Makefile.conf.dl
+
+
+# install in share/pkg/bin
+PKG_BIN= \
+cxx/util/genDLIndex \
+cxx/util/genDLIndexXML \
+cxx/util/genDLWrapperStrict
+
+# begin of lots of babel-dependent stuff 6
+ifeq "X$(HAVE_BABEL)" "X1"
+
+PKG_BIN += \
+src/bkupFile.rb \
+src/namespchgr.rb \
+cxx/dc/babel/bin/implNewr.rb \
+cxx/dc/babel/bin/implUnstamper.sh \
+cxx/dc/babel/bin/newer.rb \
+cxx/dc/babel/bin/sidlUncrufter.rb \
+cxx/dc/babel/bin/splicer.rb
+
+#src/testBabelFactoryService 
+CCAFE_BABEL_PKG_BIN= \
+src/testBabelParameterPortFactory \
+src/testBabelServiceRegistry
+
+CCAFE_BABEL_WCLASSIC_PKG_BIN= \
+src/testBabelPortTranslator 
+
+endif 
+# end of lots of babel-dependent stuff 6
+
+# install in bin
+INSTALL_BIN_SCRIPTS= \
+src/ccafe-config \
+src/setupMPD \
+src/simpleBatch \
+src/simpleTests \
+src/test-python-bs \
+src/test-GoThread
+
+ifeq "$(HAVE_TCL)" "1"
+INSTALL_BIN_SCRIPTS += \
+scripts/bld2rc \
+scripts/bld2rc.tcl \
+scripts/simplify-bld \
+scripts/simplify-bld.tcl 
+endif
+
+# install in bin
+INSTALL_BINS= \
+cxx/drivers/ccafe-single \
+cxx/drivers/ccafe-client \
+cxx/drivers/ccafe-batch \
+
+RPM_BINS= \
+src/testRPMBatch 
+
+RPM_WCLASSIC_BINS= \
+src/testRPMPortTranslator
+
+
+INSTALL_EXCLUDE= \
+$(DEST_INSTALL_ROOT)/include/dc/user_iface/ccafe-batch \
+
+QUIET=2>|/dev/null
+
+install-root:
+	@if test ! -d $(DEST_INSTALL_ROOT) ; then \
+		echo "Creating $(DEST_INSTALL_ROOT)"; \
+	else \
+		echo "Creating $(DEST_INSTALL_ROOT) already done."; \
+	fi
+	@-mkdir -p $(DEST_INSTALL_ROOT)
+	@if test ! -d $(DEST_INSTALL_ROOT) ; then \
+		echo "Unable to create $(INSTALL_ROOT)"; \
+		exit 1 ; \
+	fi
+	@if test ! -w $(DEST_INSTALL_ROOT) ; then \
+		echo "* * * You don't have permission to install in $(DEST_INSTALL_ROOT)" ; \
+		exit 1 ; \
+	fi
+
+install-dummy:
+	@echo "No python babel support configured."
+
+install: install-root $(INSTALL_PY)
+	$(MAKE) -f Makefile.install install-dirs
+	$(MAKE) -f Makefile.install install-files
+	$(MAKE) -f Makefile.install install-exclude
+
+install-dirs:
+	@for i in $(INSTALL_DIRS) /dev/null ; do \
+		if test $$i != "/dev/null" -a -d $$i ; then \
+			echo "Creating $$i already done."; \
+			chmod go+rx $$i; \
+		else \
+			if test $$i != "/dev/null" ; then \
+				echo "Creating $$i"; \
+				mkdir -p $$i ; \
+				chmod 755 $$i; \
+			fi ; \
+		fi ; \
+	done
+	@for i in $(INSTALL_INCLUDE_SUBDIRS) /dev/null ; do \
+		if test $$i != "/dev/null" -a -d $(pkgincludedir)/$$i ; then \
+			echo "Creating $(pkgincludedir)/$$i already done."; \
+			chmod go+rx $(pkgincludedir)/$$i; \
+		else \
+			if test $$i != "/dev/null" ; then \
+				echo "Creating $(pkgincludedir)/$$i"; \
+				mkdir -p $(pkgincludedir)/$$i ; \
+				chmod 755 $(pkgincludedir)/$$i; \
+			fi ; \
+		fi ; \
+	done
+	@if test "x$(HAVE_CLASSIC)" != "x0" -a "x$(HAVE_CLASSIC)" != "x" ; then \
+		for i in $(CCAFE_CLASSIC_INSTALL_INCLUDE_SUBDIRS) /dev/null ; do \
+			if test $$i != "/dev/null" -a -d $(pkgincludedir)/$$i ; then \
+				echo "Creating $(pkgincludedir)/$$i already done."; \
+				chmod go+rx $(pkgincludedir)/$$i; \
+			else \
+				if test $$i != "/dev/null" ; then \
+					echo "Creating $(pkgincludedir)/$$i"; \
+					mkdir -p $(pkgincludedir)/$$i ; \
+					chmod 755 $(pkgincludedir)/$$i; \
+				fi ; \
+			fi ; \
+		done ; \
+	fi
+	@if test "x$(HAVE_BABEL)" != "x0" -a "x$(HAVE_BABEL)" != "x" ; then \
+		for i in $(CCAFE_BABEL_INSTALL_INCLUDE_SUBDIRS) /dev/null ; do \
+			if test $$i != "/dev/null" -a -d $(pkgincludedir)/$$i ; then \
+				echo "Creating $(pkgincludedir)/$$i already done."; \
+				chmod go+rx $(pkgincludedir)/$$i; \
+			else \
+				if test $$i != "/dev/null" ; then \
+					echo "Creating $(pkgincludedir)/$$i"; \
+					mkdir -p $(pkgincludedir)/$$i ; \
+					chmod 755 $(pkgincludedir)/$$i; \
+				fi ; \
+			fi ; \
+		done ; \
+		if test "x$(HAVE_CLASSIC)" != "x0" -a "x$(HAVE_CLASSIC)" != "x" ; then \
+			for i in $(CCAFE_BABEL_WCLASSIC_INSTALL_INCLUDE_SUBDIRS) /dev/null ; do \
+				if test $$i != "/dev/null" -a -d $(pkgincludedir)/$$i ; then \
+					echo "Creating $(pkgincludedir)/$$i already done."; \
+					chmod go+rx $(pkgincludedir)/$$i; \
+				else \
+					if test $$i != "/dev/null" ; then \
+						echo "Creating $(pkgincludedir)/$$i"; \
+						mkdir -p $(pkgincludedir)/$$i ; \
+						chmod 755 $(pkgincludedir)/$$i; \
+					fi ; \
+				fi ; \
+			done ; \
+		fi ; \
+	fi
+
+install-files: install-hdr-dir-srcs install-components install-libs install-xml \
+	install-meta-$(XMLBUILD) install-sidl \
+	install-bin install-share
+
+install-:
+	@echo "old java user interface not supported any more."
+
+install-exclude:
+	-$(RM) -f $(INSTALL_EXCLUDE)
+
+install-hdr-dir-srcs:
+	@for j in $(INSTALL_INCLUDE_SUBDIRS_WITH_HEADERS) /dev/null ; do \
+		if test -d $(srcdir)/cxx/$$j -o -d cxx/$$j ; then \
+			echo "Installing in $(pkgincludedir)/$$j"; \
+			if test "x$(BUILD_INPLACE)" = "x0"; then \
+				files=`ls -1 $(srcdir)/cxx/$$j/*.h $(srcdir)/cxx/$$j/*.hh cxx/$$j/*.h cxx/$$j/*.hh $(QUIET) |grep -v Impl`; \
+			else \
+				files=`ls -1 cxx/$$j/*.h cxx/$$j/*.hh $(QUIET) |grep -v Impl`; \
+			fi; \
+			for i in $$files; do \
+				$(INSTALL_DATA) $$i $(pkgincludedir)/$$j ; \
+			done; \
+		else \
+			if test $$j != "/dev/null" ; then \
+				echo "Cannot find directory cxx/$$j to copy headers from." ; \
+			fi; \
+		fi ; \
+	done
+	@if test "x$(HAVE_BABEL)" != "x0" -a "x$(HAVE_BABEL)" != "x" ; then \
+		for j in $(CCAFE_BABEL_INSTALL_INCLUDE_SUBDIRS_WITH_HEADERS) /dev/null ; do \
+			if test -d $(srcdir)/cxx/$$j -o -d cxx/$$j ; then \
+				echo "Installing in $(pkgincludedir)/$$j"; \
+				if test "x$(BUILD_INPLACE)" = "x0"; then \
+					files=`ls -1 $(srcdir)/cxx/$$j/*.h $(srcdir)/cxx/$$j/*.hh $(srcdir)/cxx/$$j/*.hxx cxx/$$j/*.h cxx/$$j/*.hh cxx/$$j/*.hxx $(QUIET) |grep -v Impl`; \
+				else \
+					files=`ls -1 cxx/$$j/*.h cxx/$$j/*.hh cxx/$$j/*.hxx $(QUIET) |grep -v Impl`; \
+				fi; \
+				for i in $$files; do \
+					$(INSTALL_DATA) $$i $(pkgincludedir)/$$j ; \
+				done; \
+			else \
+				if test $$j != "/dev/null" ; then \
+					echo "Cannot find directory cxx/$$j to copy headers from." ; \
+				fi; \
+			fi ; \
+		done; \
+		if test "x$(HAVE_CLASSIC)" != "x0" -a "x$(HAVE_CLASSIC)" != "x" ; then \
+			for j in $(CCAFE_BABEL_WCLASSIC_INSTALL_INCLUDE_SUBDIRS_WITH_HEADERS) /dev/null ; do \
+				if test -d $(srcdir)/cxx/$$j -o -d cxx/$$j ; then \
+					echo "Installing in $(pkgincludedir)/$$j"; \
+					if test "x$(BUILD_INPLACE)" = "x0"; then \
+						files=`ls -1 $(srcdir)/cxx/$$j/*.h $(srcdir)/cxx/$$j/*.hh cxx/$$j/*.h cxx/$$j/*.hh $(QUIET) |grep -v Impl`; \
+					else \
+						files=`ls -1 cxx/$$j/*.h cxx/$$j/*.hh $(QUIET) |grep -v Impl`; \
+					fi; \
+					for i in $$files; do \
+						$(INSTALL_DATA) $$i $(pkgincludedir)/$$j ; \
+					done; \
+				else \
+					if test $$j != "/dev/null" ; then \
+						echo "Cannot find directory cxx/$$j to copy headers from." ; \
+					fi; \
+				fi ; \
+			done; \
+		fi ; \
+	fi
+	@if test "x$(HAVE_CLASSIC)" != "x0" -a "x$(HAVE_CLASSIC)" != "x" ; then \
+		for j in $(CCAFE_CLASSIC_INSTALL_INCLUDE_SUBDIRS_WITH_HEADERS) /dev/null ; do \
+			if test -d $(srcdir)/cxx/$$j -o -d cxx/$$j ; then \
+				echo "Installing in $(pkgincludedir)/$$j"; \
+				if test "x$(BUILD_INPLACE)" = "x0"; then \
+					files=`ls -1 $(srcdir)/cxx/$$j/*.h $(srcdir)/cxx/$$j/*.hh cxx/$$j/*.h cxx/$$j/*.hh $(QUIET) |grep -v Impl`; \
+				else \
+					files=`ls -1 cxx/$$j/*.h cxx/$$j/*.hh $(QUIET) |grep -v Impl`; \
+				fi; \
+				for i in $$files; do \
+					$(INSTALL_DATA) $$i $(pkgincludedir)/$$j ; \
+				done; \
+			else \
+				if test $$j != "/dev/null" ; then \
+					echo "Cannot find directory cxx/$$j to copy headers from." ; \
+				fi; \
+			fi ; \
+		done; \
+	fi
+
+install-libs:
+	@echo "Installing in $(libdir)"
+	$(HIDELIBTOOL)$(LIBTOOL) --mode=install cp cxx/drivers/$(CCAFE_PRELOAD_LIB) $(libdir)
+	$(HIDELIBTOOL)$(LIBTOOL) --mode=install cp cxx/drivers/$(BUILT_PRELOAD_LIB) $(pkglibdir)
+	$(HIDELIBTOOL)$(LIBTOOL) --mode=install cp cxx/obj/$(CCAFE_LIBTOOL_LIB) $(libdir)
+	$(HIDELIBTOOL)$(LIBTOOL) --mode=install cp cxx/obj/$(BUILT_LIBTOOL_LIB) $(pkglibdir)
+	src/uniquifyLibtool.sh  $(BUILT_LIBTOOL_LIB) $(pkglibdir) $(CCAFE_LIBTOOL_LIB) $(libdir) 
+	$(HIDELIBTOOL)$(LIBTOOL) --mode=install cp cxx/obj/$(CCAFE_LIBTOOL_DRIVER_LIB) $(libdir)
+	$(HIDELIBTOOL)$(LIBTOOL) --mode=install cp cxx/obj/$(BUILT_LIBTOOL_DRIVER_LIB) $(pkglibdir)
+	src/uniquifyLibtool.sh  $(BUILT_LIBTOOL_DRIVER_LIB) $(pkglibdir) $(CCAFE_LIBTOOL_DRIVER_LIB) $(libdir) 
+	@if test "x$(HAVE_BABEL)" != "x0" -a "x$(HAVE_BABEL)" != "x" ; then \
+		. $(FAKEPUSHD) ; \
+		$(INSTALL_DATA) src/libccafeCore.scl $(libdir);  \
+		$(LIBTOOL) --mode=install cp cxx/obj/$(CCAFE_BABEL_LIBTOOL_LIB) $(libdir) ; \
+		$(LIBTOOL) --mode=install cp cxx/obj/$(BUILT_BABEL_LIBTOOL_LIB) $(pkglibdir) ; \
+		src/uniquifyLibtool.sh  $(BUILT_BABEL_LIBTOOL_LIB) $(pkglibdir) $(CCAFE_BABEL_LIBTOOL_LIB) $(libdir) ; \
+	fi
+	$(LIBTOOL) --mode=finish $(LIBTOOL_FINISHFLAGS) $(libdir)
+	$(LIBTOOL) --mode=finish $(LIBTOOL_FINISHFLAGS) $(pkglibdir)
+
+
+install-bin: install-bin-scripts install-binaries
+
+install-binaries:
+	@. $(FAKEPUSHD) ; \
+	for i in $(INSTALL_BINS) ; do \
+		p=`echo $$i |sed -e 's%.*/%%g'` ; \
+		r=$${p}$(VER_SUFFIX)$(PROGRAM_SUFFIX) ; \
+		q=`echo $${r}|sed '$(transform)'`; \
+		$(LIBTOOL) --mode=install cp $$i $(bindir)/$$q ; \
+		if ! test -x $(bindir)/$$p ;  then \
+			echo "Creating sym-link$ $(bindir)/$${p}" ; \
+			(pushd $(bindir); $(LN_S) $${q} $${p} ; popd)  \
+		else \
+			echo "Leaving prior file or link $(bindir)/$${p} unchanged."; \
+			(pushd $(bindir); ls -l $$p; popd) \
+		fi \
+	done
+	
+install-bin-scripts:
+	@echo "Installing in $(bindir)"
+	@. $(FAKEPUSHD) ; \
+	for i in $(INSTALL_BIN_SCRIPTS) ; do \
+		p=`echo $$i |sed -e 's%.*/%%g'` ; \
+		r=$${p}$(VER_SUFFIX)$(PROGRAM_SUFFIX) ; \
+		if test -e $$i; then \
+			$(INSTALL) $$i $(bindir)/$${r} ; \
+		else \
+			if test "x$(BUILD_INPLACE)" = "x0"; then \
+				$(INSTALL) $(srcdir)/$$i $(bindir)/$${r}; \
+			else \
+				echo "Cannot find program $$i. Configure error?"; \
+				exit 1 ; \
+			fi; \
+		fi; \
+		if ! test -x $(bindir)/$$p ;  then \
+			echo "Creating sym-link$ $(bindir)/$${p}" ; \
+			(pushd $(bindir); $(LN_S) $${r} $${p} ; popd)  \
+		else \
+			echo "Leaving prior file or link $(bindir)/$${p} unchanged."; \
+			(pushd $(bindir); ls -l $$p; popd) \
+		fi; \
+	done
+	@. $(FAKEPUSHD) ; \
+	for i in $(RPM_BINS) ; do \
+		p=`echo $$i |sed -e 's%.*/%%g'` ; \
+		q=`echo $$p |sed -e 's%RPM%%g'`; \
+		r=$${q}$(PROGRAM_SUFFIX) ; \
+		if test -e $$i; then \
+			$(INSTALL) $$i $(bindir)/$$r ; \
+		else \
+			if test "x$(BUILD_INPLACE)" = "x0"; then \
+				$(INSTALL) $(srcdir)/$$i $(bindir)/$$r ; \
+			else \
+				echo "Cannot find program $$i. Configure error?"; \
+				exit 1 ; \
+			fi; \
+		fi ; \
+		if ! test -x $(bindir)/$$q ;  then \
+			echo "Creating sym-link$ $(bindir)/$${q}" ; \
+			(pushd $(bindir); $(LN_S) $${r} $${q} ; popd)  \
+		else \
+			echo "Leaving prior file or link $(bindir)/$${q} unchanged."; \
+			(pushd $(bindir); ls -l $$q; popd) \
+		fi; \
+	done
+	@if test "x$(HAVE_CLASSIC)" != "x0" -a "x$(HAVE_CLASSIC)" != "x" ; then \
+		. $(FAKEPUSHD) ; \
+		for i in $(RPM_WCLASSIC_BINS) ; do \
+			p=`echo $$i |sed -e 's%.*/%%g'` ; \
+			q=`echo $$p |sed -e 's%RPM%%g'`; \
+			r=$${q}$(PROGRAM_SUFFIX) ; \
+			if test -e $$i; then \
+				$(INSTALL) $$i $(bindir)/$$r ; \
+			else \
+				if test "x$(BUILD_INPLACE)" = "x0"; then \
+					$(INSTALL) $(srcdir)/$$i $(bindir)/$$r ; \
+				else \
+					echo "Cannot find program $$i. Configure error?"; \
+					exit 1 ; \
+				fi; \
+			fi; \
+			if ! test -x $(bindir)/$$q ;  then \
+				echo "Creating sym-link$ $(bindir)/$${q}" ; \
+				(pushd $(bindir); $(LN_S) $${r} $${q} ; popd)  \
+			else \
+				echo "Leaving prior file or link $(bindir)/$${q} unchanged."; \
+				(pushd $(bindir); ls -l $$q; popd) \
+			fi; \
+		done ; \
+	fi; \
+
+install-meta-xmlbuild:
+	@echo "Installing in $(pkgdatadir)/components"
+	@if test "x$(HAVE_CLASSIC)" != "x0" -a "x$(HAVE_CLASSIC)" != "x" ; then \
+		for i in $(INSTALL_CCA_META) ; do \
+			$(INSTALL_DATA) $$i.depl.cca $(pkgdatadir)/components ; \
+		done ; \
+	fi
+	@if test "x$(HAVE_BABEL)" != "x0" -a "x$(HAVE_BABEL)" != "x" ; then \
+		for i in $(CCAFE_BABEL_INSTALL_CCA_META) ; do \
+			$(INSTALL_DATA) $$i.depl.cca $(libdir) ; \
+		done ; \
+		if test "x$(HAVE_CLASSIC)" != "x0" -a "x$(HAVE_CLASSIC)" != "x" ; then \
+			for i in $(CCAFE_BABEL_WCLASSIC_INSTALL_CCA_META) ; do \
+				$(INSTALL_DATA) $$i.depl.cca $(libdir) ; \
+			done ; \
+		fi ;\
+	fi
+	@if test "x$(HAVE_CLASSIC)" != "x0" -a "x$(HAVE_CLASSIC)" != "x" ; then \
+		for i in $(INSTALL_CCA_META_MORPH) ; do \
+			cp $(BUILD_ROOT)/cxx/dc/component/$$i.depl.cca \
+				$(pkgdatadir)/components/classic.$$i.depl.cca ; \
+			chmod 644 $(pkgdatadir)/components/classic.*.cca ; \
+		done ; \
+	fi
+
+install-meta-:
+	@echo "Installing in $(pkgdatadir)/components"
+	@if test "x$(HAVE_CLASSIC)" != "x0" -a "x$(HAVE_CLASSIC)" != "x" ; then \
+		for i in $(INSTALL_CCA_META) ; do \
+			$(INSTALL_DATA) $$i.cca $(pkgdatadir)/components ; \
+		done ; \
+	fi
+	@if test "x$(HAVE_BABEL)" != "x0" -a "x$(HAVE_BABEL)" != "x" ; then \
+		for i in $(CCAFE_BABEL_INSTALL_CCA_META) ; do \
+			$(INSTALL_DATA) $$i.cca $(pkgdatadir)/components ; \
+		done ; \
+	fi
+	@if test "x$(HAVE_CLASSIC)" != "x0" -a "x$(HAVE_CLASSIC)" != "x" ; then \
+		for i in $(INSTALL_CCA_META_MORPH) ; do \
+			cp $(BUILD_ROOT)/cxx/dc/component/$$i.cca \
+				$(pkgdatadir)/components/classic.$$i.cca ; \
+			chmod 644 $(pkgdatadir)/components/classic.*.cca ; \
+		done ; \
+	fi
+
+install-components:
+	@echo "Installing components in $(libdir)"
+	@if test "x$(HAVE_CLASSIC)" != "x0" -a "x$(HAVE_CLASSIC)" != "x" ; then \
+		for i in $(CCAFE_CLASSIC_INSTALL_CCA_COMPONENTS) ; do \
+			$(LIBTOOL) --mode=install cp \
+				cxx/obj/libclassic$${i}$(VER_SUFFIX)$(PROGRAM_SUFFIX).la \
+				$(libdir) ; \
+		done ; \
+	fi
+	@if test "x$(HAVE_BABEL)" != "x0" -a "x$(HAVE_BABEL)" != "x" ; then \
+		for i in $(CCAFE_BABEL_INSTALL_CCA_COMPONENTS) ; do \
+			$(LIBTOOL) --mode=install cp \
+				cxx/obj/$${i}$(VER_SUFFIX)$(PROGRAM_SUFFIX).la \
+				$(libdir) ; \
+		done ; \
+		if test "x$(HAVE_CLASSIC)" != "x0" -a "x$(HAVE_CLASSIC)" != "x" ; then \
+			for i in $(CCAFE_BABEL_WCLASSIC_INSTALL_CCA_COMPONENTS) ; do \
+				$(LIBTOOL) --mode=install cp \
+					cxx/obj/$${i}$(VER_SUFFIX)$(PROGRAM_SUFFIX).la \
+					$(libdir) ; \
+			done ; \
+		fi; \
+		if test "x$(DOADAPTER)" = "x1"; then \
+			$(INSTALL) $(ADAPTER_COMPONENT) $(libdir); \
+			$(LIBTOOL) --mode=install cp \
+				$(ADAPTER_COMPONENT) $(libdir); \
+		fi; \
+	fi
+	$(LIBTOOL) --mode=finish $(LIBTOOL_FINISHFLAGS) $(libdir)
+
+install-xml:
+	@echo "Installing in $(pkgdatadir)/xml"
+	@if test "x$(HAVE_BABEL)" != "x0" -a "x$(HAVE_BABEL)" != "x" ; then \
+		for j in $(INSTALL_XML_DIRS) ; do \
+			(flist=`ls -1 $$j/*xml`; $(INSTALL_DATA) $$flist $(pkgdatadir)/xml); \
+		done ; \
+		if test "x$(HAVE_CLASSIC)" != "x0" -a "x$(HAVE_CLASSIC)" != "x" ; then \
+			for j in $(INSTALL_WCLASSIC_XML_DIRS) ; do \
+				(flist=`ls -1 $$j/*xml`; $(INSTALL_DATA) $$flist $(pkgdatadir)/xml); \
+			done ; \
+		fi ; \
+	fi
+
+install-sidl:
+	@echo "Installing sidl in $(pkgdatadir)"
+	@if test "x$(HAVE_BABEL)" != "x0" -a "x$(HAVE_BABEL)" != "x" ; then \
+		for i in $(INSTALL_SIDL) ; do \
+			$(INSTALL_DATA) $$i $(pkgdatadir) ; \
+		done ; \
+	fi
+
+#gnu cp-ism. if it gets to portability madness, use tar instead.
+install-share:
+	@echo "Installing $(SHARE_FILES) in $(pkgdatadir)"
+	@$(INSTALL_DATA) $(SHARE_FILES) $(pkgdatadir)
+	@. $(FAKEGNUCP) ; cpparents $(SHARE_PATH_FILES) $(pkgdatadir)
+	@. $(FAKEGNUCP) ; cd $(srcdir); cpparents $(SHARE_EXAMPLE_FILES) $(pkgdatadir)
+	@echo "Installing in $(pkgdatadir)/bin"
+	@for i in $(PKG_BIN) ; do \
+		$(INSTALL) $(srcdir)/$$i $(pkgdatadir)/bin ; \
+	done
+	@if test "x$(HAVE_BABEL)" != "x0" -a "x$(HAVE_BABEL)" != "x" ; then \
+		for i in $(CCAFE_BABEL_PKG_BIN) ; do \
+			$(INSTALL) $$i $(pkgdatadir)/bin ; \
+		done ; \
+		if test "x$(HAVE_CLASSIC)" != "x0" -a "x$(HAVE_CLASSIC)" != "x" ; then \
+			for i in $(CCAFE_BABEL_WCLASSIC_PKG_BIN) ; do \
+				$(INSTALL) $$i $(pkgdatadir)/bin ; \
+			done ; \
+		fi ; \
+	fi
+
+# Python Install
+
+
+PYINCLUDEDIR = $(shell $(BABEL_ROOT)/bin/babel-config --query-var=PYTHONINC)
+CCASPEC_INCLUDE_DIR = $(shell $(BABEL_CCA_ROOT)/bin/cca-spec-babel-config --var CCASPEC_pkgincludedir)
+INCLUDEDIR = $(BABEL_ROOT)/include
+INCLUDEDIR2 = .
+SIDLPYTHONLIB = $(BABEL_ROOT)/lib
+BABEL_RUNTIME_INCLUDE = $(INCLUDEDIR)/$(PYTHON_VERSION)/babel
+BABEL_RUNTIME_INCLUDE2 = $(INCLUDEDIR)/$(PYTHON_VERSION)/llnl_babel
+
+install-python:
+	(cd $(BUILD_ROOT)/cxx/dc/$(BABEL_SRC_TREE)/babel-cca/py-client; python setup.py install --prefix=$(INSTALL_ROOT) --exec-prefix=$(INSTALL_ROOT)\
+	  --include-dirs=$(PYINCLUDEDIR) \
+	  --include-dirs=$(INCLUDEDIR) \
+	  --include-dirs=$(INCLUDEDIR2)	\
+	  --include-dirs=$(BABEL_RUNTIME_INCLUDE) \
+	  --library-dirs=$(SIDLPYTHONLIB) \
+	  --force \
+			)
+	(cd $(BUILD_ROOT)/cxx/dc/$(BABEL_SRC_TREE)/component/PrinterComponent/py-client; python setup.py install --prefix=$(INSTALL_ROOT) --exec-prefix=$(INSTALL_ROOT)\
+	  --include-dirs=$(PYINCLUDEDIR) \
+	  --include-dirs=$(INCLUDEDIR) \
+	  --include-dirs=$(INCLUDEDIR2)	\
+	  --include-dirs=$(BABEL_RUNTIME_INCLUDE2) \
+	  --include-dirs=$(BABEL_RUNTIME_INCLUDE) \
+	  --include-dirs=$(CCASPEC_INCLUDE_DIR) \
+	  --include-dirs=$(CCAFE_ROOT)/cxx/dc/$(BABEL_SRC_TREE)/babel-cca/py-client \
+	  --library-dirs=$(SIDLPYTHONLIB) \
+	  --force \
+			)
+	
+

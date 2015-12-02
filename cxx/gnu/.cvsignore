@@ -1,0 +1,4 @@
+Makefile.depends
+Makefile
+*.a
+*.x

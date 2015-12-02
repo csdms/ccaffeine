@@ -1,0 +1,80 @@
+buildroot=../..
+CCAFE_HOME=..
+
+zeroth: first
+
+include $(CCAFE_HOME)/Makefile.Rules
+
+VPATH := $(srcdir)/cxx/parameters
+
+#OTHERFLAGS= -DTIMESTAMP="\"`date` by `whoami`@`hostname`\"" \
+	-DCCAROOT="\"`pwd | sed -e 's;/cca$$;;g'`\""
+
+# CXX = c++
+# CXXFLAGS = -I. -I$(CCAFE_HOME)
+
+%.o : %.C
+	$(CXX) -c $(CXXFLAGS) $(OTHERFLAGS) $<
+
+%.o : %.cxx
+	$(CXX) -c $(CXXFLAGS) $(OTHERFLAGS) $<
+
+%.i : %.cxx
+	$(CXX) -c -E $(CXXFLAGS) $(OTHERFLAGS) $< > $@
+
+CXXSRC = \
+parametersDynamic.cxx \
+BaseParameter.cxx \
+BoolParameter.cxx \
+DoubleParameter.cxx \
+FloatParameter.cxx \
+IntParameter.cxx \
+LongParameter.cxx \
+StringParameter.cxx
+
+CXXOBJ = $(CXXSRC:%.cxx=%.o)
+
+LIB=libparameters.a
+OBJS=$(CXXOBJ)
+
+first all : lib
+	@touch .allbuild.complete
+
+bins:
+	@touch .binbuild.complete
+
+lib $(LIB): warning $(CXXOBJ) 
+	@-$(RM)  $(LIB)
+	ar ruv $(LIB) *.o
+	$(RANLIB) $(LIB)
+	@echo done $(CXXOBJ)
+
+warning :
+	@echo CCAFE_HOME = $(CCAFE_HOME)   
+	@echo Make sure this is set properly!
+clean : 
+	$(RM) -f $(CXXOBJ) $(LIB) *.i shr.o *.u src-list
+
+depend:
+	$(DEPEND) $(CXXFLAGS) $(CXXSRC)
+
+depend-sys:
+	$(DEPENDSYS) $(CXXFLAGS) $(CXXSRC)
+
+gen:
+	@echo "gen parameters done"
+
+src-list:
+	@$(RM) src-list
+	@echo "PARAMETERS_LIST=\\" >> src-list
+	@for i in $(CXXSRC) ; do \
+		echo "$(srcdir)/cxx/parameters/$$i \\" >> src-list ; \
+	done
+	@echo "" >> src-list
+	@echo updated src-list
+
+.PHONY: src-list
+
+ifneq "x$(TARGET)" "xclean"
+include Makefile.depends
+endif

@@ -1,0 +1,15 @@
+*.html
+Makefile
+*.gif
+*.db
+*.tex
+*.class
+*.ps
+*.pnm
+*.eps
+*.aux
+*.dvi
+*.log
+.*html
+core
+

@@ -1,0 +1,119 @@
+This file is administrivia.
+For build help, see 
+http://www.cca-forum.org/cca-sc01/dccafeQuick.html
+or 
+cca-spec/INSTALL
+and then
+dccafe/A.GETTING.STARTED
+
+Sections below:
+RELEASE
+PORTABILITY
+ENVIRONMENT VARIABLES
+CHANGES
+BUILDING
+BUGS
+CONTACTS
+NOTES
+
+Release number:
+dccafe-sc01/ccafe-0.3.0-sandia3
+
+This work has been reviewed for unlimited release as:
+SAND-2001-8235S.
+
+Contents by:
+B. Allan, R. Armstrong, Craig Rasmussen, J. Ray, A. Wolfe, 
+and the GNU community (getopt).
+
+See Also:
+http://www.cca-forum.org
+http://www.cca-forum.org/cca-sc01
+
+This is alpha-release software for development purposes only. 
+Feedback is appreciated. Redistribution is not advisable.
+
+PORTABILITY: (Believed to work under)
+
+Linux/gcc 2.91.66 and 2.95.3
+Solaris WS 5.0 and later.
+IRIX 6.x and later with proper compiler options.
+MacOSX
+
+
+ENVIRONMENT variables desirable
+
+java and javac should be located in your PATH.
+
+CCATUT_HOME should be set and name the directory containing
+the unpacked directories cca-spec, dccafe, sandbox, esi, and other
+CCA SC01 related directories. 
+Probably CCATUT_HOME is something like $HOME/cca-sc01 or /tmp.
+
+The java CLASSPATH normally is taken care of, but if 
+the ccaffeine build and test fail, add to it:
+.:"$CCATUT_HOME"/cca-spec/java:"$CCATUT_HOME"/dccafe/java
+
+
+CHANGES:
+
+dccafe-sc01/ccafe-0.3.0-sandia3 ------------------------------------------
+This is an patch release to fix a bug which manifests as
+a failed class load under java 1.3 (why are they allergic
+to symbolic links in the classpath?), to provide Rob's
+stovepipe package, to clean up some makefile insanity, to
+improve configure macros, and generally provide a snapshot
+for the CCA SC01 applications release. This is still alpha
+software; in fact the entire C++ code base is likely to be
+reimplemented shortly using more of the C++ features and
+SIDL/babel. (look out! templates here we come).
+
+ccafe-0.3.0-sandia2 ------------------------------------------
+This is an patch release to fix a bug which manifests as
+a failed dynamic_cast under SUNWS 5.0.
+
+ccafe-0.3.0-sandia1 ------------------------------------------
+This is primarily a patch release for C++ and gcc 2.95.3/solaris WS5.0.
+The configure script has been improved per ANL and SNL feedback.
+The java included is not extensively tested, and, indeed,
+older java ccaffeine releases should be compatible with this
+C++ ccaffeine release. 
+
+BUILDING:
+(gnu tar may be needed to fully extract this tar file on some
+unix-like platforms). Some filenames may be too long for old,
+buggy tars to cope.
+
+Need to build cca-spec/ and dccafe/.
+See the readme's, getting.starteds, etc in each for details.
+In general, it's
+./configure 
+(where you may need to specify --with-* options to configure.)
+./configure --help for details.
+and
+gmake
+
+BUGS:
+JAVA not detected quite right in configure under solaris jdks,
+patch supplied by ANL not yet applied.
+
+SPECIAL NOTE:
+The CCA specification working group changed some details in
+the gov::cca::Services interface. These are likely to break code;
+this release of ccaffeine does not yet incorporate the changes.
+Those wishing to write specification compliant code will be
+ahead of the framework implementers; in fact at this point
+CCA has no C/C++/Java/Python specifications at all.
+
+Contacts:
+For ccaffeine specific questions:
+ccafe-help@z.ca.sandia.gov
+Please list the release you are using. This release
+is dccafe-sc01/ccafe-0.3.0-sandia3
+
+Requires:
+java, javadoc, CC(however spelled)
+
+Optional:
+mpi, doc++, doxygen, blas, lapack
+

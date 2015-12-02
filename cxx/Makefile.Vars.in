@@ -1,0 +1,233 @@
+#-----------------------------------------------------------------
+# global makefile include for ccaffeine cxx and java trees.
+#-----------------------------------------------------------------
+
+@SET_MAKE@
+
+# about the release
+CCAFE_MAJOR_VERSION= @CCAFE_MAJOR_VERSION@
+CCAFE_MINOR_VERSION= @CCAFE_MINOR_VERSION@
+CCAFE_PATCH_LEVEL= @CCAFE_PATCH_LEVEL@
+CCAFE_VERSION_UNDERBAR= @CCAFE_VERSION_UNDERBAR@
+CCAFE_VERSION= @CCAFE_VERSION@
+CCAFE_DEVELOPER=@CCAFE_DEVELOPER@
+CCAFE_CMDSHELL=@CCAFE_CMDSHELL@
+VERSION= @VERSION@
+# source root is srcdir
+srcdir=@fullpathsrcdir@
+# build root is ccafe_root
+CCAFE_ROOT= @CCAFE_ROOT@
+CCAFE_SPEW= @CCAFE_SPEW@
+PROGRAM_SUFFIX=@PROGRAM_SUFFIX@
+VER_SUFFIX=@VER_SUFFIX@
+
+# note: CCAFE_ROOT is the absolute path for external consumption.
+# CCAFE_HOME is defined per Makefile and is relative to CCAFE_ROOT
+
+# required external dependencies
+CCA_ROOT= @CLASSIC_CCA_ROOT@
+CLASSIC_CCA_ROOT = @CLASSIC_CCA_ROOT@
+# optional dependency
+NEO_CCA_ROOT_INSTALLED=@NEO_CCA_ROOT_INSTALLED@
+
+BABEL_CCA_ROOT = @BABEL_CCA_ROOT@
+BABEL_ROOT = @BABEL_ROOT@
+HAVE_BABEL = @HAVE_BABEL@
+BOOST_ROOT = @BOOST_ROOT@
+# defined iff boost used and not in a system default include path.
+BOOST_INC = @BOOST_INC@ @BOOST_FLAGS@
+CCAFE_BUILD_PY = @CCAFE_BUILD_PY@
+
+#install or build trees being compiled against?
+BABEL_CCA_INSTALLED=@BABEL_CCA_INSTALLED@
+CLASSIC_CCA_INSTALLED=@CLASSIC_CCA_INSTALLED@
+HAVE_CLASSIC = @HAVE_CLASSIC@
+# aka HAVE_NEO
+NEO_CCA_INSTALLED=@NEO_CCA_INSTALLED@
+NEO_CCA_CONFIG=@NEO_CCA_CONFIG@
+EGNEO_CONFIG=@EGNEO_CONFIG@
+NEOTESTPARAMETER_CONFIG=@NEOTESTPARAMETER_CONFIG@
+CCAFE_TESTS_NEO=@CCAFE_TESTS_NEO@
+
+# handling for version family directory of babel sources
+BSUF=@BSUF@
+
+# optional external dependencies 
+# requires path to siloon and python if PYTHON_SCRIPTING is on.
+PYTHON_SCRIPTING  = @PYTHON_SCRIPTING@
+
+# stuff for generated docs.
+DOT=@DOT@
+DOXYGEN=@DOXYGEN@
+DOTTARG=@DOTTARG@
+DOXYGENTARG=@DOXYGENTARG@
+BUILDDOCS=@BUILDDOCS@
+
+
+# if mpi is used, it should be defined below.
+# the multiplicity of variables is needed to cope
+# with buggy versions of mpich wrappers.
+# mpi info
+MPI= @MPI@
+MPI_HOME= @MPI_HOME@
+MPI_ARCH= @MPI_ARCH@
+MPICC= @MPICC@
+MPICXX= @MPICXX@
+MPI_LD= @MPI_LD@
+MPIRUN= @MPIRUN@
+MPI_LDFLAGS= @MPI_LDFLAGS@
+MPILIB= @MPILIB@
+# transitional crud
+MPI_LIBDIR= @MPI_LIBDIR@
+MPI_INC_ODD= @MPI_INC_ODD@
+MPI_SO_LIBDIR= @MPI_SO_LIBDIR@
+MPILD_SO_FLAGS= @MPILD_SO_FLAGS@
+# stuff from config switches
+MPIPRERUN= @MPIPRERUN@ 
+MPIF77= @MPIF77@ 
+MPIF90= @MPIF90@ 
+MPI_INC= @MPI_INC@ 
+MPI_BIN= @MPI_BIN@ 
+MPI_STATIC_LIBS= @MPI_STATIC_LIBS@ 
+MPI_STATIC_LDFLAGS= @MPI_STATIC_LDFLAGS@ 
+MPI_SO_LIBS= @MPI_SO_LIBS@ 
+MPI_SO_LDFLAGS= @MPI_SO_LDFLAGS@ 
+MPI_CFLAGS= @MPI_CFLAGS@ 
+MPI_FFLAGS= @MPI_FFLAGS@ 
+MPI_CXXFLAGS= @MPI_CXXFLAGS@ 
+
+HAVE_XML=@HAVE_XML@
+XMLLIB=@XMLLIB@
+XMLINC=@XMLINC@
+HAVE_THREADS=@CCAFE_THREADS@
+HAVE_SOCKETS=@CCAFE_SOCKETS@
+
+BABEL_LIBTOOL=@BABEL_LIBTOOL@
+CCAFE_PRELOAD_LIB=@CCAFE_PRELOAD_LIB@
+BUILT_PRELOAD_LIB=@BUILT_PRELOAD_LIB@
+CCAFE_LIBTOOL_LIB=@CCAFE_LIBTOOL_LIB@
+BUILT_LIBTOOL_LIB=@BUILT_LIBTOOL_LIB@
+CCAFE_LIBTOOL_DRIVER_LIB=@CCAFE_LIBTOOL_DRIVER_LIB@
+BUILT_LIBTOOL_DRIVER_LIB=@BUILT_LIBTOOL_DRIVER_LIB@
+
+CCAFE_SHARED_DRIVER_LIB=@CCAFE_SHARED_DRIVER_LIB@
+CCAFE_BABEL_LIBTOOL_LIB=@CCAFE_BABEL_LIBTOOL_LIB@
+CCAFE_BABEL_SHARED_LIB=@CCAFE_BABEL_SHARED_LIB@
+CCAFE_BABEL_STATIC_LIB=@CCAFE_BABEL_STATIC_LIB@
+BUILT_SHARED_DRIVER_LIB=@BUILT_SHARED_DRIVER_LIB@
+BUILT_BABEL_LIBTOOL_LIB=@BUILT_BABEL_LIBTOOL_LIB@
+BUILT_BABEL_SHARED_LIB=@BUILT_BABEL_SHARED_LIB@
+BUILT_BABEL_STATIC_LIB=@BUILT_BABEL_STATIC_LIB@
+
+
+# dynamic loading for this platform
+include $(CCAFE_ROOT)/Makefile.dl
+# srcdir is identical for all directories in our tree as coded.
+GENDLINDEX=$(srcdir)/cxx/util/genDLIndex
+GENDLINDEXXML=$(srcdir)/cxx/util/genDLIndexXML
+GENDLWRAPPERSLOPPY=$(srcdir)/cxx/util/genDLWrapperSloppy
+GENDLWRAPPERSTRICT=$(srcdir)/cxx/util/genDLWrapperStrict
+GENDLWRAPPEROPAQUE=$(srcdir)/cxx/util/genDLWrapperOpaque
+
+####################################
+# LIBTOOL related stuff from configure
+# set NOISE to empty to be quiet and to noise to make target list files
+NOISE=@HAVE_NOISE@
+# set HIDELIBTOOL to empty to see libtool invocations or @ to not see.
+HIDELIBTOOL=@HIDELIBTOOL@
+# set HIDECOMPILE to empty to c/c++ compile lines or --quiet to not see.
+HIDECOMPILE=@HIDECOMPILE@
+# set PURESINGLE to yes to get mpi-free driver along with mpi build.
+PURESINGLE=@PURESINGLE@
+
+# compiler tools
+# Some sh code in configure tries to guess
+# the appropriate template instantiation flags.
+CFLAGS= @CFLAGS@ @EXTRA_CFLAGS@ -D@OS_ARCH@
+ENV_CFLAGS = @CFLAGS@
+CFLAGS_DEBUG= @CFLAGS_DEBUG@
+CFLAGS_OPTIMIZE= @CFLAGS_OPTIMIZE@
+CFLAGS_WARNING= @CFLAGS_WARNING@
+CPP= @CPP@
+CC= @CC@
+CXX= @CXX@
+CXX_NOPS= @CXX@
+CXXFLAGS= @CXXFLAGS@ 
+ENV_CXXFLAGS = @CXXFLAGS@
+NOT_HAVE_CXX_LIMITS= @NOT_HAVE_CXX_LIMITS@
+CXX_TEMPLATES= @CXX_TEMPLATES@
+CXXCPP= @CXXCPP@
+FLIBS=@FLIBS@
+LIBS=@LIBS@
+# debugger tools
+MATH_LIBS= @MATH_LIBS@
+EFENCE_LIB=
+PURIFY= @PURIFY@
+CCAFE_FORCE=@CCAFE_FORCE@
+BABEL_FLAGS=@BABEL_FLAGS@
+CCASPEC_BABEL_BABEL=@CCASPEC_BABEL_BABEL@
+CCAFE_THREAD_LIBS = @PTLIB@
+
+# unixisms
+AWK= @AWK@
+LN_S= @LN_S@
+RANLIB= @RANLIB@
+LEX= @LEX@
+YACC= @YACC@
+TCLSH= @TCLSH@
+HAVE_TCL=@HAVE_TCL@
+BASH= @BASH@
+RUBY= @RUBY@
+GNUCP=@GNU_CP@
+INSTALL=@INSTALL@
+INSTALL_DATA=@INSTALL_DATA@
+
+# used inside configure (along with compiler name) to pick templates flags
+TARGET_OS=@target_os@
+TARGET_CPU=@target_cpu@
+TARGET_VENDOR=@target_vendor@
+HOST_OS=@host_os@
+HOST_CPU=@host_cpu@
+HOST_VENDOR=@host_vendor@
+
+bindir = @bindir@
+sbindir = @sbindir@
+libexecdir = @libexecdir@
+datarootdir = @datarootdir@
+datadir = @datadir@
+docdir = @datadir@/doc
+sysconfdir = @sysconfdir@
+sharedstatedir = @sharedstatedir@
+localstatedir = @localstatedir@
+libdir = @libdir@
+infodir = @infodir@
+mandir = @mandir@
+includedir = @includedir@
+oldincludedir = /usr/include
+pkgdatadir = $(datadir)/@PKG_NAME@
+pkgdocdir = $(datadir)/doc/@PKG_NAME@
+pkglibdir = $(libdir)/@PKG_NAME@
+pkgincludedir = $(includedir)/@PKG_NAME@
+transform=@program_transform_name@
+CCAFE_RPM_ROOT=@CCAFE_RPM_ROOT@
+CCAFE_RPM_libdir=@CCAFE_RPM_libdir@
+
+#-----------------------------------------------------------------
+# IDLE: probably should be/will be used
+#-----------------------------------------------------------------
+GMAKE= @GMAKE@
+TIME_WITH_SYS_TIME= @TIME_WITH_SYS_TIME@
+HAVE_SYS_TIME_H= @HAVE_SYS_TIME_H@
+SETVBUF_REVERSED= @SETVBUF_REVERSED@
+HAVE_VPRINTF= @HAVE_VPRINTF@
+HAVE_SYS_IOCTL_H= @HAVE_SYS_IOCTL_H@
+HAVE_SYS_FILIO_H= @HAVE_SYS_FILIO_H@
+USE_FIONBIO= @USE_FIONBIO@
+
+HAVE_LIBREADLINE= @HAVE_LIBREADLINE@
+LIBREADLINE_LIBS= @LIBREADLINE_LIBS@
+HAVE_READLINE_READLINE_H = @HAVE_READLINE_READLINE_H@
+HAVE_READLINE_H = @HAVE_READLINE_H@
+HAVE_READLINE_HISTORY = @HAVE_READLINE_HISTORY@
+HAVE_HISTORY_H = @HAVE_HISTORY_H@
+HAVE_READINE_HISTORY_H = @HAVE_READLINE_HISTORY_H@

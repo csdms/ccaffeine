@@ -1,0 +1,4 @@
+*.u
+src-list
+xlcdepinclude
+xlcdepinclude_nosys

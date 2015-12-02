@@ -1,0 +1,79 @@
+# this is a fragment to be included in makes in
+# arbitrary locations, so it doesn't include
+# anything determined by ccafe configure. it's
+# generated just so it's in the tree for a vpath build.
+
+# Use of this file requires predefining somehow
+# CCAFE_CXX_ROOT, for example
+# CCAFE_CXX_ROOT= /home/baallan/src/dccafe/cxx
+# This file provides definitions which may be useful
+# in building framework extensions or CCA components
+# dependent on ccaffeine-specific framework services.
+#
+# if you also want to use mpi the same way ccaffeine does,
+# also include MakeIncl.CCAFE_MPI
+
+
+# You don't *really* want to treat us as a package. You
+# might want to use several parts of us though. 
+# CCAFE_INC is used to get at all our crap.
+CCAFE_INC = -I$(CCAFE_CXX_ROOT)
+
+# CCAFE_PINC is used to get just our
+# interesting port definitions; and it should
+# be going away soon.
+CCAFE_PINC = -I$(CCAFE_CXX_ROOT)/dc/port
+
+# We have lots of pieces, many independent
+
+# JC++ java/c++ source compatibility classes
+JCP_INC = $(CCAFE_INC)
+JCP_LIB = $(CCAFE_CXX_ROOT)/jc++/libjcpp.a
+
+# Cmd parser classes
+CMD_INC = $(CCAFE_INC)
+CMD_LIB = $(CCAFE_CXX_ROOT)/cmd/libcmd.a
+
+# Parameter i/o,storage classes
+PAR_INC = $(CCAFE_INC)
+PAR_LIB = $(CCAFE_CXX_ROOT)/parameters/libparameters.a
+
+# Our IO object and other obscure utils.
+CCAFE_UTIL_INC = $(CCAFE_INC)
+CCAFE_UTIL_LIB = $(CCAFE_CXX_ROOT)/util/libcafeutil.a
+
+# Our framework stuff we can't really decouple
+# and our independent bits it requires.
+
+# our "port lib"
+# most component writers need only this.
+CCAFE_PLIBS = \
+$(CCAFE_CXX_ROOT)/dc/port/libports.a \
+$(PAR_LIB) \
+$(CMD_LIB) \
+$(JCP_LIB) \
+$(CCAFE_UTIL_LIB)
+
+# our "framework core" lib, for embedding in other's mains.
+# NOTE: this is unsupported. it lacks features currently
+# found only in the chez-rob sandbox. it isn't cca compliant.
+# on the other hand, it works ;-)
+CCAFE_CORELIB=$(CCAFE_CXX_ROOT)/lib/libccafeCore.a
+
+# Experimental ccaffeine core + abstract fwk and builderservice
+# prototype. This is unsupported, pending CCA action.
+CCAFE_BSLIB= \
+$(CCAFE_ROOT)/chez-rob/protoBS/libprotobs.a \
+$(CCAFE_CORELIB)
+
+# our "lib" list for ccaffeine mains.
+CCAFE_LIBS = \
+$(CCAFE_CXX_ROOT)/dc/port/libports.a \
+$(CCAFE_CXX_ROOT)/dc/component/libcomponent.a \
+$(CCAFE_CXX_ROOT)/dc/framework/libdc_fwk.a \
+$(CCAFE_CXX_ROOT)/dc/distributed/libdistributed.a \
+$(CCAFE_CXX_ROOT)/dc/user_iface/ccacmd/libccacmd.a \
+$(PAR_LIB) \
+$(CMD_LIB) \
+$(JCP_LIB) \
+$(CCAFE_UTIL_LIB)

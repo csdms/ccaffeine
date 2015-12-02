@@ -1,0 +1,2 @@
+#!/bin/sh
+./ccafe-batch --ccafe-mpi no --ccafe-rc test.rc

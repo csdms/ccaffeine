@@ -1,0 +1,200 @@
+# $Revision: 1.1 $
+# $Author: baallan $
+
+zeroth: first
+
+# computed from `ccafe-config --var CCAFE_MAKEINCL`
+# at configure time
+CCAFE_MAKEINCL=@CCAFE_MAKEINCL@
+
+include $(CCAFE_MAKEINCL)
+include $(CCAFE_CLASSIC_CCA_CONFIG)
+
+
+# ccaffeine related stuff. see APPL vars below for component
+# specific flag location.
+EXTERNAL_INC=-I$(CCAFE_pkgincludedir) $(CCA_INC)
+
+
+# some options for this example
+PROFILING=yes
+PROFILING=no
+LINUXGCC_PROF_OPTS=-pg -D_STATIC_LINKING_STUFF -fprofile-arcs -ftest-coverage
+
+CCAFE_HOME=$(CCAFE_pkgdatadir)/cxx
+include $(CCAFE_HOME)/Makefile.Rules
+
+######################## Set stuff here ####################################
+
+#list all classic static libs here and in the examplestaticfactory.cxx file
+# it happens the list is empty for our present example because in
+# normal construction of a fwk supporting classic, the classic
+# test components we need are in libccafeCore.a
+APPL_STATIC_LIBS= \
+
+# probably list nothing here.
+# may need to list some includes so that ExampleStaticFactory will compile.
+APPL_INCLS= \
+
+######################## End Set stuff here ####################################
+
+
+CCAFELIBS=$(CCAFE_libdir)/$(CCAFE_STATIC_DRIVER_LIB)
+CCA_LIB=$(CLASSIC_libdir)/$(CLASSIC_STATIC_LIB)
+BABEL_CCA_LIBS=$(CCASPEC_libdir)/$(CCASPEC_STATIC_LIB)
+
+BABEL_LIB3= $(BABEL_CCA_LIBS) $(BABEL_ROOT)/lib/libsidl.a
+BABELSTUFF_INC= $(BABEL_INC) $(BABEL_CCA_INC) 
+
+ifeq "$(HAVE_BABEL)" "0"
+BABEL_LIB1=
+LINK_BABEL_LIB1=
+BABEL_LIB2=
+BABEL_LIB3=
+BABELSTUFF_INC=
+endif
+
+ifeq "$(NEO_CCA_INSTALLED)" "1"
+NEO_INCLUDE=$(NEOCCA_INC)
+else
+NEO_INCLUDE=
+endif
+
+
+LOCALFLAGS = $(EXTERNAL_INC) $(BABELSTUFF_INC) $(APPL_INCLS)
+ifeq "x$(PROFILING)" "xyes"
+PROF_LINK_OPTS=$(LINUXGCC_PROF_OPTS)
+endif
+CPPFLAGS= $(CXXFLAGS) $(LOCAL_FLAGS) -E
+
+
+
+# the next definition must be kept in sync with the definition of
+# CCALIBS. CCALIBS is used only for dependency checks while this
+# this must include some linker flags to handle .so files.
+#
+LINK_CCALIBS= \
+$(APPL_STATIC_LIBS) \
+$(LIBREADLINE_LIBS) \
+$(CCAFELIBS) \
+$(CCA_LIB) \
+$(BABEL_LIB2) \
+$(BABEL_LIB3)
+
+%.o : %.cxx
+	$(CXX) -c $(CXXFLAGS) $(LOCALFLAGS) $<
+
+%.i : %.cxx
+	-$(RM) $@
+	$(CXX) $(CPPFLAGS) $(LOCALFLAGS) $< | grep '[a-z]' |egrep -v '^# ' > $@
+
+%.cxx.ps : %.cxx
+	-enscript -2rg --pretty-print=cpp --color $< -o $@
+
+%.h.ps : %.h
+	-enscript -2rg --pretty-print=cpp --color $< -o $@
+
+RETIRED= Link.cxx 
+
+
+CXXSRC= StaticCmdLineClientMain.cxx ExampleStaticFactory.cxx
+
+CXXOBJ= $(CXXSRC:%.cxx=%.o)
+
+first: bins
+
+bins: ex-ccafe-client ccafe-batch
+
+clientban:
+	@echo "============================================================="	
+	@echo "= building ex-ccafe-client"
+	@echo "============================================================="	
+
+
+StaticCmdLineClientMain.o : StaticCmdLineClientMain.cxx
+	$(MPICXX) -c $(CXXFLAGS) $(LOCALFLAGS) \
+	$(CCA_PLLFLAGS) \
+	StaticCmdLineClientMain.cxx
+
+
+# executables
+
+ctest:
+	@echo 'mpi compilers: $(MPICXX) $(MPICC)'
+	@echo 'CXXFLAGS=$(CXXFLAGS)'
+	@echo 'CCALIBS=$(CCALIBS)'
+	@echo 'LINK_CCALIBS=$(LINK_CCALIBS)'
+	@echo 'CCA_ROOT=$(CCA_ROOT)'
+	@echo 'CCA_LIB=$(CCA_LIB)'
+	@echo 'CCA_LIBS=$(CCA_LIBS)'
+	@echo 'CCA_CXX_HOME=$(CCA_CXX_HOME)'
+	@echo 'LOCALFLAGS=$(LOCALFLAGS)'
+
+ex-ccafe-client ex-CmdLineClient : StaticCmdLineClientMain.o \
+				$(CXXOBJ) \
+				$(CCAFELIBS)
+	$(RM) -f $@
+	$(RM) -f ex-CmdLineClient.exe ex-ccafe-client
+	(BFLFLAGS=`echo $(CXXFLAGS) |sed -e 's; -G ; ;'` ; \
+	$(PURIFY) $(MPICXX) $$BFLFLAGS $(LOCALFLAGS) $(STV_LDFLAGS) \
+		$(CXXOBJ)  \
+		$(LINK_CCALIBS) \
+		$(CXXLDFLAGS) \
+		$(MATHLIBS) \
+		$(CCAFE_LD_FLAGS)  $(CCAFE_DL_LIBS)  \
+		$(FLIBS) $(SOCKETLIBS) $(PTHREADLIBS) $(XMLLIB) \
+                $(PROF_LINK_OPTS) \
+		-o ex-ccafe-client )
+	$(LN_S) ex-ccafe-client ex-CmdLineClient.exe
+
+ccafe-batch: ex-ccafe-client
+	$(RM) ex-ccafe-batch
+	ln -s ex-ccafe-client ccafe-batch
+
+
+# testing
+
+run-oneproc:
+	@echo Running the command line view in one proc for humans ...
+	./ex-ccafe-client --type oneProcInteractive
+
+run-interactive:
+	@echo Running the command line view for humans ...
+	mpirun -np 3 ./ex-ccafe-client --type interactive
+
+run-gui-interactive:
+	@echo Running the client with GUI view interactively ...
+	./ex-ccafe-client --type gui
+
+run-client:
+	@echo This will most likely bomb unless it can connect to somebody:
+	./ex-ccafe-client --name 127.0.0.3
+
+clean:	lclean
+
+lclean: nopi
+	-$(RM) -f *.o *.a *.so *.exe *.u \
+		ex-* pErr* pOut* \
+		*~ 
+	-$(RM) -r autom* config.log config.status
+
+distclean: clean
+	$(RM) reconfigure
+
+nopi:
+	-$(RM) PId*
+
+depend:	subdepend
+	$(DEPEND) $(CXXFLAGS) $(LOCALFLAGS) $(CXXSRC)
+
+depend-sys: subdepend-sys
+	$(DEPENDSYS) $(CXXFLAGS) $(LOCALFLAGS) $(CXXSRC)
+
+subdepend:
+
+subdepend-sys:
+
+configure: configure.ac config/*.m4
+	autoconf-2.53 configure.ac > configure
+	chmod a+x ./configure
+

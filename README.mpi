@@ -1,0 +1,10 @@
+When building with shared-libraries version of mpi,
+there are still bugs in the mpich 1.2.5 script wrapper mpiCC.
+Here's a config line that works for the rpm version as of
+jan 2003:
+
+./configure  --with-boost=/usr/local/include --with-mpi=/usr/local/cca --with-cca-classic=/usr/local --with-cca-babel=/usr/local --prefix=/usr/local '--with-mpi-cxx=/usr/local/cca/bin/mpiCC -shlib -Wl,-rpath,/usr/local/cca/lib'
+
+contrary to comments from bill gropp, -shlib doesn't affect the outcome,
+and can be omitted.
+

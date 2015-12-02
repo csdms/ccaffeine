@@ -1,0 +1,59 @@
+
+# $Revision: 1.1 $
+# $Author: baallan $
+buildroot=../..
+
+
+# Needed for VIS for some strange reason
+CCAFE_HOME = ..
+
+include $(CCAFE_HOME)/Makefile.Rules
+VPATH := $(fullpathsrcdir)/cxx/dc
+
+SUBDIRS = \
+	port    \
+	services \
+	framework  \
+	distributed\
+	$(OPAQUE_BINDING_DIRS) \
+	user_iface 
+
+DEPSUBDIRS = \
+	port    \
+	services \
+	$(OPAQUE_BINDING_DIRS) \
+	framework  \
+	distributed\
+	user_iface 
+
+
+all:
+	for i in $(SUBDIRS); do if ! (cd $$i;$(MAKE));then exit -1;fi done
+	@touch .allbuild.complete
+
+bins:
+	-(cd neo; $(MAKE) bins)
+	(cd user_iface; $(MAKE) bins)
+	@touch .binbuild.complete
+
+gen:
+	for i in $(SUBDIRS); do if ! (cd $$i;$(MAKE) gen);then exit -1;fi done
+
+src-list:
+	-@$(RM) src-list
+	@for i in $(SUBDIRS) ; do \
+                (cd $$i; $(MAKE) src-list) ; \
+        done
+	@echo "updated dc src-list"
+
+clean:
+	-@$(RM) src-list
+	for i in $(SUBDIRS); do if ! (cd $$i;$(MAKE) clean);then exit -1;fi done
+
+distclean:
+	for i in $(SUBDIRS); do if ! (cd $$i;$(MAKE) distclean);then exit -1;fi done
+
+depend: 
+	for i in $(DEPSUBDIRS); do if ! (cd $$i;$(MAKE) depend);then exit -1;fi done
+
+.PHONY: src-list

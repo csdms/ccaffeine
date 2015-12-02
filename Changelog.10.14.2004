@@ -1,0 +1,49 @@
+To disable classic, --with-cca-classic=no.
+The default is that if classic is found, it will be used.
+To disable babel, --with-cca-babel=no.
+The default is that if babel is found, it will be used.
+
+Fixed simpleTests to bypass classic component sections 
+if classic not configured.
+Fixed testBatch to pass ldlibrarypath to mpd if set in user env.
+Added connectionevents namespace to the opaque core.
+Updated configure, makefile.install.
+Removed dependencies on cca.h defined macros.
+Added --ccafe-remap-stdio switch for batch mode;
+if it is not present, stderr/out are left alone and only the IO::
+class files get hooked to the framework output. Enough platforms
+have trouble with remapping stdout that the default for batch mode
+is not to unless --ccafe-remap-stdio is given. The remapeverythingtofile
+hangs if --ccafe-remap-stdio is given for mpich/mpd and la mpi at least.
+
+
+HAVE_CLASSIC is defined at configure time and is accessible
+everywhere in the framework internals by including ccafeopq.hh,
+or if only the config info is needed, including 
+dc/export/config.hh.
+
+The C preprocessor convention for coding with classic is
+#ifdef HAVE_CLASSIC
+ // classic-dependent stuff here.
+#endif // HAVE_CLASSIC
+
+The Makefile convention for coding with classic is
+ifeq "$(CLASSIC_CCA_INSTALLED)" "1"
+endif
+
+Implementation details:
+
+ConnectionEventService moved into opaque space.
+The implementation moved into a separate class
+that could in principle become a component (shadowed
+per-component) but is currently just a delegated
+operation in the Gizzard. So Gizzard no longer
+derives from Port in any way and the getClassicPort
+operations are out of the Gizzard now.
+
+BblConnectionEventListener.h moved into the babel
+binding where it belongs.
+
+Deleted long dead DO_P_LEGACY code.
+
+Retired long dead classic components and ports from old SC demos.

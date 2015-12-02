@@ -1,0 +1,36 @@
+#!ccaffeine bootstrap file. 
+# ------- don't change anything ABOVE this line.-------------
+# first element is the rpm install tree
+path set @CCAFE_RPM_pkgdatadir@/components
+# second element is the install tree, which often doesn't exist.
+path append @pkgdatadir@/components
+# third element is for SIDL loader to find components.
+path append @libdir@
+! if you change the above lines, it is recommended that you
+! know what you're doing first.
+# if classic is not present, the following are commented out.
+@NO_CLASSIC_RC@ repository get-global StarterComponent
+@NO_CLASSIC_RC@ repository get-global TimeStamper
+@NO_CLASSIC_RC@ repository get-global Timer
+@NO_CLASSIC_RC@ repository get-global PrinterComponent
+# this may just be broken right now
+#repository get-global RevalidateTest
+# if babel is not present, the following are commented out.
+@NO_BABEL_RC@ repository get-global ccafe1.StarterComponent
+@NO_BABEL_RC@ repository get-global ccafe0.PrinterComponent
+@NO_BABEL_RC@ repository get-global ccafe4.ParameterPortFactoryTest
+@NO_BABEL_RC@ repository get-global ccafe5.GoComponent
+@NO_BABEL_RC@ repository get-global ccafe5.BasicParameterPortTest
+@NO_BABEL_RC@ repository get-global ccafe0.SCPProxy
+@NO_BABEL_RC@ repository get-global ccafe2.SimpleProxyTest
+@NO_BABEL_RC@ repository get-global ccafe5.GUIServiceTest
+# if babel and mpi are not present, the following are commented out.
+@NO_MPI_RC@@NO_BABEL_RC@ repository get-global ccafe6.TestMPI
+
+# the service registry is just there normally, as is mpicomponent
+# @NO_BABEL_RC@ repository get-global ccafe2.ServiceRegistryTest
+
+#ccafe_eg.PortTranslatorStarter is definitely incorrect given
+# insistence on correct, sidl-defined, port type names in the
+# babel binding.
+#@NO_BABELCLASSIC_RC@ repository get ccafe_eg.PortTranslatorStarter

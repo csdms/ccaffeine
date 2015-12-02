@@ -1,0 +1,929 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.0 Transitional//EN"
+                      "http://www.w3.org/TR/REC-html40/loose.dtd">
+<html>
+<head>
+  <title>Remote UI wire protocols, pre-XML, for the CCA component framework
+  CCAFFEINE</title>
+  <meta http-equiv="Content-Type" content="text/html">
+</head>
+
+<body>
+<h1>
+<center>
+<b><span style="color: #FF69FF">DRAFT</span></b></center>
+</h1>
+
+<p><b>Contributors</b></p>
+
+<p>Ben Allan, Rob Armstrong, Colin Potter</p>
+
+<p><b>Change history</b></p>
+<ul>
+  <li>0.0.0 baa 5/2/2000 initial</li>
+  <li>0.0.1 baa 5/3/2000 htmlify</li>
+  <li>0.0.2 baa 5/30/2000 finished appendices A,B</li>
+
+  <h1>
+  <center>
+  Map of what is and what might be for remote UI/HPC framework communication
+  in CCAFFEINE<br>
+  </center>
+  </h1>
+
+  <h2><b>Introduction</b></h2>
+
+  <p>CCAFFEINE (Common Component Architecture Fast Framework Example In Need
+  of Everything) is the first Sandia testbed implementation of a component
+  software framework supporting the standards proposals published by the
+  Common Component Architecture Forum.  Our two purposes in writing are to
+  solicit technical suggestions and criticism (dope slaps?) for the proposed
+  version 1 wire protocol currently in design for CCAFFEINE and to document
+  the allegedly scalable command and control structure and the version 0 wire
+  protocol presently used in CCAFFEINE.<br>
+  </p>
+
+  <p>First, we very briefly review the current command and control strategy
+  used in CCAFFEINE. It would be overstating the case to claim that the
+  accumulated code which handles these tasks was designed beyond the most
+  basic structural levels.  Second section, we list the objectives we believe
+  need to be considered when replacing the remote control layer. Finally, we
+  present an initial design of the replacement for review by the larger
+  community.<br>
+  </p>
+
+  <h2><b>Command, control, and communications anatomy of CCAFFEINE</b></h2>
+
+  <p>We document the current wire protocol and message transport scheme used
+  in CCAFFEINE for the runtime management of HPC software components to
+  motivate a new design and to capture many relevant use-cases. We are not
+  writing a reference manual to support future users of an existing product.
+  We hope the documentation of several failings in the initial implementation
+  may save time for later implementers and designers. <br>
+  </p>
+
+  <h3><b><a name="Servers">UI Servers and SPMD Clients</a></b></h3>
+
+  <p>(Put some pictures here that explain our sockets, muxers, and
+  CmdLineBuildViews and the process of starting up CCAFFEINE).</p>
+
+  <h3><b>Existing (G)UI features (5/2000)</b></h3>
+
+  <p>As seen in <a href="#Servers">UI Servers and SPMD Clients</a>  the
+  CCAFFEINE GUI drives the framework by sending it strings through a socket
+  connection. Thus each GUI feature is implemented as some combination of
+  framework line-oriented commands and (minimal) GUI-cached data. We will
+  document the command-line syntax and semantics in <a
+  href="#Appendix">Appendix A</a>.<br>
+  </p>
+
+  <p>The current CCAFFEINE GUI has buttons, features, and bindings (actions)
+  as summarized in the following list. We name these items in a dot notation
+  to indicate a conceptual hierarchy that organizes the information and
+  functions delivered by the GUI. This does not correspond to a specific
+  hierarchy of widgets in the implementation or to a specific display
+  layout.<br>
+  </p>
+
+  <table border="1">
+    <caption>CCAFFEINE version 0 GUI</caption>
+    <tbody>
+      <tr>
+        <td>GUI.title</td>
+        <td>Publicity string naming the system and the demo being shown.</td>
+      </tr>
+      <tr>
+        <td>file.new</td>
+        <td>forget the existing components and start a new screen</td>
+      </tr>
+      <tr>
+        <td>file.quit</td>
+        <td>exit the GUI and cause linux kernel failure if using mpich/c++
+          frame. Just quit if pure java.</td>
+      </tr>
+      <tr>
+        <td>help.about_this_demo</td>
+        <td>display about file from disk (html)</td>
+      </tr>
+      <tr>
+        <td>open_and_execute .bld file.</td>
+        <td>replay history file</td>
+      </tr>
+      <tr>
+        <td>save .bld file as</td>
+        <td>save history file</td>
+      </tr>
+      <tr>
+        <td>pallette.fill from framework list</td>
+        <td>load list of component classes into GUI</td>
+      </tr>
+      <tr>
+        <td>pallette.pick</td>
+        <td>nominate class for next instantiation in arena</td>
+      </tr>
+      <tr>
+        <td>remove</td>
+        <td>delete picked arena instance</td>
+      </tr>
+      <tr>
+        <td>remove all</td>
+        <td>delete all arena instances and clear history.</td>
+      </tr>
+      <tr>
+        <td>run</td>
+        <td>fire all go ports in arena. probably a really bad idea.</td>
+      </tr>
+      <tr>
+        <td>arena.component.pick</td>
+        <td>highlight in blue/nominate component instance for next arena
+          action</td>
+      </tr>
+      <tr>
+        <td>arena.component.drop</td>
+        <td>normal finish of pallet.pick process. create an instance and draw
+          icon at GUI drop location.</td>
+      </tr>
+      <tr>
+        <td>arena.component.move</td>
+        <td>reposition instance icon in the arena GUI</td>
+      </tr>
+      <tr>
+        <td>arena.component.port.pick_source</td>
+        <td>highlight uses port to connect next.</td>
+      </tr>
+      <tr>
+        <td>arena.component.port.pick_target_and_connect</td>
+        <td>select providing port and attempt connection.</td>
+      </tr>
+      <tr>
+        <td>arena.component.port.pick_go</td>
+        <td>select and execute go port.</td>
+      </tr>
+      <tr>
+        <td>arena.component.port.pick_config</td>
+        <td>select port and initiate configuration parameters dialog</td>
+      </tr>
+      <tr>
+        <td>paramDialog.ok</td>
+        <td>dismiss parameter port dialog and feed configs back to
+        framework.</td>
+      </tr>
+      <tr>
+        <td>paramDialog.cancel</td>
+        <td>dismiss parameter port dialog</td>
+      </tr>
+      <tr>
+        <td>arena.component.port.hover</td>
+        <td>display port type</td>
+      </tr>
+      <tr>
+        <td>paramDialog.*</td>
+        <td>See <a href="#Appendix1">Appendix B</a>, Generic Configuration
+          Port.</td>
+      </tr>
+    </tbody>
+  </table>
+
+  <h3>Shortcomings</h3>
+  <li>The present GUI and underlying sockets cannot go away and come back
+    later in a long running job.</li>
+  <li>There is no generic mechanism for special rendering of framework
+    service-linked ports such as Go, ParameterDialog, Stop, ConnectionEvent,
+    DisconnectionEvent, ParameterChangeEvent, HumanLineOutput,
+    UIMessageOutput, HumanLineInput, HumanErrorOutput, MPIService,
+    ConfirmationDialog, etc, etc, etc.</li>
+  <li>There is no GUI mechanism for adding components from a repository.</li>
+  <li>The gui (and underlying framework) do not account for the possibility
+    that components may live on a subset of the remote processors.</li>
+  <li>The gui, the underlying framework, and the CCA standard on which these
+    are based do not anticipate a port existing on only the lead processor in
+    the set of processors where the component is instantiated.</li>
+
+  <h2>WHAT OUGHT probably TO BE</h2>
+
+  <h3>Scope, objectives and constraints</h3>
+
+  <h4>Desired product scope</h4>
+
+  <p>We seek a wire protocol (event strings over sockets) for managing a
+  heavy, remote, "mostly single threaded" parallel framework from
+  java/tk/python/other shell languages.  The protocol should be such that a
+  GUI can optimize some aspects of its rendering while becoming consistent
+  with the remote framework state if the user waits an appropriate amount of
+  time. In particular, it should not be such that the GUI offers services
+  before they are really there or that it continues to offer services after
+  they are definitely *not* there. Given lags in network transport and long
+  pauses while computations progress, it is not efficient to fully synchronize
+  a largely passive (frame the parallel job then get out of the way) remote
+  GUI rendering with its phalanx of controlled processes. This scope may be
+  rather distinct from the loosely coupled system represented by the Indiana
+  framework.</p>
+</ul>
+
+<h4>Expected results</h4>
+<ul>
+  <p>The framework and protocols we describe here are aimed at supporting
+  framework developers, component developers, and component testers using the
+  software on a workstation emulating a multiprocessor or a small set of
+  processors in a larger SPMD machine. Most tightly coupled, massively
+  parallel platforms we are aware of provide such an interactive environment
+  for development purposes, while production runs are large, batch-queued, and
+  non-interactive. Interaction with production runs is often through
+  examination of periodically dumped checkpoint files or editing of a
+  periodically reread parameter file.</p>
+
+  <p>The minimum result we require from CCAFFEINE is that the actions of an
+  interactive session can be recorded as a script which can be reread as the
+  control file for a non-interactive production run where only a lightweight
+  C++ framework backend is present. The other result we expect to obtain is
+  that we can generate a C++ main() which is equivalent to the script, but
+  requires no string interpreters and only an extremely lightweight framework
+  backend without the CCAFFEINE control sockets outlined in <a
+  href="#Servers">UI Servers and SPMD Clients</a>.</p>
+</ul>
+<ul>
+  <h4>Other objectives</h4>
+
+  <p></p>
+  <li>Make the remote UI/GUI as passive as possible. I.e. whereever possible,
+    the UI is simply a listener to (and renderer of) the output events.</li>
+  <li>Let the UI/GUI come and go while the framework runs.</li>
+  <li>Use a protocol <b><i>identical</i></b> for both Java and C++ frameworks
+    to facilitate testing.</li>
+  <li>Use a protocol implementation as nearly identical for both Java and C++
+    frameworks as possible to reduce development cost.</li>
+
+  <h4>General behaviors needed at a low level</h4>
+
+  <p></p>
+  <li>Let the GUI can preempt (cancel) instructions (queued in framework) it
+    already received from the user by sending framework a later cancel/stop.
+    This means the GUI must not hang waiting for an answer to an instruction
+    that never arrived.</li>
+  <li>Let the framework silently refuse to queue new instructions from the
+    GUI. This means the GUI must not hang waiting for an answer to an
+    instruction that never arrived.</li>
+  <li>Let the GUI immediately do every command it receives from the
+  framework.</li>
+  <li>Disallow the GUI from on its own flushing the queue of events it
+    receives from the framework or refuse to queue new commands. GUI can only
+    remove itself from the listeners on the framework by the appropriate
+    detach protocol. This shouldn't be an issue since the GUI shouldn't be
+    running a queue of any sort on the framework events in the first
+  place.</li>
+
+  <table border="1">
+    <caption>Specific behaviors and events (make browser wide for proper
+    viewing)</caption>
+    <tbody>
+      <tr>
+        <td>GUI.title</td>
+        <td>string from GUI author.</td>
+      </tr>
+      <tr>
+        <td>framework title</td>
+        <td>goes in the container titles issued by the framework; not a
+          separate facility.</td>
+      </tr>
+      <tr>
+        <td>file.new</td>
+        <td>GUI sends a request for a new named container<br>
+
+
+          <blockquote>
+            <b>newContainer &lt;name></b></blockquote>
+
+          <p><br>
+          GUI returns to passivity<br>
+          framework sends back event sequence<br>
+          </p>
+
+          <blockquote>
+            <b>newContainer &lt;name><br>
+            containerTitle &lt;name> &lt;title> <br>
+            pallet begin &lt;name><br>
+            newClass &lt;class-name> &lt;name></b><br>
+            [repeat newClass until list done]<br>
+            <b> pallet end &lt;name> <br>
+            arena begin &lt;name> <br>
+            newComponent &lt;class-name> &lt;instance-name> &lt;name> </b><br>
+            [repeat newComponent until list done]<b><br>
+            arena end &lt;name></b></blockquote>
+
+          <p>GUI renders named pallet and arena into its collection of pages
+          on receipt of the <i>arena/pallet end &lt;name></i>. The pallet may
+          be empty. (The GUI has a separate facility to support the framework
+          api that adds classes to a (possibly empty) pallet. The arena may be
+          empty. It may not if the framework chooses to preinstantiate some
+          components always!</p>
+
+          <p>Notes: The GUI cannot be certain the framework is done with a new
+          container and should be capable of accurate partial rendering of the
+          container. Similarly, the GUI cannot be certain of receiving either
+          <i>pallet end &lt;name></i> or <i>arena end &lt;name></i>. The
+          intent of the "end" events is to give the GUI a backstop event for
+          those times where the GUI wants to skip the rendering phase of
+          adding to its list of managed classes/instances until "all" have
+          been received or a specified timeout since last newClass event has
+          occured. This allows optimization (minimization) of GUI redraws;
+          e.g. wait until all the classes are in (or a timeout) and then
+          resize pallet to hold the widest label.</p>
+        </td>
+      </tr>
+      <tr>
+        <td>GUI.about</td>
+        <td>anything the GUI author implements</td>
+      </tr>
+      <tr>
+        <td>framework.about</td>
+        <td>GUI sends a request for about info <br>
+
+
+          <blockquote>
+            <b>containerAbout &lt;name></b></blockquote>
+
+          <p><br>
+          GUI returns to passivity. <br>
+          framework sends back event sequence <br>
+          </p>
+
+          <blockquote>
+            <b>containerAbout &lt;name> &lt;html> ...
+          &lt;/html></b></blockquote>
+
+          <p><br>
+          if the named container exists (and produces its "about" string).</p>
+
+          <p>Notes: Between &lt;html> and &lt;/html> there may be line breaks.
+          &lt;/html> may be assumed to occur on a line by itself for sloppy
+          prototype implementations if needed.</p>
+        </td>
+      </tr>
+      <tr>
+        <td>file.attach</td>
+        <td>GUI attaches to a running framework and sends introspection
+          request:
+
+          <blockquote>
+            <b>fwkDump</b></blockquote>
+
+          <p>GUI returns to passivity. framework sends back event sequence
+          which will be</p>
+
+          <blockquote>
+            <b>fwkDump begin &lt;fwkName></b> [0 or more newContainer
+            sequences as described for file.new] [0 or more newComponent
+            sequences as described for file new] <b>fwkDump end
+            &lt;fwkName></b></blockquote>
+
+          <p>framework flushes from its queue any events that an overeager
+          user tried to schedule while the GUI was catching up with output
+          from the framework.</p>
+        </td>
+      </tr>
+      <tr>
+        <td>container.close</td>
+        <td>send a single request to the framework to close and destroy the
+          named container.
+
+          <blockquote>
+            <b>containerClose &lt;name></b></blockquote>
+
+          <p>GUI returns to passivity. framework sends back (if lucky)</p>
+
+          <blockquote>
+            <b>containerClose &lt;name></b></blockquote>
+
+          <p>GUI may de-render the container at any time after containerClose
+          is sent.</p>
+
+          <p>Notes: It may be desirable for the GUI to queue to itself the
+          teardown event to be done in X seconds. The containerClose event
+          from the framework should cause immediate de-rendering of the
+          container on the GUI side. A teardown event on a non-existent
+          container must not be an error. Tearing down a container must cause
+          cancel and teardown of any open dialogs associated with it.
+          containerClose &lt;name> may also generate messages as in "remove
+          picked arena instance" below.</p>
+        </td>
+      </tr>
+      <tr>
+        <td>file.detach</td>
+        <td>GUI unregisters as a framework listener and tears down all the
+          renderings of containers.</td>
+      </tr>
+      <tr>
+        <td>file.quit</td>
+        <td>GUI sends exit command to the framework.<br>
+          GUI does file.detach above.<br>
+          GUI exits.<br>
+          framework will shutdown on its own at next convenient point which
+          may be after a long computation finishes.</td>
+      </tr>
+      <tr>
+        <td>file.quit_now_damnit</td>
+        <td>GUI sends stop command to the framework.<br>
+          GUI does file.detach above.<br>
+          GUI displays instructions to user about how to kill the framework
+          job if it doesn't die nicely on its own.<br>
+          GUI exits.<br>
+          framework will shutdown immediately (or at next checkpoint in
+          computation). If this is not soon enough, user can follow
+          instructions about killing processes.</td>
+      </tr>
+      <tr>
+        <td>cca.about_this_demo:</td>
+        <td>see framework.about above.</td>
+      </tr>
+      <tr>
+        <td>open_and_execute .bld file save .bld file: save .bld file as:</td>
+        <td>These need further thought, as we have the following small
+          conundrum- .bld is really a history file. presently it is a history
+          of the GUI issued commands. But if the GUI comes and goes, then the
+          history of a container in the framework must be kept in the
+          framework not in the GUI. So then we need a command for the GUI to
+          query the container for the history string.</td>
+      </tr>
+      <tr>
+        <td>pallette.fill from framework list</td>
+        <td>subsumed by container above, though implemented separately.</td>
+      </tr>
+      <tr>
+        <td>pallette.pick</td>
+        <td>nominate class for next arena drop or other query GUI-only. no
+          implication on framework.</td>
+      </tr>
+      <tr>
+        <td>remove picked arena instance</td>
+        <td>GUI send remove request.<br>
+
+
+          <blockquote>
+            <b>remove &lt;container-name> &lt;comp-name></b></blockquote>
+
+          <p><br>
+          GUI return to quiescent state.<br>
+          framework will see about tearing down connections and removing
+          component.<br>
+          It may send back to the GUI zero or more<br>
+          </p>
+
+          <blockquote>
+            <b>disconnect &lt;container-name> &lt;comp> &lt;port> &lt;comp>
+            &lt;port></b><br>
+            <b>delete &lt;container-name> &lt;comp-name></b></blockquote>
+
+          <p>commands which cause the GUI to de-render the connection or
+          component.</p>
+
+          <p>Notes: if a component is de-rendered, any open dialogs for it
+          should also be de-rendered and actions equivalent to cancel taken.
+          The delete and disconnect commands must deal gracefully (silently)
+          with names the GUI no longer recognizes/already de-rendered.</p>
+        </td>
+      </tr>
+      <tr>
+        <td>remove all arena instances and clear history</td>
+        <td>implement as close.container &lt;name>;file.new &lt;name>.</td>
+      </tr>
+      <tr>
+        <td>run</td>
+        <td>(fire all go ports in arena. probably a really bad idea now): just
+          delete this feature.</td>
+      </tr>
+      <tr>
+        <td>arena.component.pick</td>
+        <td>(highlight in blue/nominate for next arena action) GUI-only. no
+          implication on framework.</td>
+      </tr>
+      <tr>
+        <td>arena.component.drop</td>
+        <td>Normal finish of pallet.pick-arena.create.<br>
+          GUI send create request to framework.<br>
+
+
+          <blockquote>
+            <b>pulldown containerName className compName</b></blockquote>
+
+          <p><br>
+          framework may follow up with events<br>
+          </p>
+
+          <blockquote>
+            <b>newComponent &lt;class-name> &lt;instance-name>
+          &lt;name></b></blockquote>
+        </td>
+      </tr>
+      <tr>
+        <td>arena.component.describe</td>
+        <td>GUI send request for port and other component properties.<br>
+
+
+          <blockquote>
+            <b>display component &lt;containerName>
+          &lt;compName></b></blockquote>
+
+          <p><br>
+          framework may follow up with events that add ports, properties,
+          hints, etc to a component (as currently done)</p>
+        </td>
+      </tr>
+      <tr>
+        <td>arena.component.move</td>
+        <td>reposition in the GUI. GUI-only. no implication on framework.</td>
+      </tr>
+      <tr>
+        <td>arena.component.port.pick_source</td>
+        <td>highlight uses port to connect. GUI-only. no implication on
+          framework.</td>
+      </tr>
+      <tr>
+        <td>arena.component.port.pick_target_and_connect</td>
+        <td>select providing port. GUI send request for connection.<br>
+
+
+          <blockquote>
+            <b>connect &lt;containerName> &lt;component> &lt;port>
+            &lt;component> &lt;port></b></blockquote>
+
+          <p><br>
+          framework may respond (or not) with connection/port making/breaking
+          events.<br>
+          </p>
+
+          <blockquote>
+            <b>connect &lt;containerName> &lt;component> &lt;port>
+            &lt;component> &lt;port></b><br>
+            <b>disconnect &lt;containerName> &lt;component> &lt;port>
+            &lt;component> &lt;port></b><br>
+            <b>addPort/removePort/etc as currently but with &lt;containerName>
+            added.</b><br>
+          </blockquote>
+        </td>
+      </tr>
+      <tr>
+        <td>arena.component.port.pick_go</td>
+        <td>highlight and execute go port.<br>
+          GUI send request for execution.<br>
+
+
+          <blockquote>
+            <b>go &lt;containerName> &lt;component> &lt;port></b></blockquote>
+
+          <p><br>
+          framework not expected to do anything in return.</p>
+        </td>
+      </tr>
+      <tr>
+        <td>arena.component.port.pick_config</td>
+        <td>highlight and execute config port.<br>
+          GUI send request for config info<br>
+
+
+          <blockquote>
+            <b>configure &lt;containerName> &lt;component>
+          &lt;port></b></blockquote>
+
+          <p><br>
+          GUI return to passive state.<br>
+          framework may or not subsequently issue events as now for parameter
+          dialog, but adding in container name to arguments needed.</p>
+        </td>
+      </tr>
+      <tr>
+        <td>paramDialog.ok</td>
+        <td>Dismiss dialog and feed configs back to framework.<br>
+          GUI send parameter set requests to framework.<br>
+          GUI return to passive state.<br>
+        </td>
+      </tr>
+      <tr>
+        <td>paramDialog.cancel</td>
+        <td>dismiss dialog. GUI-only. no implication on framework. teardown
+          dialog window.</td>
+      </tr>
+    </tbody>
+  </table>
+</ul>
+<pre>Lots more to be added. See TODO-list and then get inspired to extend here.
+E.g.
+RepositoryService, SemaphoreService,AboutService, HelpService, GeneralDialogService, control of Nestable containers, Port property hints (rendering),
+component property hints (rendering), framework properties (rendering). GlobalResourceStringService ala Argonne
+integrated with parameter dialog wire protocol. </pre>
+
+<h1><a name="Appendix">Appendix A</a>: Version 0 command Line and wire
+protocol</h1>
+The line-oriented string API is identical in the Java and C++ implementations
+of CCAFFEINE. The table below is an annotated version of the syntax and
+semantics described by the "help" command of the command-line interpreter.
+Arguments given in square brackets are [optional]. Arguments in angle brackets
+are &lt;required>. Commands may be abbreviated to the minimum number of
+characters needed to be unique among possible commands. Class and instance
+name arguments are fuzzy matched (watch out!) while Port names must be
+specified exactly. The parser is case sensitive.
+
+<table border="1">
+  <caption>Framework control line commands (with aliases) and
+  meanings</caption>
+  <tbody>
+    <tr>
+      <td>Aliases</td>
+      <td>Arguments and Description</td>
+    </tr>
+    <tr>
+      <td>help, ?</td>
+      <td><b>arguments: [string token]</b>
+
+        <p>Prints the help of one or all commands. This table is the annotated
+        version of the "help" output.</p>
+      </td>
+    </tr>
+    <tr>
+      <td>exit, bye, quit, x</td>
+      <td><b>arguments: [string token]</b>
+
+        <p>Exits the parser, returning control to the parser caller. If string
+        is given, it is converted to an integer return value.</p>
+      </td>
+    </tr>
+    <tr>
+      <td>connect</td>
+      <td><b>arguments: &lt;using instance> &lt;used Port name> &lt;providing
+        instance> &lt;provided Port name></b>
+
+        <p>Connect two components in the arena. NOTE! According to the draft
+        specification, either or both components may do any of the following
+        when receiving the ConnectionEvent after the connection is made:
+        immediately use the connected port and delete it or other ports, add
+        new ports, or nearly anything else. Expect surprises when using new
+        components.</p>
+      </td>
+    </tr>
+    <tr>
+      <td>configure, parameters</td>
+      <td><b>arguments: &lt;instance> &lt;parameterPortName>
+        &lt;parameterName> [newValue]</b>
+
+        <p>Query (or set new value) of named parameter (field)  in the named
+        port of the named component instance. The special field
+        (parameterName) <b>ALL</b> is recognized (when newValue is omitted)
+        and causes the framework to send back a full description of the port
+        as outlined in <a href="#Appendix1">Appendix B</a>.</p>
+      </td>
+    </tr>
+    <tr>
+      <td>display arena</td>
+      <td>List component instances known in the arena. (not expected to remain
+        in future releases, see arena below)</td>
+    </tr>
+    <tr>
+      <td>display pallet</td>
+      <td>List component classes available in the pallet. (not expected to
+        remain in future releases, see pallet below)</td>
+    </tr>
+    <tr>
+      <td>display component</td>
+      <td><b>arguments: &lt;instanceName></b>
+
+        <p>Show class name and ports defined for the named instance in the
+        arena. (not expected to remain in future releases, see show below)</p>
+      </td>
+    </tr>
+    <tr>
+      <td>display chain</td>
+      <td><b>arguments: &lt;instanceName></b>
+
+        <p>List all connections in the arena. The instance name given is
+        irrelevant. Connections are grouped by their 'using' component.
+        Connections with a releasePort() call outstanding are listed as
+        ACTIVE. (not expected to remain in future releases, see links
+        below)</p>
+      </td>
+    </tr>
+    <tr>
+      <td>go, run</td>
+      <td><b>arguments: [instanceName portName]</b>
+
+        <p>Execute the go() function of the named port on the named
+        instance.</p>
+
+        <p>Presently, if the names are omitted, all Go ports in the arena are
+        fired in an arbitrary sequence.</p>
+      </td>
+    </tr>
+    <tr>
+      <td>create, instantiate, pulldown</td>
+      <td><b>arguments: &lt;className> [instanceName]</b>
+
+        <p>Add an instance of named class to the arena. The instance name may
+        be supplied. If not, a unique instance name will be generated from the
+        class name.</p>
+      </td>
+    </tr>
+    <tr>
+      <td>pallet, classes</td>
+      <td>List component classes available in the pallet.</td>
+    </tr>
+    <tr>
+      <td>arena, instances</td>
+      <td>List component instances known in the arena.</td>
+    </tr>
+    <tr>
+      <td>remove</td>
+      <td><b>arguments: &lt;instanceName></b>
+
+        <p>Delete the named instance from arena. Probably a very buggy thing
+        to do in alpha releases of the framework.</p>
+      </td>
+    </tr>
+    <tr>
+      <td>nuke</td>
+      <td>Destroy all of the components in the arena. Probably a very buggy
+        thing to do in alpha releases of the framework.</td>
+    </tr>
+    <tr>
+      <td>path</td>
+      <td><b>arguments: [keyword] [directory/path]</b>
+        <p>Manipulate the path searched for CCA components.
+        With no arguments, displays the current path.
+	Keyword <b>init</b> initializes the path from env(CCA_COMPONENT_PATH).
+        Keyword <b>append/prepend</b> followed by a directory name
+	extends the path to include that directory. Keyword <b>set</b>
+	followed by a shell-style path replaces the current search path
+	with a new one.
+        </p></td>
+    </tr>
+    <tr>
+      <td>repository</td>
+      <td><b>arguments: &lt;keyword> [repositoryClassName]</b>
+	  <p>Keyword <b>list</b> returns the known components in the
+           repository that are not yet loaded. Keyword <b>get</b>
+           followed by a classname returned from <b>repository list</b>
+           dynamically loads the class into the framework. Keyword
+           <b>info</b> followed by a className gives the metadata
+           associated with the className. (Info is not yet implemented).</p>
+        </td>
+    </tr>
+    <tr>
+      <td>links (not implemented)</td>
+      <td>List all connections in the arena, grouped by using component.
+        Connections with a releasePort() call outstanding are listed as
+        ACTIVE. (Replacement for "display chain".)</td>
+    </tr>
+    <tr>
+      <td>show (not implemented)</td>
+      <td><b>arguments: &lt;instanceName></b>
+
+        <p>Show class name and ports defined for the named instance in the
+        arena.</p>
+      </td>
+    </tr>
+  </tbody>
+</table>
+
+<p></p>
+
+<h1><a name="Appendix1">Appendix B</a>: Generic Configuration Parameter
+Dialog</h1>
+
+<p>We provide a basic, UI-independent parameter input request protocol that
+lets the component developer assume primitive input sanity. One GUI rendering
+of the input request protocol, the paramDialog,  is described in the second
+table below. The first table below gives the protocol itself, the
+line-oriented commands sent from the framework to the GUI. The UI optional
+response to these commands is to send back configure commands for one or more
+of the fields of the parameter dialog according to the description in <a
+href="#Appendix">Appendix A</a>.</p>
+
+<p>The protocol could be easily replaced with a single dialog display command
+using an XML description of the parameter input request. The series of
+commands is sent in an order that will allow any reasonable object-oriented UI
+implementation to build temporary data structures needed to negotiate with the
+user.</p>
+
+<p>The first shortcoming of the protocol is that it may need to have inserted
+a lead argument to all commands which lets the UI discriminate among multiple
+containers. I.e. everywhere in the protocol that arguments <i>instance
+port</i> appear we may need to extend to <i>containerInstance instance port
+</i>. The second shortcoming of the protocol is that it requires the UI
+implementation to associate each paramField received with the most recently
+received paramTab in the given dialog. It would be preferable to include a
+tabName  in the arguments associated with individual fields.</p>
+
+<table border="1">
+  <caption>UI-independent parameter request commands from framework to
+  GUI</caption>
+  <tbody>
+    <tr>
+      <td>command</td>
+      <td>arguments and explanation</td>
+    </tr>
+    <tr>
+      <td>paramDialog</td>
+      <td><b>arguments: &lt;instanceName> &lt;portName>
+        &lt;dialogTitle...></b>
+
+        <p>Inform the UI that the framework wants a dialog to get the values
+        of one or more scalar variables (parameter fields) from the user. Each
+        port of type ParameterPort on a CCA instance is associated with a
+        separate dialog. There may be several such ports, uniquely named,  per
+        instance.  The dialogTitle is a string terminated by the newline. It
+        cannot be empty.</p>
+      </td>
+    </tr>
+    <tr>
+      <td>paramTab</td>
+      <td><b>arguments: &lt;instanceName> &lt;portName> &lt;groupTitle...></b>
+
+        <p>When the dialog has lots of fields, they need to be broken up into
+        groups of more closely related values. This is typically graphically
+        rendered as a tabbed dialog or other series of panels. The groupTitle
+        is a string, as the dialog title. It cannot be empty.</p>
+      </td>
+    </tr>
+    <tr>
+      <td>paramField</td>
+      <td><b>arguments: &lt;instanceName> &lt;portName> &lt;fieldType>
+        &lt;fieldName></b>
+
+        <p>Add a new field to the most recently defined group. FieldType is
+        one of: DOUBLE, INT, FLOAT, LONG, BOOL, and STRING.</p>
+      </td>
+    </tr>
+    <tr>
+      <td>paramPrompt</td>
+      <td><b>arguments: &lt;instanceName> &lt;portName> &lt;fieldName>
+        &lt;promptString...></b>
+
+        <p>With each field is a (hopefully concise) string to clue the user
+        about what is reqested.   The promptString cannot be empty.</p>
+      </td>
+    </tr>
+    <tr>
+      <td>paramCurrent</td>
+      <td><b>arguments: &lt;instanceName> &lt;portName> &lt;fieldName>
+        &lt;value...></b>
+
+        <p>Each field has a current value. Only in the case of un-enumerated
+        STRING fields is it possible that the value is empty, in which case
+        the degenerate form of the command will occur:</p>
+
+        <p><b>arguments: &lt;instanceName> &lt;portName>
+        &lt;fieldName></b></p>
+      </td>
+    </tr>
+    <tr>
+      <td>paramDefault</td>
+      <td><b>arguments: &lt;instanceName> &lt;portName> &lt;fieldName>
+        &lt;value...></b>
+
+        <p>Each field has a default value. The description is as for
+        paramCurrent.</p>
+      </td>
+    </tr>
+    <tr>
+      <td>paramNumberRange</td>
+      <td><b>arguments: &lt;instanceName> &lt;portName> &lt;fieldName>
+        &lt;low> &lt;high></b>
+
+        <p>The numerical field types have lower and upper bounds. The UI must
+        use these to filter out bogus input.</p>
+      </td>
+    </tr>
+    <tr>
+      <td>paramStringChoice</td>
+      <td><b>arguments: &lt;instanceName> &lt;portName> &lt;fieldName>
+        &lt;string...></b>
+
+        <p>For STRING parameters which are limited to a selection (such as
+        from a pulldown list) each choice of value is sent in a separate
+        command of this form.</p>
+      </td>
+    </tr>
+    <tr>
+      <td><p>paramHelp</p>
+      </td>
+      <td><b>arguments: &lt;instanceName> &lt;portName> &lt;fieldName>
+        &lt;string...></b>
+
+        <p>Each field may have a longer explanation associated with it. That
+        explanation is in the form of a string. It should not be rendered by
+        default, but only when the user asks for it.</p>
+      </td>
+    </tr>
+    <tr>
+      <td>paramEndDialog</td>
+      <td><b>arguments: &lt;instanceName> &lt;portName></b>
+
+        <p>This optional command tells the UI that the framework is done
+        sending information about the dialog specified by instance and port.
+        The UI may choose to render the dialog partially as commands are
+        received from the framework. When a paramEndDialog is received, the UI
+        must render, if it has not already. The UI might,  if a reasonable
+        timeout has expired since the last command wrt the dialog was
+        received, assume the dialog request is complete and render anyway.</p>
+      </td>
+    </tr>
+  </tbody>
+</table>
+</body>
+</html>

@@ -1,0 +1,89 @@
+#! @SHELL@
+
+# in non-ben configurations, this script needs a lot
+# of mpi checking. ccafe-single as simply a link
+# to ccafe-client is a bogus assumption for
+# cranky mpi implementations.
+#
+progname=`echo $0 | sed -e 's%.*/%%g'`
+curdir=`pwd`
+bindir=@bindir@
+libdir=@libdir@
+pkglibdir=@pkglibdir@
+pkgdatadir=@pkgdatadir@
+binsuffix=@PROGRAM_SUFFIX@
+tmpfile=""
+if test ! -w $curdir ; then
+  tmpfile=`mktemp -q /tmp/$progname.out.XXXXXX`
+  if [ $? -ne 0 ]; then
+     echo "$progname: Can't create temp file /tmp/$progname.out. Exiting..."
+     exit 1
+  fi
+else
+  tmpfile=`mktemp -q $curdir/$progname.out.XXXXXX`
+  if [ $? -ne 0 ]; then
+     echo "$progname: Can't create temp file $curdir/$progname.out. Exiting..."
+     exit 1
+  fi
+fi
+#
+# LD_LIBRARY_PATH=@BABEL_ROOT@/lib:"$LD_LIBRARY_PATH"; export LD_LIBRARY_PATH
+#SIDL_DLL_PATH=$libdir;export SIDL_DLL_PATH
+answer1="Hello Babel World"
+answer2="Printer says the string is: Hello Classic World"
+
+frame_opts="--ccafe-rc $pkgdatadir/EmptyRC"
+echo "====================================================================="
+echo "                  Testing the BabelPortTranslator ...                "
+if $bindir/ccafe-single$binsuffix $frame_opts <<EOF >$tmpfile 2>&1
+#
+path set $libdir
+path append $pkgdatadir/components
+#
+# Register the components with the framework
+#
+repository get-global ccafe0.PrinterComponent
+repository get-global ccafe1.StarterComponent
+repository get-global ccafe_eg.PortTranslatorStarter
+#
+# classic component is instantiated:
+#
+repository get-global PrinterComponent
+#
+# Babel components instantiated:
+#
+instantiate ccafe0.PrinterComponent babelPrinter
+instantiate PrinterComponent classicPrinter
+instantiate ccafe_eg.PortTranslatorStarter portX
+#
+# connect the PortTranslator to just the Babel ccafe0.PrinterComponent
+#
+connect portX babelOut babelPrinter string
+#
+# Run just that
+#
+go portX go
+#
+# Now connect the classic PrinterComponent
+#
+connect portX classicOut classicPrinter printer_port
+#
+go portX go
+#
+bye
+EOF
+then
+	echo -n "didn't crash or hang up early ...  "
+else
+	echo -n "didn't make it all the way through ...  "
+fi
+if grep "$answer2" $tmpfile >/dev/null 2>&1 &&\
+   grep "$answer1" $tmpfile >/dev/null 2>&1
+then
+	echo looks like it is working.
+else
+	echo "The output indicates that BabelPortTranslator is inoperative"
+fi
+
+echo "====================================================================="
+echo "                          done.                                      "

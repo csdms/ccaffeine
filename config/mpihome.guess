@@ -1,0 +1,29 @@
+# We have a common file here for configure and
+# for mpi.folklore consumption.
+#
+# places to look
+ccafe_mpich_dirs="
+    $MPI_HOME
+    $CCAFE_PARENT/mpi
+    $CCAFE_ANCESTOR/mpi
+    $CCAFE_PARENT/mpich
+    $CCAFE_ANCESTOR/mpich
+    $prefix/cca
+    $prefix/mpich
+    $prefix/mpi
+    $HOME/mpich
+    /usr/local/cca
+    /usr/local/mpich-1.1.2
+    /usr/local/mpich
+    /usr/local/mpi
+"
+# c++ compiler wrappers
+ccafe_mpicxx_bins="
+    mpCC
+    mpiCC
+"
+# c compiler wrappers
+ccafe_mpicc_bins="
+    mpcc
+    mpicc
+"

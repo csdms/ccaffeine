@@ -1,0 +1,10 @@
+config.status
+.ix*
+Makefile
+DHLDRConfig.sh
+DHLDRConfigTemporary.sh
+MakeIncl.DHLDR_Component
+DataHolder.cca
+DH_Test.i
+DH_Test
+*.i

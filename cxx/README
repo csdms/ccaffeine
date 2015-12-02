@@ -1,0 +1,45 @@
+See the cca-forum.org website for tutorials, etc, or email ccafe-users with
+questions.
+
+CCAFFEINE 0.8
+c++ release notes and BUILD Instructions:
+
+BUILD:
+You will need (or probably want):
+- mpi
+You must have:
+- gmake
+- ANSI c compiler, ISO C++ 3 compiler
+- java2 (jdk1.4 for linux) in order to use babel. build babel first.
+- a copy of cca-spec-[neo,classic,babel] as suits you. at least one
+must be installed.
+
+% cd dccafe/ (cd ../ from here: cxx/)
+% ./configure --prefix=/some/place/else --with-cs[b,c,n]-config=$specprefix/bin/cca-spec-[babel,neo,classic]-config
+[lot of other configure options exist for mpi, etc. that you may need]
+
+Edit Makefile.conf.dl, Makefile.Vars if needed.
+% make
+% make install
+% cd dc/user_iface
+% cp CcaffeineRC ~/.ccaferc if desired for customization.
+% # assuming dccafe is checked out into ~/
+
+Run ccafe-single from whereever you installed (/some/place/else/bin)
+This gets you the serial (np=1) commandline framework
+cca> ? (for help)
+cca> path init
+cca> pallet 
+You get the idea. 'help <command>' will tell you about a
+particular command.
+
+TECH SUPPORT:
+
+mail help@cca-forum.org for user questions.
+
+Register and post on https://www.cca-forum.org/bugs/ccafe
+with bugs.
+
+Telephone Ben Allan @ Sandia National Laboratories
+if you are prepared to make grant remote access to the
+machine on which you are having trouble with Ccaffeine.

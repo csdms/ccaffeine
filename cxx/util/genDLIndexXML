@@ -1,0 +1,45 @@
+#!/bin/sh
+# This script generates an xml index file for the library
+# given, under loose cca assumptions. 
+dstring=`date`
+pstring=`pwd`/
+palias="paletteClassAlias=\"$3\""
+if test "x$4" = "x" ; then
+  echo "$0:usage: <libname> <constructorName> <className> <install-lib-dir> <palette-alias> <bindingType>"
+  exit 1
+fi
+if test "x$5" = "x"; then
+  echo "$0:usage: <libname> <constructorName> <className> <install-lib-dir> <palette-alias> <bindingType>"
+  exit 1
+fi
+if test "x$6" = "x"; then
+  echo "$0:usage: <libname> <constructorName> <className> <install-lib-dir> <palette-alias> <bindingType>"
+  exit 1
+fi
+if test "x$6" = "xbabel"; then
+  echo "$0:deprecated: bindingType 'babel' is no longer supported with this script."
+  echo "   Use genSCLCCA.sh from cca-spec-babel installation instead."
+  exit 1
+fi
+cat << __EOF1
+<xml>
+<!-- # generated CCAFFEINE dynamic library index. -->
+<!-- date=$dstring -->
+<!-- builder=$USER@$HOST -->
+<!-- $0 $* -->
+<componentDeployment 
+  name="$3" 
+  paletteClassAlias="$5"
+>
+    <environment> 
+        <ccaSpec binding="$6" /> 
+        <library loading="dynamic" 
+                 name="$1"
+		 constructor="$2"
+                 location="$4"
+        />
+    </environment>
+</componentDeployment>
+</xml>
+__EOF1
+exit 0

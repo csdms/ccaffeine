@@ -1,0 +1,4 @@
+Makefile.depends
+src-list
+*.a
+*.x

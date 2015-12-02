@@ -1,0 +1,19 @@
+// ConnectionEventServiceTest.sidl is a configure generated file.
+
+@CCAFE4_SIDL_START_0@
+@CCAFE4_SIDL_START_1@
+
+  /** When the GoPort is hit, test the ConnectionEventService via
+      BuilderService means.  */
+  class ConnectionEventServiceTest implements-all 
+	gov.cca.ports.GoPort,
+	gov.cca.Component, 
+	gov.cca.ComponentRelease,
+	gov.cca.ports.ConnectionEventListener,
+	ccafe3.StringConsumerPort
+  {
+	// note: not finished impling yet.
+  }
+
+}
+

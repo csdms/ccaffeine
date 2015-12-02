@@ -1,0 +1,1594 @@
+dnl Process this file with autoconf 2.59+ to produce a configure script
+dnl for the CCAFFEINE software installation.
+dnl    autconf configure.in > configure
+
+#--------------------------------------------------------------------
+#       Disable caching since it seems to get in the way
+#       more times than it helps us.
+#--------------------------------------------------------------------
+define([AC_CACHE_LOAD], )dnl
+define([AC_CACHE_SAVE], )dnl
+
+# Make sure we're us.
+AC_INIT(cxx/dc/user_iface/CmdLineCommonInternal.h)
+AC_CONFIG_HEADER([cxx/dc/export/configh.hh])
+AC_PREREQ(2.60) 
+AC_PREFIX_DEFAULT([`pwd`])
+# record the args to configure in a var
+CCAFE_CONFIG_ARGS(CONFIG_ARGS)
+# load a portable pushd
+CCAFE_PUSHD
+CCAFE_BASH_SHELL
+
+#------------------------------------------------------------------------------
+# whine about deprecated switches early
+#------------------------------------------------------------------------------
+# trap old --with-babel configurations
+CCAFE_BABEL_OBSOLETE
+
+# trap old --with-cca configurations
+CCAFE_CCA_OBSOLETE
+
+# ---------
+# issue reminders about env vars which make make our life bad
+# if abused.
+# ---------
+echo "Checking for environment variables that may affect the configure/make:"
+dccafe_var_checks=`cat $srcdir/varlist.in | grep '=' | sed 's/=.*//' | grep -v ^#`
+for dccafe_var_line in $dccafe_var_checks ; do
+        dccafe_var_name=`echo $dccafe_var_line | sed 's/[ ,	]//'`
+	if test "$dccafe_var_name" = "SHELL" ; then
+		continue; # ignore SHELL.
+	fi
+        CCAFE_ENV_CHECK($dccafe_var_name, [predefined. Hope it is correct.] , [no. OK.])
+done
+echo "Done checking for environment variables."
+
+# $Header: /cvs/ccaffeine/repository/dccafe/configure.in,v 1.185 2008/12/11 17:27:04 baallan Exp $
+# created: Ben Allan 5/2000, Sandia national laboratories/California.
+#
+# We have a lot to configure for if we were doing a purely static build, namely:
+# - where we are.
+# - AWK, LN, MAKE, RANLIB (required)
+# - CC, CPP, CXX, CXXCPP (required)
+# - F77, F90, LEX, YACC (optional)
+# - CCA spec babel (required)
+# - MPI (optional)
+# - BLAS/LAPACK
+# - GMAKE (still required for older OS not having 'include' statements)
+# - TCLSH (optional)
+# - Dynamic Loading (not optional)
+# - non-blocking io
+# - purify (optional)
+# - parasoft (optional)
+# - siloon (optional python scripting)
+
+#------------------------------------------------------------------------------
+# Directory where we keep the autoconf stuff and some HPC environment folklore.
+#
+# Some folklore is keyed to hostname, which is probably a very bad
+# idea in the long run, but provides examples for frustrated alpha users.
+# Most of it is keyed to the answers supplied by AC_CANONICAL_SYSTEM.
+#
+# We wish MPICH was adapted to use autoconf 2.x so we could steal
+# conveniently everything they deduce about fortran, mpi, threads,
+# etc in their configure scripts and extend it to our compilers.
+#------------------------------------------------------------------------------
+AC_CONFIG_AUX_DIR([config])
+CCA_BUNDLE_TAG
+
+#------------------------------------------------------------------------------
+# Check for host type early so that host specific things can be done.
+#------------------------------------------------------------------------------
+AC_CANONICAL_HOST
+
+
+target_os=unknown
+OS_ARCH=OS_UNKNOWN
+case "$host" in
+  *powerpc-apple-darwin*)
+    OS_ARCH=MACOSX
+    ;;
+  *powerpc-apple-Darwin*)
+    OS_ARCH=MACOSX
+    ;;
+esac
+
+# the next macro recomputes target_os anyway.
+AC_CANONICAL_TARGET
+
+case "$target_os" in
+  *arwin*)
+  OS_ARCH=OS_MACOSX
+  ;;
+  *linux*)
+  OS_ARCH=OS_LINUX
+  ;;
+  *Linux*)
+  OS_ARCH=OS_LINUX
+  ;;
+  *LINUX*)
+  OS_ARCH=OS_LINUX
+  ;;
+  *aix*)
+  OS_ARCH=OS_AIX
+  ;;
+  *irix*)
+  OS_ARCH=OS_IRIX
+  ;;
+  *olaris*)
+  OS_ARCH=OS_SUNOS5
+  ;;
+esac
+
+CCAFE_CATAMOUNT
+# disable threads if catamount, ignoring enable if given.
+if test "x$OS_ARCH" = "x$CATAMOUNT_ARCH"; then
+	enable_threads=no
+	enable_sockets=no
+fi
+
+AC_ARG_PROGRAM
+
+#------------------------------------------------------------------------------
+# End host type configuration.
+#------------------------------------------------------------------------------
+
+CCAFE_MAJOR_VERSION=0
+CCAFE_MINOR_VERSION=8
+CCAFE_PATCH_LEVEL=8
+CCAFE_VERSION=$CCAFE_MAJOR_VERSION.$CCAFE_MINOR_VERSION.$CCAFE_PATCH_LEVEL
+CCAFE_VERSION_UNDERBAR=${CCAFE_MAJOR_VERSION}_${CCAFE_MINOR_VERSION}_${CCAFE_PATCH_LEVEL}
+
+VERSION=${CCAFE_VERSION}
+
+PKG_NAME=ccafe-$VERSION
+VER_SUFFIX=_$CCAFE_VERSION_UNDERBAR
+
+if test "x$program_suffix" != "xNONE" ; then
+  PROGRAM_SUFFIX=$program_suffix
+fi
+
+if test "${exec_prefix}" = "NONE" -a "${prefix}" != "NONE"; then
+    exec_prefix=$prefix
+fi
+if test "${prefix}" = "NONE"; then
+    prefix=`pwd`
+fi
+if test "${exec_prefix}" = "NONE"; then
+    exec_prefix=`pwd`
+fi
+CCAFE_AC_PREFIX($prefix)
+CCAFE_AC_EXEC_PREFIX($exec_prefix)
+pkgdatadir=$datadir/$PKG_NAME
+pkgdocdir=$datadir/doc/$PKG_NAME
+pkglibdir=$libdir/$PKG_NAME
+pkgincludedir=$includedir/$PKG_NAME
+
+ccafepwd=`pwd`
+# source tree var
+fullpathsrcdir=`cd $srcdir ; pwd`
+
+HAVE_BABEL=0
+HAVE_CLASSIC=0
+HAVE_NEO=0
+
+# build tree vars
+CCAFE_ROOT=`pwd`
+CCAFE_CXX_ROOT="$CCAFE_ROOT/cxx"
+# The next two lines entirely quoted to keep autoconf/m4 
+# from messing with the [] in the regex.
+[CCAFE_PARENT=`echo $CCAFE_ROOT | sed 's%[^/][^/]*$%%' | sed 's%\/$%%'`]
+[CCAFE_ANCESTOR=`echo $CCAFE_PARENT | sed 's%[^/][^/]*$%%' | sed 's%\/$%%'`]
+[CCAFE_GRANDPARENT=$CCAFE_ANCESTOR]
+[CCAFE_GREATGRANDPARENT=`echo $CCAFE_GRANDPARENT | sed 's%[^/][^/]*$%%' | sed 's%\/$%%'`]
+# install tree vars
+CCAFE_INSTALL_ROOT=$prefix
+
+CSB=cca-spec-babel
+
+dnl a dummy value for some case handling if babel is not found
+CCASPEC_BABEL_VERSION=NONE
+
+cca_babel_dirs="$prefix/$CSB:$CCATUT_HOME/$CSB:$TOP/$CSB:$CCAFE_PARENT/$CSB:$CCAFE_GRANDPARENT/$CSB:$CCAFE_GREATGRANDPARENT/$CSB:$CCAFE_ANCESTOR/$CSB:$HOME/$CSB:$HOME/cca/$CSB:/home/alice/CCA/$CSB:/usr/local/$CSB"
+
+cca_babel_install_dirs="$prefix:$CCATUT_HOME:$TOP:$CCAFE_PARENT:$CCAFE_GRANDPARENT:$CCAFE_GREATGRANDPARENT:$CCAFE_ANCESTOR:$HOME:$HOME/cca:/home/alice/CCA:/usr/local"
+#------------------------------------------------------------------------------
+# BABEL_ROOT/BABEL_CCA_ROOT: See if the user gave us the location of cca-spec-babel
+# We have to do this one first, because it tells us where babel itself
+# is (that the spec was built with) and because babel limits which compilers 
+# we can use. If we don't have cca-spec-babel, we don't have babel period.
+# If we let the user specify babel separately, we will get impenetrable bug
+# reports when they have an old cca-spec-babel (w/old babel) and a new
+# dccafe built with a new babel.
+# CCAFE_CHECK_CCA_SPEC_BABEL must default to yes if unspecified
+# in order for this logic below to be correct.
+#------------------------------------------------------------------------------
+ccaspec_lastwarn="Babel CCA spec location indeterminate.  Use --with-csb-config=/where/is/cca-spec-babel-config if wanted, or use --with-cca-babel=no if not wanted."
+
+CCAFE_CSB_CONFIG_FORCE
+
+CCA_SPEC_BABEL_CONFIG(BABEL_CCA_ROOT_INSTALLED, $cca_babel_install_dirs:$cca_babel_dirs, bin/cca-spec-babel-config, $ccaspec_lastwarn, BABEL_CCA_INSTALLED_CONFIG)
+
+if test "x$BABEL_CCA_INSTALLED_CONFIG" = "xno" -o "x$BABEL_CCA_ROOT_INSTALLED" = "xno" ; then
+  AC_MSG_RESULT([ Babel/SIDL unavailable or user requested to omit babel.])
+dnl  AC_MSG_RESULT([BABEL_CCA_INSTALLED_CONFIG: $BABEL_CCA_INSTALLED_CONFIG])
+dnl  AC_MSG_RESULT([BABEL_CCA_ROOT_INSTALLED: $BABEL_CCA_ROOT_INSTALLED])
+  AC_MSG_RESULT([  Did not find cca-spec-babel. If it is wanted
+    Please specify it with --with-csb-config. e.g:
+       --with-csb-config=/path/to/bin/cca-spec-babel-config[-\$version]
+])
+  HAVE_BABEL=0
+  BABEL_CCA_INSTALLED=0
+else
+  AC_MSG_RESULT([$BABEL_CCA_ROOT_INSTALLED])
+  dnl suck in the variables from the spec
+  . `$BABEL_CCA_INSTALLED_CONFIG --var CCASPEC_VARS_SH`
+  HAVE_BABEL=1
+  BABEL_CCA_INSTALLED=1
+  BABEL_CCA_CONFIG=`$BABEL_CCA_INSTALLED_CONFIG --var CCASPEC_MAKEINCL`
+  [CCAFE_BABEL_JAVA_HOME1=`echo $CCASPEC_BABEL_JAVA | sed 's%/[^/]*$%%'`]
+  [CCAFE_BABEL_JAVA_HOME=`echo $CCAFE_BABEL_JAVA_HOME1 | sed 's%/bin$%%'`]
+  CC=$CCASPEC_BABEL_CC
+  CXX=$CCASPEC_BABEL_CXX
+  F77=$CCASPEC_BABEL_F77
+  JAR=$CCASPEC_BABEL_JAR
+  JAVA=$CCASPEC_BABEL_JAVA
+  JAVAC=$CCASPEC_BABEL_JAVAC
+  JAVAH=$CCASPEC_BABEL_JAVAH
+  BABEL_PROGRAM=CCASPEC_BABEL_BABEL
+fi
+case "$with_cca_babel" in
+    no)
+        ;;
+    yes)
+        ;;
+    *)
+        if test "x$with_cca_babel" != "x$BABEL_CCA_ROOT_INSTALLED" ; then
+		errdirmesg=""
+		if ! test -d $with_cca_babel; then
+			errdirmesg="(directory does not exist)"
+		fi
+           AC_MSG_ERROR([value specified to --with-cca-babel ($with_cca_babel) was insufficient ${errdirmesg}.
+    Found another possibility: ($BABEL_CCA_ROOT_INSTALLED). Rerun configure with
+    a corrected argument.])
+        fi
+        ;;
+esac
+
+if test "x$HAVE_BABEL" = "x1" ; then
+case "$CCASPEC_BABEL_VERSION" in
+dnl version 0.7.[0,4] 
+  0.7.*)
+           AC_MSG_ERROR([Versions 0.7.x of babel no longer supported.])
+        ;;
+dnl version 0.8 and we hope later... (includes NONE deliberately)
+    *)
+     CCAFFEINE_SIDL_START_0=""
+     CCAFFEINE_SIDL_START_1=""
+     CCAFFEINE_SIDL_START_2="package ccaffeine version 0.3 {"
+     CCAFEEG_SIDL_START_0=""
+     CCAFEEG_SIDL_START_1="package ccafe_eg version 0.1 { "
+     CCAFE0_SIDL_START_0=""
+     CCAFE0_SIDL_START_1="package ccafe0 version 0.0 {"
+     CCAFE1_SIDL_START_0=""
+     CCAFE1_SIDL_START_1="package ccafe1 version 0.1 {"
+     CCAFE2_SIDL_START_0=""
+     CCAFE2_SIDL_START_1="package ccafe2 version 0.1 {"
+     CCAFE3_SIDL_START_0=""
+     CCAFE3_SIDL_START_1="package ccafe3 version 0.0 {"
+     CCAFE4_SIDL_START_0=""
+     CCAFE4_SIDL_START_1="package ccafe4 version 0.0 {"
+     CCAFE5_SIDL_START_0=""
+     CCAFE5_SIDL_START_1="package ccafe5 version 0.0 {"
+     CCAFE6_SIDL_START_0=""
+     CCAFE6_SIDL_START_1="package ccafe6 version 0.0 {"
+
+        ;;
+esac
+
+# For Babel versions later than 0.11.0, use the babel binding in
+# cxx/dc/babel$BSUF instead of cxx/dc/babel; also -E and --suppress-timestamp are on by default
+CCAFE_USE_NEW_BABEL=1
+BABEL_BINDING_DIRS=babel.new
+CXX_SERVER_LANG=cxx
+BABEL_FLAGS=""
+
+BABEL_VERSION_MAJOR=`echo $CCASPEC_BABEL_VERSION | sed -e 's/\([[0-9]]*\)\.\([[0-9]]*\)\.\([[0-9]]*\)/\1/'`
+BABEL_VERSION_MINOR=`echo $CCASPEC_BABEL_VERSION | sed -e 's/\([[0-9]]*\)\.\([[0-9]]*\)\.\([[0-9]]*\)/\2/'`
+BABEL_VERSION_PATCH=`echo $CCASPEC_BABEL_VERSION | sed -e 's/\([[0-9]]*\)\.\([[0-9]]*\)\.\([[0-9]]*\)/\3/'`
+
+if test "$BABEL_VERSION_MAJOR" = "0" ; then 
+  if [[[ $BABEL_VERSION_MINOR < 12 ]]] ; then 
+    if test "$BABEL_VERSION_PATCH" != "1" ; then 
+      CCAFE_USE_NEW_BABEL=0
+    fi
+  fi
+fi
+if test "$CCAFE_USE_NEW_BABEL" = "0" ; then
+  CXX_SERVER_LANG=dcxx
+  BABEL_BINDING_DIRS=babel
+  BABEL_FLAGS='--suppress-timestamp -E'
+else
+  CCAFEEG_SIDL_START_1="package ccafe version 0.1 { package eg { "
+fi
+if test "$CCAFE_USE_NEW_BABEL" = "1"; then
+    case "$BABEL_VERSION_MINOR" in
+    0) BSUF=".new"; 
+    ;;
+    1) BSUF=".new"; 
+    ;;
+    2) BSUF=".12"; 
+    ;;
+    *) BSUF=".12"; 
+    ;;
+    esac
+BABEL_BINDING_DIRS=babel$BSUF
+if test "x$BSUF" = "x.12"; then
+BABEL_FLAGS="--cca-mode $BABEL_FLAGS"
+fi dnl bsuf.12
+fi dnl bsuf 
+
+fi dnl end of have_babel=1 test
+
+AC_SUBST(CCAFFEINE_SIDL_START_0)
+AC_SUBST(CCAFFEINE_SIDL_START_1)
+AC_SUBST(CCAFFEINE_SIDL_START_2)
+AC_SUBST(CCAFEEG_SIDL_START_0)
+AC_SUBST(CCAFEEG_SIDL_START_1)
+AC_SUBST(CCAFE0_SIDL_START_0)
+AC_SUBST(CCAFE0_SIDL_START_1)
+AC_SUBST(CCAFE1_SIDL_START_0)
+AC_SUBST(CCAFE1_SIDL_START_1)
+AC_SUBST(CCAFE2_SIDL_START_0)
+AC_SUBST(CCAFE2_SIDL_START_1)
+AC_SUBST(CCAFE3_SIDL_START_0)
+AC_SUBST(CCAFE3_SIDL_START_1)
+AC_SUBST(CCAFE4_SIDL_START_0)
+AC_SUBST(CCAFE4_SIDL_START_1)
+AC_SUBST(CCAFE5_SIDL_START_0)
+AC_SUBST(CCAFE5_SIDL_START_1)
+AC_SUBST(CCAFE6_SIDL_START_0)
+AC_SUBST(CCAFE6_SIDL_START_1)
+
+
+
+BABEL_CCA_ROOT=$BABEL_CCA_ROOT_INSTALLED
+BABEL_ROOT=$CCASPEC_BABEL_ROOT
+
+
+AC_SUBST(BABEL_CCA_ROOT)
+AC_SUBST(BABEL_CCA_INSTALLED)
+AC_SUBST(HAVE_BABEL)
+AC_SUBST(BABEL_ROOT)
+AC_SUBST(BABEL_CCA_CONFIG)
+CCAFE_CCA_SPEC_BABEL_CONFIG=$BABEL_CCA_INSTALLED_CONFIG
+AC_SUBST(CCAFE_CCA_SPEC_BABEL_CONFIG)
+AC_SUBST(CCAFE_USE_NEW_BABEL)
+AC_SUBST(CXX_SERVER_LANG)
+AC_SUBST(BABEL_BINDING_DIRS)
+
+
+
+dnl babel perversion support begin
+
+AC_ARG_WITH(babel-experimental, 
+    [  --with-babel-experimental=VERSION      Tell us exactly the version your babel will report and promise us that it will work. If the build crashes, it's not ccaffeine's fault as you are living beyond the edge. If you don't know the babel version, you probably shouldn't be using this switch. ] ,
+    [AC_MSG_WARN([User specified experimental babel version $withval])]
+)
+
+case "$with_babel_experimental" in
+
+yes|no)
+	;;
+*)
+	SOME_SPECIAL_BABEL=$withval
+	;;
+esac
+AC_SUBST(SOME_SPECIAL_BABEL)
+
+dnl   babel perversion support end
+
+
+AC_ARG_WITH(babel-python, 
+    [  --with-babel-python      Generate Babel Python code for some bits of Ccaffeine. ] ,
+    [AC_MSG_WARN([The switch --with-babel-python is experimental])]
+)
+
+case "$with_babel_python" in
+
+yes)
+	CCAFE_BUILD_PY=1
+	INSTALL_PYTHON=install-python
+	;;
+*)
+	CCAFE_BUILD_PY=
+	INSTALL_PYTHON=install-dummy
+	;;
+esac
+
+AC_SUBST(CCAFE_BUILD_PY)
+AC_SUBST(INSTALL_PYTHON)
+
+dnl End Babel python tests
+
+# cca spec (must contain installed spec)
+# classic spec
+ccafe_cca_spec_dirs="
+    $CCAFE_PARENT/cca-spec-classic
+    $CCATUT_HOME/cca-spec-classic
+    $prefix/cca-spec-classic
+    /usr/local/cca-spec-classic
+"
+ccafe_cca_spec_install_dirs="
+    $prefix
+    $CCAFE_PARENT
+    $CCATUT_HOME
+    /usr/local
+"
+#------------------------------------------------------------------------------
+# CLASSIC_CCA_ROOT: See if the user gave us the location of cca-spec
+# then search $ccafe_cca_spec_dirs.
+# One of these directories must be
+# present and contain the correct files, or else the user
+# must give the directory that contains the correct files.
+#------------------------------------------------------------------------------
+#BAA
+cca_classic_dirs=$ccafe_cca_spec_dirs
+cca_classic_install_dirs=$ccafe_cca_spec_install_dirs
+classic_warn="Classic CCA spec not found."
+
+# check for the --with giving full path of config script.
+CCA_CLASSIC_CONFIG_FORCE
+
+# get the --with-cca-classic input and make sure it's good.
+CCA_SPEC_CLASSIC_CONFIG(CLASSIC_CCA_ROOT_INSTALLED, $cca_classic_install_dirs:$cca_classic_dirs, bin/cca-spec-classic-config, $classic_warn, CLASSIC_CCA_INSTALLED_CONFIG)
+if test "x$CLASSIC_CCA_INSTALLED_CONFIG" = "xno" -o "x$CLASSIC_CCA_ROOT_INSTALLED" = "xno" ; then
+dnl dnl the following two when not debugging
+  HAVE_CLASSIC=0
+  CLASSIC_CCA_INSTALLED=0
+dnl  AC_MSG_RESULT([CLASSIC_CCA_INSTALLED_CONFIG: $CLASSIC_CCA_INSTALLED_CONFIG])
+dnl  AC_MSG_RESULT([CLASSIC_CCA_ROOT_INSTALLED: $CLASSIC_CCA_ROOT_INSTALLED])
+  AC_MSG_WARN([Building ccaffeine without the classic spec.
+  If you think it really is there, try specifying:
+    --with-classic-config=/path/to/bin/cca-spec-classic-config-\$version
+  and maybe also
+    --with-cca-classic=INSTALL_PREFIX_of_cca-spec-classic.
+])
+else
+  AC_MSG_RESULT([$CLASSIC_CCA_ROOT_INSTALLED])
+dnl suck in the variables from the spec
+  . `$CLASSIC_CCA_INSTALLED_CONFIG --var CLASSIC_VARS_SH`
+  HAVE_CLASSIC=1
+  CLASSIC_CCA_INSTALLED=1
+  CLASSIC_CCA_CONFIG=`$CLASSIC_CCA_INSTALLED_CONFIG --var CLASSIC_MAKEINCL` dnl fixme
+  CCA_ROOT=$CLASSIC_CCA_ROOT_INSTALLED
+  CLASSIC_CCA_ROOT=$CLASSIC_CCA_ROOT_INSTALLED
+  [CCAFE_CLASSIC_JAVA_HOME1=`echo $CCASPEC_CLASSIC_JAVA | sed 's%/[^/]*$%%'`]
+  [CCAFE_CLASSIC_JAVA_HOME=`echo $CCAFE_CLASSIC_JAVA_HOME1 | sed 's%/bin$%%'`]
+  # need to assign the following before substs.
+  CCA_JAVA_HM=$CCA_JAR
+  if test "x$BABEL_CCA_INSTALLED" = "x"; then
+    CXX=$CCA_CXX 
+  fi
+dnl fixme-- rational basis for picking CXX is what? babel wins for now.
+fi
+
+case "$with_cca_classic" in
+    no)
+        ;;
+    yes)
+        ;;
+    *)
+        if test "x$with_cca_classic" != "x$CLASSIC_CCA_ROOT_INSTALLED" ; then
+           AC_MSG_WARN([value specified to --with-cca-classic was insufficient.
+    Found another ($CLASSIC_CCA_ROOT_INSTALLED). hope it's ok. ])
+        fi
+        ;;
+esac
+
+
+
+#------------------------------------------------------
+
+# neo spec  (must contain installed spec)
+ccafe_neo_spec_dirs="
+    $CCAFE_PARENT/cca-spec-neo
+    $CCATUT_HOME/cca-spec-neo
+    $prefix/cca-spec-neo
+    /usr/local/cca-spec-neo
+"
+ccafe_neo_spec_install_dirs="
+    $prefix
+    $CCAFE_PARENT
+    $CCATUT_HOME
+    /usr/local
+"
+#------------------------------------------------------------------------------
+# NEO_CCA_ROOT: See if the user gave us the location of cca-spec-neo
+# then search $ccafe_neo_spec_dirs.
+# One of these directories must be
+# present and contain the correct files, or else the user
+# must give the directory that contains the correct files.
+#------------------------------------------------------------------------------
+#BAA
+cca_neo_dirs=$ccafe_neo_spec_dirs
+cca_neo_install_dirs=$ccafe_neo_spec_install_dirs
+neo_warn="Neo CCA spec not found."
+HAVE_NEO=0
+NEO_CCA_INSTALLED=0
+
+# check for the --with giving full path of config script.
+CCA_NEO_CONFIG_FORCE
+
+# get the --with-cca-neo input and make sure it's good.
+CCA_SPEC_NEO_CONFIG(NEO_CCA_ROOT_INSTALLED, $cca_neo_install_dirs:$cca_neo_dirs, bin/cca-spec-neo-config, $neo_warn, NEO_CCA_INSTALLED_CONFIG)
+
+if test "x$NEO_CCA_INSTALLED_CONFIG" = "xno" -o "x$NEO_CCA_ROOT_INSTALLED" = "xno" ; then
+dnl dnl the following two when not debugging
+dnl  AC_MSG_RESULT([NEO_CCA_INSTALLED_CONFIG: $NEO_CCA_INSTALLED_CONFIG])
+dnl  AC_MSG_RESULT([NEO_CCA_ROOT_INSTALLED: $NEO_CCA_ROOT_INSTALLED])
+  AC_MSG_WARN([Building ccaffeine without the neo spec.
+  If you think it really is there, try specifying:
+    --with-neo-config=/path/to/bin/cca-spec-neo-config-\$version
+  and maybe also
+    --with-cca-neo=INSTALL_PREFIX_of_cca-spec-neo.
+])
+else
+  AC_MSG_RESULT([$NEO_CCA_ROOT_INSTALLED])
+dnl suck in the variables from the spec
+  . `$NEO_CCA_INSTALLED_CONFIG --var NEOCCA_VARS_SH` dnl fixme
+
+  HAVE_NEO=1
+  NEO_CCA_INSTALLED=1
+  NEO_CCA_CONFIG=`$NEO_CCA_INSTALLED_CONFIG --var NEOCCA_MAKEINCL` dnl fixme
+  NEO_CCA_ROOT=$NEO_CCA_ROOT_INSTALLED
+# deal with subpackages next
+dnl suck in the variables from egneo
+  . `$NEOCCA_INSTALL_ROOT/bin/eg-neo-config --var EGNEO_VARS_SH`
+  EGNEO_CONFIG=$EGNEO_MAKEINCL
+  . `$NEOCCA_INSTALL_ROOT/bin/neotest-parameter-config --var NEOTESTPARAMETER_VARS_SH`
+  NEOTESTPARAMETER_CONFIG=$NEOTESTPARAMETER_MAKEINCL
+  . `$NEOCCA_INSTALL_ROOT/bin/neotest-go-config --var NEOTESTGO_VARS_SH`
+  NEOTESTGO_CONFIG=$NEOTESTGO_MAKEINCL
+
+  if test "x$BABEL_CCA_INSTALLED" = "x" -a "x$CCA_CXX" = "x" ; then
+    CXX=$NEO_CXX
+  fi
+dnl fixme-- rational basis for picking CXX is what? babel wins for now, then classic.
+
+  case $NEOCCA_VERSION in
+  0.1.0)
+        AC_MSG_ERROR([ Value specified or found for --with-cca-neo
+  is a version ($NEOCCA_VERSION) too old to work with Ccaffeine.
+  Please get an updated version of cca-spec-neo.])
+        ;;
+  *)
+        ;;
+  esac
+fi
+
+case "$with_cca_neo" in
+    no)
+        ;;
+    yes)
+        ;;
+    *)
+        if test "x$with_cca_neo" != "x$NEO_CCA_ROOT_INSTALLED" ; then
+           AC_MSG_WARN([value specified to --with-cca-neo was insufficient.
+    Found another ($NEO_CCA_ROOT_INSTALLED). hope it's ok. ])
+        fi
+        ;;
+esac
+
+
+# FIXME. need boost and c++ fron neo if neo found, else need
+# boost directly.
+
+#------------------------------------------------------
+
+# stupidity check for env/user:
+
+if test "X$HAVE_BABEL.$HAVE_CLASSIC.$HAVE_NEO" = "X0.0.0" ; then
+	AC_MSG_WARN([
+ #############################################
+   At least one cca specification is required.
+   Not sure what you'll do with an unbound framework.
+ ############################################# 
+])
+fi
+
+CCAFE_BABEL_LIBTOOL
+#------------------------------------------------------
+
+
+dnl Checks for unix programs.
+AC_PROG_AWK
+AC_PROG_LN_S
+AC_PROG_MAKE_SET
+AC_PROG_RANLIB
+AC_PROG_INSTALL
+AC_PROG_CC
+
+# FIND if cc has a stupid limitation
+AC_PROG_CC_C_O
+
+# FIND c++ compiler
+#------------------------------------------------------------------------------
+#  see if the user gave us the location of the c++ compiler
+#------------------------------------------------------------------------------
+AC_ARG_WITH(cPP,
+    [Location of c++ compiler:
+  --with-cPP=EXECUTABLE
+                          The location of C++. Omit if using BABEL.
+                          Give the full path:
+                              --with-cPP='/usr/gnu/bin/c++' ],
+    , [with_cPP=yes])
+
+case "$with_cPP" in
+    no)
+        #  User specified --without-c++
+        #  print a warning.
+        AC_MSG_WARN([Option '--without-c++'
+        Causes c++ spec to be suppressed.])
+        cca_have_cpp=no
+        ;;
+    yes)
+        #  User didn't give the option or didn't give useful
+        #  information, search for it ourselves
+        with_cPP=_searching
+        ;;
+    *)
+        CXX="$with_cPP"
+        cca_have_cpp=yes
+        ;;
+esac
+
+if test "$with_cPP" = _searching ; then
+    AC_PROG_CXX
+fi
+
+#- 1 -----------------------------------------------------
+if test "x$HAVE_NEO" = "x1"; then
+	CCAFE_CHECK_NOTYPE($NEOCCA_pkgincludedir/neobase/Type.hh)
+	AC_MSG_CHECKING([if cca-spec-neo supports NoType])
+	if test "x$CCAFE_NOTYPE" = "x0" ; then
+		AC_MSG_ERROR([cca-spec-neo needs to be at least 0.2.8 for enum NoType.])
+	fi
+	AC_MSG_RESULT([yes])
+fi
+#- 2 -----------------------------------------------------
+
+#--------------------------------------------------------------------
+# cxxflags, which will override CXXFLAGS in the env if specified.
+#--------------------------------------------------------------------
+AC_ARG_WITH(cxxflags,
+    [Override environment CXXFLAGS for compiling C++.
+  --with-cxxflags=CXXFLAGS
+                        ],
+    , [with_cxxflags=no])
+
+case "$with_cxxflags" in
+    no)
+        # so nothing
+        ;;
+    yes)
+        AC_MSG_WARN([Option '--with-cxxflags=yes': yes not a valid flag.])
+        ;;
+    *)
+        CXXFLAGS="$with_cxxflags"
+        ;;
+esac
+
+NOT_HAVE_CXX_LIMITS=""
+AC_CHECK_HEADER(limits, , [NOT_HAVE_CXX_LIMITS=-DNO_NUMERIC_LIMITS])
+
+AC_ARG_WITH(rpm-prefix,
+	[Prefix directory of the real install destination.
+  --with-rpm-prefix=/final/root/install-dir
+             Used to set a value for embedding in scripts that will
+             be installed in a final location, not the 'build+install'
+             prefix used in the rpm generation process.], 
+   , [with_rpm_prefix=no])
+
+case "$with_rpm_prefix" in
+    no)
+        with_rpm_prefix=$prefix
+        ;;
+    yes)
+        AC_MSG_WARN([Option '--with-rpm-prefix=yes' invalid. Defaulting prefix.])
+        with_rpm_prefix=$prefix
+        ;;
+    *)
+        CCAFE_RPM_ROOT=$with_rpm_prefix
+        ;;
+esac
+CCAFE_RPM_ROOT=$with_rpm_prefix
+CCAFE_RPM_prefix=$with_rpm_prefix
+
+AC_ARG_WITH(rpm-libdir,
+	[libdir of the real install destination.
+  --with-rpm-libdir=/final/root/lib-dir
+             Used to set a value for embedding in scripts that will
+             be installed in a final location, not the 'build+install'
+             prefix used in the rpm generation process.], 
+   , [with_rpm_libdir=no])
+
+case "$with_rpm_libdir" in
+    no)
+        with_rpm_libdir="$libdir"
+        ;;
+    yes)
+        AC_MSG_WARN([Option '--with-rpm-libdir=yes' invalid. Defaulting libdir.])
+        with_rpm_libdir="$libdir"
+        ;;
+    *)
+        CCAFE_RPM_libdir=$with_rpm_libdir
+        ;;
+esac
+CCAFE_RPM_libdir="$with_rpm_libdir"
+
+AC_ARG_WITH(rpm-pkgdatadir,
+	[pkgdatadir of the real install destination.
+  --with-rpm-pkgdatadir=/final/root/pkgdata-dir
+             Used to set a value for embedding in scripts that will
+             be installed in a final location, not the 'build+install'
+             pkgdatadir used in the rpm generation process.], 
+   , [with_rpm_pkgdatadir=no])
+
+case "$with_rpm_pkgdatadir" in
+    no)
+        with_rpm_pkgdatadir="$pkgdatadir"
+        ;;
+    yes)
+        AC_MSG_WARN([Option '--with-rpm-pkgdatadir=yes' invalid. Defaulting.])
+        with_rpm_pkgdatadir="$pkgdatadir"
+        ;;
+    *)
+        CCAFE_RPM_pkgdatadir=$with_rpm_pkgdatadir
+        ;;
+esac
+CCAFE_RPM_pkgdatadir="$with_rpm_pkgdatadir"
+
+# FIND c preprocessor
+AC_PROG_CPP
+
+# FIND c++ preprocessor
+AC_PROG_CXXCPP
+
+# FIND lex 
+dnl AC_PROG_LEX
+
+# FIND yacc
+dnl AC_PROG_YACC
+
+
+# set the warning flags depending on whether or not we are using gcc
+if test "${GCC}" = "yes" ; then
+    CFLAGS_WARNING="-Wall -Wconversion"
+else
+    CFLAGS_WARNING=""
+fi
+
+AC_CHECK_SIZEOF(short)
+AC_CHECK_SIZEOF(short *)
+AC_CHECK_SIZEOF(long int)
+AC_CHECK_SIZEOF(long long int)
+AC_CHECK_SIZEOF(int64_t)
+SIZEOF_SHORT_P="$ac_cv_sizeof_short_p"
+SIZEOF_SHORT="$ac_cv_sizeof_short"
+SIZEOF_LONG_INT="$ac_cv_sizeof_long_int"
+SIZEOF_LONG_LONG_INT="$ac_cv_sizeof_long_long_int"
+SIZEOF_INT64_T="$ac_cv_sizeof_int64_t"
+
+
+# mpich 1.1.2 (or later? mpiCC is broken in some mpich 1.2.x) 
+# this will guess and if comes up empty look in the
+# config/ hint files for mpi and the detected architecture.
+# NOT optional.
+#  Pull in the search lists for mpi.
+# these are : ccafe_mpich_dirs, ccafe_mpicxx_bins, ccafe_mpicc_bins
+# mpich_dirs are full paths, bins are script names.
+. $srcdir/config/mpihome.guess
+
+# blas/lapack/equivalent libraries
+ccafe_math_support_dirs="/lib:/usr/lib:/usr/local/lib:/usr/contributed/lib"
+
+
+## end of paths to search collection
+
+
+if test "y$JAVAC" = "x" ; then
+  NOJAVARULE="all build java cxx clean distclean lib gen install: "
+  HAVE_JAVA=0
+else
+  NOJAVARULE=""
+  HAVE_JAVA=1
+fi
+
+# hunt up options for python, gmake, tclsh, ruby, swig
+CCAFE_FIND_SHELLS
+
+if test "x$ccafe_have_tclsh" = "xno"; then
+	HAVE_TCL=0
+else
+	HAVE_TCL=1
+fi
+
+# let babel spec veto the search if done.
+# need to add a classic/neo override eventually.
+if test "x$CCASPEC_BABEL_HAVE_TCLSH" = "x0"; then
+	HAVE_TCL=0
+	TCLSH=""
+fi
+
+dnl Checks for libraries.
+dnl the content of config/old_check_mpi.m4 used to be here. replaced.
+
+# if we already have a neo spec configured with mpi, this is redundant.
+# but neo might not have been built with mpi.
+CCAFE_CHECK_MPI
+
+if test "x$MPICC" = "x_none"; then
+	MPICC=$CC
+	MPI_CFLAGS=$CFLAGS
+fi
+if test "x$MPICXX" = "x_none"; then
+	MPICXX=$CXX
+	MPI_CXXFLAGS=$CXXFLAGS
+fi
+
+# END of MPI CRUFT #######################################################
+#
+
+# determine if namespaces close with }; or }
+CCAFE_NAMESPACE_END
+AC_SUBST(NAMESPACE_NEEDS_ENDSEMI)
+CCA_NAMESPACE_ENDSEMICOLON=NAMESPACE_NEEDS_ENDSEMI
+
+CCAFE_FORCE=""
+
+dnl deadmath #--------------------------------------------------------------------
+dnl deadmath # See if we can find BLAS and link it static.
+dnl deadmath #--------------------------------------------------------------------
+dnl deadmath AC_ARG_WITH(blas,
+dnl deadmath     [  --with-blas=BLASLIB     The full path to the blas library.],
+dnl deadmath     , [with_blas=no] )
+dnl deadmath case $with_blas in 
+dnl deadmath     no)
+dnl deadmath         BLASLIB=
+dnl deadmath         ;;
+dnl deadmath     yes)
+dnl deadmath         #  The user didn't give the --with-blas
+dnl deadmath         #  option or didn't give the library's location.
+dnl deadmath         #  Search for a compiled libblas.a.
+dnl deadmath         #  If that fails, disable and print a warning.
+dnl deadmath         AC_PATH_PROG(BLASLIB, libblas.a, , [$ccafe_math_support_dirs])
+dnl deadmath         ;;
+dnl deadmath     *)
+dnl deadmath         #  The user gave us --with-blas=BLASLIB, use that as the
+dnl deadmath         #  location of the BLAS library.
+dnl deadmath         BLASLIB="$with_blas"
+dnl deadmath         ;;
+dnl deadmath esac
+dnl deadmath if test -z "$BLASLIB" ; then
+dnl deadmath if test ! "X$with_blas" = Xno ; then
+dnl deadmath     AC_MSG_WARN([Cannot find libblas.a. 
+dnl deadmath     Building CCAFFEINE without BLAS linked. Expect HPC numeric
+dnl deadmath 	components to bomb.
+dnl deadmath     To specify a location for the blas library, run
+dnl deadmath     configure again with the argument:
+dnl deadmath             --with-blas=BLASLIB
+dnl deadmath     where BLASLIB is the full path to the blas library file.])
+dnl deadmath else
+dnl deadmath     AC_MSG_WARN([Built without BLAS library.])
+dnl deadmath fi
+dnl deadmath else
+dnl deadmath     CCAFE_FORCE="$CCAFE_FORCE -D_HAVE_BLAS"
+dnl deadmath fi
+
+#-------------------
+# find xml2 lib, include, etc. see config/ directory.
+#-------------------
+CCAFE_LIBXML2
+
+# find doxygen, dot. see config/ directory.
+CCAFE_DOXYGEN
+CCAFE_DOCS
+
+dnl deadmath #--------------------------------------------------------------------
+dnl deadmath # See if we can find lapack and link it static.
+dnl deadmath #--------------------------------------------------------------------
+dnl deadmath AC_ARG_WITH(lapack,
+dnl deadmath     [  --with-lapack=LAPACKLIB     The full path to the lapack library.],
+dnl deadmath     , [with_lapack=no] )
+dnl deadmath 
+dnl deadmath if test "X$with_blas" = Xno ; then
+dnl deadmath   with_lapack=no
+dnl deadmath fi
+dnl deadmath 
+dnl deadmath case $with_lapack in 
+dnl deadmath     no)
+dnl deadmath         LAPACKLIB=
+dnl deadmath         ;;
+dnl deadmath     yes)
+dnl deadmath         #  The user didn't give the --with-lapack
+dnl deadmath         #  option or didn't give the library's location.
+dnl deadmath         #  Search for a compiled liblapack.a.
+dnl deadmath         #  If that fails, disable and print a warning.
+dnl deadmath         AC_PATH_PROGS(LAPACKLIB, liblapack.a, , $ccafe_math_support_dirs)
+dnl deadmath         ;;
+dnl deadmath     *)
+dnl deadmath         #  The user gave us --with-lapack=LAPACKLIB, use that as the
+dnl deadmath         #  location of the LAPACK library.
+dnl deadmath         LAPACKLIB="$with_lapack"
+dnl deadmath         ;;
+dnl deadmath esac
+dnl deadmath 
+dnl deadmath if test -z "$LAPACKLIB" ; then
+dnl deadmath if test ! "X$with_lapack" = Xno ; then
+dnl deadmath     AC_MSG_WARN([Cannot find liblapack.a. 
+dnl deadmath     Building CCAFFEINE without LAPACK linked. Expect HPC numeric
+dnl deadmath 	components to bomb.
+dnl deadmath     To specify a location for the lapack library, run
+dnl deadmath     configure again with the argument:
+dnl deadmath             --with-lapack=LAPACKLIB
+dnl deadmath     where LAPACKLIB is the full path to the lapack library file,
+dnl deadmath 	e.g. --with-lapack=/usr/lib/libcomplib.sgimath.a or
+dnl deadmath              --with-lapack=/usr/local/lib/libessl.a.])
+dnl deadmath else
+dnl deadmath     AC_MSG_WARN([Built without LAPACK library.])
+dnl deadmath fi
+dnl deadmath else
+dnl deadmath     CCAFE_FORCE="$CCAFE_FORCE -D_HAVE_LAPACK"
+dnl deadmath fi
+dnl deadmath 
+dnl deadmath if test -n "$LAPACKLIB" -o -n "$BLASLIB"
+dnl deadmath then
+dnl deadmath    AC_PATH_PROGS(BLASX1, libatlas.a, , $ccafe_math_support_dirs)
+dnl deadmath    AC_PATH_PROGS(BLASX2, libcblas.a, , $ccafe_math_support_dirs)
+dnl deadmath    BLASEXTRALIBS="$BLASX1 $BLASX2"
+dnl deadmath    AC_MSG_WARN([Found these "extra" BLAS libs: $BLASEXTRALIBS; These will be included in the link])	
+dnl deadmath fi
+
+CCAFE_CHECK_BOOST
+
+if test "$BOOST_ROOT" = "no" ; then
+	AC_MSG_ERROR(
+[	Cannot find BOOST headers.
+Make sure that the specified path has the directory boost/
+in it and does not have it *included* in the path.  
+Ccaffeine cannot be built without BOOST smart pointers
+To specify a location for the BOOST smart pointer library run
+configure again with the argument:
+--with-boost=BOOST_ROOT
+where BOOST_ROOT is the full path to the boost headers. 
+See http://www.boost.org for more details.
+]
+	)
+fi
+AC_SUBST(BOOST_ROOT)
+BOOST_INC="-I$BOOST_ROOT"
+BOOST_FLAGS=-DBOOST_DISABLE_THREADS
+if test "$BOOST_ROOT" = "/usr/include" ; then
+        BOOST_INC=""
+fi
+if test "$BOOST_ROOT" = "/usr/local/include" ; then
+        BOOST_INC=""
+fi
+AC_SUBST(BOOST_INC)
+AC_SUBST(BOOST_FLAGS)
+
+#--------------------------------------------------------------------
+#       On a few very rare systems, all of the libm.a stuff is
+#       already in libc.a.  Set compiler flags accordingly.
+#       Also, Linux requires the "ieee" library for math to work
+#       right (and it must appear before "-lm").
+#--------------------------------------------------------------------
+
+AC_CHECK_FUNC(sin, MATH_LIBS="$LAPACKLIB $BLASLIB $BLASEXTRALIBS", MATH_LIBS="$LAPACKLIB $BLASLIB $BLASEXTRALIBS -lm")
+AC_CHECK_LIB(ieee, main, [MATH_LIBS="-lieee $MATH_LIBS"])
+
+dnl deadmath #-----------------------------------------------------------------------
+dnl deadmath # 	On Linux, you need to add in the g2c library needed to supply
+dnl deadmath #	fortran run-time functions when linking fortran BLAS and LAPACK
+dnl deadmath #	via gcc or g++
+dnl deadmath #   (Then only do this if either BLAS or LAPACK are being used - Jeeem)
+dnl deadmath #---------------------------------------------------------------------
+dnl deadmath 
+dnl deadmath if test -n "$LAPACKLIB" -o -n "$BLASLIB"
+dnl deadmath then
+dnl deadmath AC_CHECK_LIB(g2c, z_div, [FLIBS="-lg2c $FLIBS"])
+dnl deadmath fi
+
+#--------------------------------------------------------------------
+#       On AIX systems, libbsd.a has to be linked in to support
+#       non-blocking file IO.  This library has to be linked in after
+#       the MATH_LIBS or it breaks the pow() function.  The way to
+#       insure proper sequencing, is to add it to the tail of MATH_LIBS.
+#        This library also supplies gettimeofday.
+#--------------------------------------------------------------------
+libbsd=no
+if test "`uname -s`" = "AIX" ; then
+    AC_CHECK_LIB(bsd, gettimeofday, libbsd=yes)
+    if test $libbsd = yes; then
+        MATH_LIBS="$MATH_LIBS -lbsd"
+    fi
+fi
+
+dnl Replace `main' with a function in -ldl:
+dnl AC_CHECK_LIB(dl, main)
+dnl Checked later, don't do here and screw up SGI...  :-Q
+
+dnl Checks for header files.
+AC_HEADER_STDC
+AC_CHECK_HEADERS(fcntl.h strings.h sys/file.h sys/time.h unistd.h)
+
+dnl check for GNU readline
+CCAFE_LIB_READLINE
+
+dnl Checks for typedefs, structures, and compiler characteristics.
+AC_C_CONST
+AC_TYPE_SIZE_T
+AC_HEADER_TIME
+
+dnl Checks for library functions.
+
+#--------------------------------------------------------------------
+#       Check for the existence of the -lsocket and -lnsl libraries.
+#       The order here is important, so that they end up in the right
+#       order in the command line generated by make.  Here are some
+#       special considerations:
+#       1. Use "connect" and "accept" to check for -lsocket, and
+#          "gethostbyname" to check for -lnsl.
+#       2. Use each function name only once:  can't redo a check because
+#          autoconf caches the results of the last check and won't redo it.
+#       3. Use -lnsl and -lsocket only if they supply procedures that
+#          aren't already present in the normal libraries.  This is because
+#          IRIX 5.2 has libraries, but they aren't needed and they're
+#          bogus:  they goof up name resolution if used.
+#       4. On some SVR4 systems, can't use -lsocket without -lnsl too.
+#          To get around this problem, check for both libraries together
+#          if -lsocket doesn't work by itself.
+#--------------------------------------------------------------------
+
+tcl_checkBoth=0
+AC_CHECK_FUNC(connect, tcl_checkSocket=0, tcl_checkSocket=1)
+if test "$tcl_checkSocket" = 1; then
+    AC_CHECK_LIB(socket, main, LIBS="$LIBS -lsocket", tcl_checkBoth=1)
+fi
+if test "$tcl_checkBoth" = 1; then
+    tk_oldLibs=$LIBS
+    LIBS="$LIBS -lsocket -lnsl"
+    AC_CHECK_FUNC(accept, tcl_checkNsl=0, [LIBS=$tk_oldLibs])
+fi
+AC_CHECK_FUNC(gethostbyname, , AC_CHECK_LIB(nsl, main, [LIBS="$LIBS -lnsl"]))
+
+AC_FUNC_SETVBUF_REVERSED
+AC_FUNC_VPRINTF
+AC_CHECK_FUNCS(select socket strdup strerror strstr strtol)
+
+SC_ENABLE_SHARED
+# after SC_ENABLE_SHARED checks the configure switches.
+SC_CONFIG_CFLAGS
+SC_ENABLE_THREADS
+SC_ENABLE_SYMBOLS
+CCAFE_ENABLE_SOCKETS
+
+# On MacOS X <sys/socklen.h> contains socklen_t, so must include that
+# when testing.
+AC_CHECK_TYPE(socklen_t, ,
+  [AC_DEFINE_UNQUOTED(socklen_t, int,
+                      [Define to `int' if <sys/socket.h> does not define.])],
+  [#if HAVE_SYS_TYPES_H
+#include <sys/types.h>
+#endif
+#include <sys/socket.h>
+])
+
+
+if test "$enable_threads" = "no"; then
+	PTLIB=""
+else
+	PTLIB="$THREADS_LIBS"
+fi
+AC_SUBST(PTLIB)
+
+#       CCAFE_DL_LIBS -       Library file(s) to include in demo and other base
+#                       applications in order for the "load" command to work.
+#       CCAFE_LD_FLAGS -      Flags to pass to the compiler when linking object
+#                       files into an executable application binary such
+#                       as demo.
+#       CCAFE_LD_SEARCH_FLAGS-Flags to pass to ld, such as "-R /usr/local/tcl/lib",
+#                       that tell the run-time dynamic linker where to look
+#                       for shared libraries such as libtcl.so.  Depends on
+#                       the variable LIB_RUNTIME_DIR in the Makefile.
+#       CCAFE_SHLIB_CFLAGS -  Flags to pass to cc/c++ when compiling the components
+#                       for use with CCAFFEINE.
+#       CCAFE_SHLIB_LD -      Base command to use for combining object files
+#                       into a shared library for CCAFFEINE.
+#       CCAFE_SHLIB_LDFLAGS - Flags to pass to the dynamic linker when
+#                       creating a shared library.
+#       CCAFE_SHLIB_LD_LIBS - Dependent libraries for the linker to scan when
+#                       creating shared libraries for CCAFFEINE.  This symbol typically
+#                       goes at the end of the "ld" commands that build
+#                       shared libraries.
+#       CCAFE_SHLIB_SUFFIX -  Suffix to use for the names of dynamically loadable
+LD_FLAGS=$LDFLAGS
+CCAFE_DL_LIBS="$DL_LIBS"
+CCAFE_LD_FLAGS="$LD_FLAGS"
+CCAFE_LD_SEARCH_FLAGS="$LD_SEARCH_FLAGS"
+CCAFE_SHLIB_CFLAGS="$SHLIB_CFLAGS"
+CCAFE_SHLIB_LD="$CXX_SHLIB_LD"
+CCAFE_SHLIB_LDFLAGS="$SHLIB_LDFLAGS"
+CCAFE_SHLIB_LD_LIBS="$SHLIB_LD_LIBS"
+CCAFE_SHLIB_SUFFIX="$SHLIB_SUFFIX"
+
+if test "${ccafe_have_mpi}" = "no"; then
+    USEMPI=0
+    AC_MSG_WARN([Configured without MPI. Hope that is what you meant.
+  See configure --help for other mpi switches if it is not what you meant.])
+else
+    AC_MSG_RESULT([Configured with MPI. 'grep MPI ./varlist' for details.])
+    USEMPI=1
+fi
+
+CCAFE_PURESINGLE
+CCAFE_MAKEDEBUG
+CCAFE_HIDELIBTOOL
+CCAFE_HIDECOMPILE
+
+#------------------------------------------------------------------------------
+# FWK-SPEW
+# turn on various debugging or not?  mostly useful in binding debuggging.
+#------------------------------------------------------------------------------
+AC_ARG_ENABLE(spew, [  --enable-spew           Should framework-spew for debugging be enabled?
+                                 (Probably not, there's a lot of it.)],
+              [enable_spew=$enableval], [enable_spew=no])
+if test ! "X$enable_spew" = "Xno"; then
+  enable_spew=yes
+fi
+if test "X$enable_spew" = "Xyes"; then
+  CCAFE_SPEW=1
+else
+  CCAFE_SPEW=0
+fi
+
+#------------------------------------------------------------------------------
+# tests-neo
+# turn on various neo build tests.
+#------------------------------------------------------------------------------
+AC_ARG_ENABLE(tests_neo, [  --enable-tests-neo           Should neo build tests be enabled?
+                                 (Normally yes, maybe not on AIX.)],
+              [enable_tests_neo=$enableval], [enable_tests_neo=yes])
+if test ! "X$enable_tests_neo" = "Xno"; then
+  enable_tests_neo=yes
+fi
+if test "X$enable_tests_neo" = "Xyes"; then
+  CCAFE_TESTS_NEO=1
+else
+  CCAFE_TESTS_NEO=0
+fi
+
+CCAFE_SHARED_LIB=libccafeCore$VER_SUFFIX$PROGRAM_SUFFIX$SHLIB_SUFFIX
+CCAFE_STATIC_LIB=libccafeCore$VER_SUFFIX$PROGRAM_SUFFIX.a
+CCAFE_LIBTOOL_LIB=libccafeCore$VER_SUFFIX$PROGRAM_SUFFIX.la
+CCAFE_PRELOAD_LIB=libccafePreload$VER_SUFFIX$PROGRAM_SUFFIX.la
+CCAFE_STATIC_DRIVER_LIB=libccafeDrivers$VER_SUFFIX$PROGRAM_SUFFIX.a
+CCAFE_SHARED_DRIVER_LIB=libccafeDrivers$VER_SUFFIX$PROGRAM_SUFFIX$SHLIB_SUFFIX
+CCAFE_LIBTOOL_DRIVER_LIB=libccafeDrivers$VER_SUFFIX$PROGRAM_SUFFIX.la
+CCAFE_BABEL_LIBTOOL_LIB=libccaffeine$VER_SUFFIX$PROGRAM_SUFFIX.la
+CCAFE_BABEL_SHARED_LIB=libccaffeine$VER_SUFFIX$PROGRAM_SUFFIX$SHLIB_SUFFIX
+CCAFE_BABEL_STATIC_LIB=libccaffeine$VER_SUFFIX$PROGRAM_SUFFIX.a
+BUILT_SHARED_LIB=libccafeCore$SHLIB_SUFFIX
+BUILT_STATIC_LIB=libccafeCore.a
+BUILT_LIBTOOL_LIB=libccafeCore.la
+BUILT_PRELOAD_LIB=libccafePreload.la
+BUILT_SHARED_DRIVER_LIB=libccafeDrivers$SHLIB_SUFFIX
+BUILT_STATIC_DRIVER_LIB=libccafeDrivers.a
+BUILT_LIBTOOL_DRIVER_LIB=libccafeDrivers.la
+BUILT_BABEL_LIBTOOL_LIB=libccaffeine.la
+BUILT_BABEL_SHARED_LIB=libccaffeine$SHLIB_SUFFIX
+BUILT_BABEL_STATIC_LIB=libccaffeine.a
+MPICOMPONENT_INDEX=$libdir
+
+if test "X$MPICC" = "X"; then
+	MPICC=$CC
+fi
+if test "X$MPICXX" = "X"; then
+	MPICXX=$CXX
+fi
+
+NO_CLASSIC_RC="#"
+NO_BABEL_RC="#"
+NO_MPI_RC="#"
+NO_BABELCLASSIC_RC="#"
+if test "X$HAVE_BABEL" = "X1"; then
+	NO_BABEL_RC=""
+fi
+if test "x$USEMPI" = "x1"; then
+	NO_MPI_RC=""
+fi
+
+if test "X$HAVE_CLASSIC" = "X1"; then
+	NO_CLASSIC_RC=""
+fi
+
+if test "X$HAVE_CLASSIC$HAVE_BABEL" = "X11"; then
+	NO_BABELCLASSIC_RC=""
+fi
+
+
+CCAFEDEVELOPER
+CCAFECMDSHELL
+AC_SUBST(CCAFE_DEVELOPER)
+AC_SUBST(CCAFE_CMDSHELL)
+CCAFE_TOOLS_SETTING
+
+
+AC_SUBST(MPICOMPONENT_INDEX)
+AC_SUBST(NO_MPI_RC)
+AC_SUBST(NO_BABEL_RC)
+AC_SUBST(NO_BABELCLASSIC_RC)
+AC_SUBST(NO_CLASSIC_RC)
+AC_SUBST(CCASPEC_BABEL_BABEL)
+AC_SUBST(TCL_STUB_LIB_FILE)
+AC_SUBST(TCL_STUB_LIB_FLAG)
+AC_SUBST(TCL_BUILD_STUB_LIB_SPEC)
+AC_SUBST(TCL_STUB_LIB_SPEC)
+AC_SUBST(TCL_BUILD_STUB_LIB_PATH)
+AC_SUBST(TCL_STUB_LIB_PATH)
+AC_SUBST(MAKE_STUB_LIB)
+
+AC_SUBST(BUILD_DLTEST)
+AC_SUBST(CFLAGS)
+AC_SUBST(CFLAGS_DEBUG)
+AC_SUBST(CFLAGS_OPTIMIZE)
+AC_SUBST(CFLAGS_WARNING)
+AC_SUBST(CFG_TCL_SHARED_LIB_SUFFIX)
+AC_SUBST(CFG_TCL_UNSHARED_LIB_SUFFIX)
+AC_SUBST(CFG_TCL_EXPORT_FILE_SUFFIX)
+AC_SUBST(TCL_DBGX)
+AC_SUBST(DL_LIBS)
+AC_SUBST(DL_OBJS)
+AC_SUBST(EXTRA_CFLAGS)
+AC_SUBST(LD_FLAGS)
+AC_SUBST(MAKE_LIB)
+AC_SUBST(MATH_LIBS)
+AC_SUBST(SHLIB_CFLAGS)
+AC_SUBST(SHLIB_LD)
+AC_SUBST(SHLIB_LD_LIBS)
+AC_SUBST(SHLIB_SUFFIX)
+AC_SUBST(TCL_BUILD_LIB_SPEC)
+AC_SUBST(TCL_LD_SEARCH_FLAGS)
+AC_SUBST(TCL_LIB_FILE)
+AC_SUBST(TCL_LIB_FLAG)
+AC_SUBST(TCL_NEEDS_EXP_FILE)
+AC_SUBST(TCL_BUILD_EXP_FILE)
+AC_SUBST(TCL_EXP_FILE)
+AC_SUBST(TCL_LIB_SPEC)
+AC_SUBST(TCL_LIB_VERSIONS_OK)
+AC_SUBST(TCL_MAJOR_VERSION)
+AC_SUBST(TCL_MINOR_VERSION)
+AC_SUBST(TCL_PACKAGE_PATH)
+AC_SUBST(TCL_PATCH_LEVEL)
+AC_SUBST(TCL_SHARED_LIB_SUFFIX)
+AC_SUBST(TCL_SHARED_BUILD)
+AC_SUBST(TCL_SHLIB_CFLAGS)
+AC_SUBST(TCL_SRC_DIR)
+AC_SUBST(TCL_UNSHARED_LIB_SUFFIX)
+AC_SUBST(TCL_VERSION)
+AC_SUBST(XMLINC)
+AC_SUBST(XMLLIB)
+AC_SUBST(HAVE_XML)
+
+AC_SUBST(BABEL_FLAGS)
+AC_SUBST(CCAFE_DL_LIBS)
+AC_SUBST(CCAFE_LD_FLAGS)
+AC_SUBST(CCAFE_LD_SEARCH_FLAGS)
+AC_SUBST(CCAFE_SHLIB_CFLAGS)
+AC_SUBST(CCAFE_SHLIB_LD)
+AC_SUBST(CCAFE_SHLIB_LDFLAGS)
+AC_SUBST(CCAFE_SHLIB_LD_LIBS)
+AC_SUBST(CCAFE_SHLIB_SUFFIX)
+AC_SUBST(PVM_ROOT)
+AC_SUBST(EFENCE)
+AC_SUBST(EFENCE_INC)
+AC_SUBST(CCASPEC_SUPPORT_SHARED)
+AC_SUBST(CCASPEC_SUPPORT_STATIC)
+AC_SUBST(NEOCCA_SUPPORT_SHARED)
+AC_SUBST(NEOCCA_SUPPORT_STATIC)
+AC_SUBST(CLASSIC_SUPPORT_SHARED)
+AC_SUBST(CLASSIC_SUPPORT_STATIC)
+
+AC_SUBST(CCA_ROOT)
+AC_SUBST(CCA_JAVA_HM)
+AC_SUBST(NEO_CCA_ROOT_INSTALLED)
+AC_SUBST(NEO_CCA_INSTALLED)
+AC_SUBST(NEO_CCA_CONFIG)
+AC_SUBST(EGNEO_CONFIG)
+AC_SUBST(NEOTESTPARAMETER_CONFIG)
+AC_SUBST(CLASSIC_CCA_ROOT)
+AC_SUBST(CLASSIC_CCA_INSTALLED)
+AC_SUBST(CLASSIC_CCA_CONFIG)
+AC_SUBST(HAVE_CLASSIC)
+AC_SUBST(HAVE_NEO)
+AC_SUBST(CCAFE_SHARED_LIB)
+AC_SUBST(CCAFE_STATIC_LIB)
+AC_SUBST(CCAFE_STATIC_DRIVER_LIB)
+AC_SUBST(BUILT_LIBTOOL_LIB)
+AC_SUBST(CCAFE_LIBTOOL_LIB)
+AC_SUBST(CCAFE_PRELOAD_LIB)
+AC_SUBST(BUILT_PRELOAD_LIB)
+AC_SUBST(CCAFE_LIBTOOL_DRIVER_LIB)
+AC_SUBST(BUILT_SHARED_LIB)
+AC_SUBST(BUILT_STATIC_LIB)
+AC_SUBST(BUILT_STATIC_DRIVER_LIB)
+AC_SUBST(BUILT_LIBTOOL_DRIVER_LIB)
+AC_SUBST(CCAFE_SHARED_DRIVER_LIB)
+AC_SUBST(BUILT_SHARED_DRIVER_LIB)
+AC_SUBST(CCAFE_BABEL_LIBTOOL_LIB)
+AC_SUBST(CCAFE_BABEL_SHARED_LIB)
+AC_SUBST(CCAFE_BABEL_STATIC_LIB)
+AC_SUBST(BUILT_BABEL_LIBTOOL_LIB)
+AC_SUBST(BUILT_BABEL_SHARED_LIB)
+AC_SUBST(BUILT_BABEL_STATIC_LIB)
+
+AC_SUBST(HAVE_TCL)
+AC_SUBST(HAVE_JAVA)
+AC_SUBST(NOJAVARULE)
+AC_SUBST(EGNEO_CCA_DATA)
+AC_SUBST(NEOTESTPARAMETER_CCA_DATA)
+AC_SUBST(NEOTESTGO_CCA_DATA)
+AC_SUBST(PURESINGLE)
+AC_SUBST(HAVE_NOISE)
+AC_SUBST(HIDECOMPILE)
+AC_SUBST(HIDELIBTOOL)
+
+
+AC_SUBST(OS_ARCH)
+AC_SUBST(MPI)
+AC_SUBST(MPI_IS_MPD)
+AC_SUBST(MPIRUN)
+AC_SUBST(MPIPRERUN)
+AC_SUBST(MPIF77)
+AC_SUBST(MPIF90)
+AC_SUBST(MPICC)
+AC_SUBST(MPI_LD)
+AC_SUBST(MPICXX)
+AC_SUBST(MPI_ARCH)
+AC_SUBST(MPI_HOME)
+AC_SUBST(MPI_INC)
+AC_SUBST(MPI_BIN)
+AC_SUBST(MPI_STATIC_LIBS)
+AC_SUBST(MPI_STATIC_LDFLAGS)
+AC_SUBST(MPI_SO_LIBS)
+AC_SUBST(MPI_SO_LDFLAGS)
+AC_SUBST(MPI_CFLAGS)
+AC_SUBST(MPI_FFLAGS)
+AC_SUBST(MPI_CXXFLAGS)
+# some flags for mpi which should be obsolete soon we hope
+AC_SUBST(BROKEN_MPICC)
+AC_SUBST(BROKEN_MPICXX)
+AC_SUBST(MPI_LDFLAGS)
+AC_SUBST(MPILIB)
+AC_SUBST(MPI_LIBDIR)
+AC_SUBST(MPI_SO_LIBDIR)
+AC_SUBST(MPILD_SO_FLAGS)
+AC_SUBST(MPI_INC_ODD)
+# end of some flags for mpi which should be obsolete soon we hope
+
+
+AC_SUBST(PKG_NAME)
+AC_SUBST(VER_SUFFIX)
+AC_SUBST(PROGRAM_SUFFIX)
+AC_SUBST(pkgdatadir)
+AC_SUBST(pkgdocdir)
+AC_SUBST(pkglibdir)
+AC_SUBST(pkgincludedir)
+AC_SUBST(CCAFE_SPEW)
+AC_SUBST(CCAFE_TESTS_NEO)
+AC_SUBST(CCAFE_MAJOR_VERSION)
+AC_SUBST(CCAFE_MINOR_VERSION)
+AC_SUBST(CCAFE_PATCH_LEVEL)
+AC_SUBST(CCAFE_VERSION)
+AC_SUBST(CCAFE_VERSION_UNDERBAR)
+AC_SUBST(VERSION)
+AC_SUBST(CCAFE_BASH)
+AC_SUBST(TCLSH)
+AC_SUBST(HAVE_TCL)
+AC_SUBST(RUBY)
+AC_SUBST(SWIG)
+AC_SUBST(SWIG_HOME)
+AC_SUBST(CCAFE_ROOT)
+AC_SUBST(CCAFE_CXX_ROOT)
+AC_SUBST(CCAFE_JAVA_ROOT)
+AC_SUBST(CCAFE_INSTALL_ROOT)
+AC_SUBST(CCAFE_RPM_ROOT)
+AC_SUBST(CCAFE_RPM_prefix)
+AC_SUBST(CCAFE_RPM_libdir)
+AC_SUBST(CCAFE_RPM_pkgdatadir)
+AC_SUBST(EYES2_ROOT)
+AC_SUBST(SNLCPP_ROOT)
+AC_SUBST(ESI_ROOT)
+AC_SUBST(STV_ROOT)
+AC_SUBST(EYES_ROOT)
+AC_SUBST(PYTHON_SCRIPTING)
+AC_SUBST(PYTHON_INCLUDE)
+AC_SUBST(PYTHON_CPPFLAGS)
+AC_SUBST(PYTHON_LDFLAGS)
+
+AC_SUBST(CONFIG_ARGS)
+
+AC_SUBST(CCAFE_FORCE)
+AC_SUBST(CPP)
+AC_SUBST(CXX)
+AC_SUBST(CXXFLAGS)
+AC_SUBST(NOT_HAVE_CXX_LIMITS)
+AC_SUBST(CXX_TEMPLATES)
+AC_SUBST(CXXCPP)
+AC_SUBST(FLIBS)
+AC_SUBST(AWK)
+AC_SUBST(LN_S)
+AC_SUBST(RANLIB)
+AC_SUBST(LEX)
+AC_SUBST(YACC)
+AC_SUBST(SET_MAKE)
+AC_SUBST(TIME_WITH_SYS_TIME)
+AC_SUBST(HAVE_SYS_TIME_H)
+AC_SUBST(LIBS)
+AC_SUBST(SETVBUF_REVERSED)
+AC_SUBST(HAVE_VPRINTF)
+AC_SUBST(HAVE_SYS_IOCTL_H)
+AC_SUBST(HAVE_SYS_FILIO_H)
+AC_SUBST(USE_FIONBIO)
+AC_SUBST(USEMPI)
+AC_SUBST(GMAKE)
+AC_SUBST(PURIFY)
+AC_SUBST(SIZEOF_SHORT_P)
+AC_SUBST(SIZEOF_SHORT)
+AC_SUBST(SIZEOF_LONG_INT)
+AC_SUBST(SIZEOF_LONG_LONG_INT)
+AC_SUBST(SIZEOF_INT64_T)
+AC_SUBST(INSTALL)
+AC_SUBST(MONOCHROME)
+AC_SUBST(INSTALL_DATA)
+AC_SUBST(DOTTARG)
+AC_SUBST(DOT)
+AC_SUBST(DOXYGENTARG)
+AC_SUBST(DOXYGEN)
+AC_SUBST(BUILDDOCS)
+AC_SUBST(CCA_BUNDLE_VERSION)
+
+AC_SUBST(NEOCCA_VERSION)
+AC_SUBST(CLASSIC_VERSION)
+AC_SUBST(CCASPEC_VERSION)
+AC_SUBST(CCASPEC_BABEL_VERSION)
+
+
+#chez_rob_files="chez-rob/protoBS/Makefile chez-rob/protoBS/CcaffeineAbstractFramework.cxx"
+chez_rob_files="chez-rob/protoBS/Makefile"
+
+
+top_files="varlist Makefile Makefile.dl Makefile.conf.dl Makefile.install reconfigure examples/configureHints Makefile.conf Makefile.pthreads"
+dep_files="cxx/util/xlcdepinclude cxx/util/xlcdepinclude_nosys cxx/util/deltamake"
+cxx_files="cxx/Makefile cxx/Makefile.Rules cxx/Makefile.Vars cxx/Makefile.Static cxx/MakeIncl.CCAFE_MPI cxx/MakeIncl.CCAFE_Component cxx/dc/user_iface/CcaffeineRC cxx/dc/user_iface/ProgramSuffix.h cxx/dc/user_iface/InitScript.h cxx/dc/export/config.hh"
+
+doc_files="src/DoxyConfig"
+
+src_files="src/MakeIncl.CCAFE src/ccafe-config src/ccafeConfig.sh src/bkupFile.rb src/namespchgr.rb src/memtest src/simpleTests src/simpleBatch src/testBabelFactoryService src/testBabelParameterDialogServiceTest src/testBabelPortTranslator src/testRPMBatch src/testRPMPortTranslator src/test-python-bs src/test-GoThread src/testBabelParameterPortFactory src/testBabelServiceRegistry src/libccafeCore.scl src/uniquifyLibtool.sh"
+
+scripts_files="scripts/simplify-bld  scripts/bld2rc"
+
+bcd="cxx/dc/babel"
+bcf="cxx/dc/babel/component"
+if test "$CCAFE_USE_NEW_BABEL" = "1" ; then
+	bcd="cxx/dc/babel$BSUF"
+	bcf="cxx/dc/babel$BSUF/component"
+fi
+sidl_files="$bcd/babel-cca/ccafe.sidl $bcf/StringConsumerPort/StringConsumerPort.sidl $bcf/PrinterComponent/PrinterComponent.sidl $bcf/PortTranslatorStarter/PortTranslatorStarter.sidl $bcf/StarterComponent/StarterComponent.sidl $bcf/BasicParameterPortTest/BasicParameterPortTest.sidl $bcf/GoComponent/GoComponent.sidl $bcf/ParameterDialogServiceTest/ParameterDialogServiceTest.sidl $bcf/ParameterPortFactoryTest/ParameterPortFactoryTest.sidl $bcf/ServiceRegistryTest/ServiceRegistryTest.sidl $bcf/SCPProxy/SCPProxy.sidl $bcf/SimpleProxyTest/SimpleProxyTest.sidl $bcf/ConnectionEventServiceTest/ConnectionEventServiceTest.sidl $bcf/MPIComponent/MPIComponent.sidl $bcf/TestMPI/TestMPI.sidl $bcf/GUIServiceTest/GUIServiceTest.sidl"
+
+neofiles="cxx/dc/neo/mpitest/mpiTest.scr"
+babelfiles="$bcd/test/test-input.scr $bcd/mpitest/mpitest-input.scr"
+
+vpath_makefiles=" cxx/stovepipe/Makefile cxx/drivers/Makefile cxx/util/Makefile cxx/jc++/util/Makefile cxx/jc++/lang/Makefile cxx/jc++/io/Makefile cxx/jc++/Makefile cxx/jc++/test/Makefile cxx/obj/Makefile cxx/doc/Makefile cxx/dc/component/Makefile cxx/dc/services/ContextEventManager/eventCons/Makefile cxx/dc/services/ContextEventManager/Makefile cxx/dc/services/registry/Makefile cxx/dc/services/Makefile cxx/dc/services/dotcca/dccore/Makefile cxx/dc/services/dotcca/Makefile cxx/dc/services/dotcca/treeReader/Makefile cxx/dc/user_iface/ccacmd/Makefile cxx/dc/user_iface/Makefile cxx/dc/neo/mpitest/Makefile cxx/dc/neo/ccafe-bind/Makefile cxx/dc/neo/Makefile cxx/dc/neo/test/Makefile cxx/dc/distributed/Makefile cxx/dc/classic/ccafe-bind/Makefile cxx/dc/classic/Makefile cxx/dc/framework/Makefile cxx/dc/Makefile cxx/dc/port/Makefile cxx/cmd/Makefile cxx/gnu/getopt/Makefile cxx/gnu/Makefile cxx/parameters/Makefile cxx/tests/Makefile cxx/port/Makefile"
+
+vpath_makefiles_babel="cxx/dc/babel$BSUF/component/ParameterDialogServiceTest/Makefile cxx/dc/babel$BSUF/component/ParameterPortFactoryTest/Makefile cxx/dc/babel$BSUF/component/PortTranslatorStarter/Makefile cxx/dc/babel$BSUF/component/ServiceRegistryTest/Makefile cxx/dc/babel$BSUF/component/SCPProxy/Makefile cxx/dc/babel$BSUF/component/GUIServiceTest/Makefile cxx/dc/babel$BSUF/component/MPIComponent/Makefile cxx/dc/babel$BSUF/component/TestMPI/Makefile cxx/dc/babel$BSUF/component/PrinterComponent/Makefile cxx/dc/babel$BSUF/component/ConnectionEventServiceTest/Makefile cxx/dc/babel$BSUF/component/BasicParameterPortTest/Makefile cxx/dc/babel$BSUF/component/GoComponent/Makefile cxx/dc/babel$BSUF/component/SimpleProxyTest/Makefile cxx/dc/babel$BSUF/component/Makefile cxx/dc/babel$BSUF/component/StarterComponent/Makefile cxx/dc/babel$BSUF/component/StringConsumerPort/Makefile cxx/dc/babel$BSUF/mpitest/src/Makefile cxx/dc/babel$BSUF/mpitest/Makefile cxx/dc/babel$BSUF/ccafe-bind/Makefile cxx/dc/babel$BSUF/babel-cca/Makefile cxx/dc/babel$BSUF/Makefile cxx/dc/babel$BSUF/test/src/Makefile cxx/dc/babel$BSUF/test/Makefile"
+
+if test "x$HAVE_BABEL" = "x0"; then
+	sidl_files=""
+	vpath_makefiles_babel=""
+fi
+
+CCAFE_CONFIG_FILES=" $top_files $dep_files $cxx_files $scripts_files $chez_rob_files $sidl_files $babelfiles $neofiles $doc_files $src_files $vpath_makefiles $vpath_makefiles_babel"
+
+AC_SUBST(CCAFE_CONFIG_FILES)
+AC_SUBST(fullpathsrcdir)
+AC_SUBST(ccafepwd)
+AC_SUBST(BSUF)
+
+# any time a new subdir shows up with a config file
+# (other than a first-level subdir) we must make dirs
+# manually in the obj tree for vpath builds to work.
+deep_subdirs="chez-rob/protoBS cxx/dc/babel$BSUF/babel-cca cxx/dc/babel$BSUF/component/ConnectionEventServiceTest cxx/dc/babel$BSUF/component/BasicParameterPortTest cxx/dc/babel$BSUF/component/GoComponent cxx/dc/babel$BSUF/component/GUIServiceTest cxx/dc/babel$BSUF/component/MPIComponent cxx/dc/babel$BSUF/component/ParameterDialogServiceTest cxx/dc/babel$BSUF/component/ParameterPortFactoryTest cxx/dc/babel$BSUF/component/PortTranslatorStarter cxx/dc/babel$BSUF/component/PrinterComponent cxx/dc/babel$BSUF/component/SCPProxy cxx/dc/babel$BSUF/component/ServiceRegistryTest cxx/dc/babel$BSUF/component/SimpleProxyTest cxx/dc/babel$BSUF/component/StarterComponent cxx/dc/babel$BSUF/component/StringConsumerPort cxx/dc/babel$BSUF/component/TestMPI cxx/dc/babel$BSUF/mpitest cxx/dc/babel$BSUF/test cxx/dc/export cxx/dc/neo/mpitest cxx/dc/user_iface"
+
+for i in $deep_subdirs; do
+    AS_MKDIR_P($i)
+done
+
+AC_CONFIG_FILES([$CCAFE_CONFIG_FILES])
+
+AC_CONFIG_COMMANDS([outmsg],
+[chmod +x reconfigure cxx/util/deltamake src/uniquifyLibtool.sh
+echo "=== Summary of configuration ==="
+echo "Installation will be in $prefix"
+echo "libtool is $BABEL_LIBTOOL ($BLVERSION)"
+if test "x$HAVE_BABEL" = "x1"; then
+echo "babel support enabled."
+echo "Babel version=$CCASPEC_BABEL_VERSION"
+echo "Babel CCA version=$CCASPEC_VERSION"
+if test "x$CCAFE_BUILD_PY" = "x1"; then
+echo "Framework binding to babel python enabled"
+fi
+else
+echo "babel support disabled."
+fi
+if test "x$HAVE_CLASSIC" = "x1"; then
+echo "classic support enabled."
+echo "CLASSIC_VERSION=$CLASSIC_VERSION"
+else
+echo "classic support disabled."
+fi
+if test "x$HAVE_NEO" = "x1" ; then
+echo "neo support enabled."
+echo "NEOCCA_VERSION=$NEOCCA_VERSION"
+else
+echo "neo support disabled."
+fi
+if test "x$HAVE_TCL" = "x1"; then
+echo "tclsh convenience script use enabled."
+else
+echo "tclsh convenience script use disabled."
+fi
+if test "x$HAVE_XML" = "x1"; then
+echo "libxml2 use enabled."
+else
+echo "libxml2 use disabled."
+fi
+if test "x$CCAFE_SOCKETS" = "x1"; then
+echo "socket features enabled."
+else
+echo "socket features disabled."
+fi
+if test "x$CCAFE_THREADS" = "x1"; then
+echo "thread features enabled."
+echo "thread libs= $PTLIB"
+else
+echo "thread features disabled."
+fi
+echo "Compiler-Cxx=$MPICXX"
+echo "Compiler-C=$MPICC"
+],[
+prefix=$prefix
+HAVE_TCL=$HAVE_TCL
+HAVE_XML=$HAVE_XML
+CCAFE_THREADS=$CCAFE_THREADS
+PTLIB="$PTLIB"
+CCAFE_SOCKETS=$CCAFE_SOCKETS
+CCASPEC_BABEL_VERSION=$CCASPEC_BABEL_VERSION
+CLASSIC_VERSION=$CLASSIC_VERSION
+CCASPEC_VERSION=$CCASPEC_VERSION
+NEOCCA_VERSION=$NEOCCA_VERSION
+HAVE_CLASSIC=$HAVE_CLASSIC
+HAVE_NEO=$HAVE_NEO
+HAVE_BABEL=$HAVE_BABEL
+CCAFE_BUILD_PY=$CCAFE_BUILD_PY
+MPICXX="$MPICXX"
+MPICC="$MPICC"
+BLVERSION="`$BABEL_LIBTOOL --version |grep libtool`"
+]
+)
+
+AC_OUTPUT
+
+# $Header: /cvs/ccaffeine/repository/dccafe/configure.in,v 1.185 2008/12/11 17:27:04 baallan Exp $

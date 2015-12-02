@@ -1,0 +1,20 @@
+// ParameterPortFactoryTest.sidl is a configure generated file.
+
+@CCAFE2_SIDL_START_0@
+@CCAFE2_SIDL_START_1@
+
+  /** Use serviceRegistry, then when the GoPort is hit, use the 
+      ServiceRegistry to remove the singleton service and
+      add a multiple service.
+  */
+  class ServiceRegistryTest implements-all 
+	gov.cca.Component, 
+	gov.cca.ports.GoPort,
+	ccafe3.StringConsumerPort, 
+	gov.cca.ports.ServiceProvider,
+	gov.cca.ComponentRelease
+  {
+  }
+
+}
+

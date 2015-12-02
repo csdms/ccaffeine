@@ -1,0 +1,166 @@
+buildroot=../..
+
+CCAFE_HOME = ..
+include $(CCAFE_HOME)/Makefile.Rules
+VPATH := $(srcdir)/cxx/stovepipe
+
+# ruby doc generator. doesn't exist in standard distributions.
+RD2= :
+# assume it does anyway.
+RD2= rd2
+
+STP_LIB = libstp_ccafe
+STP_TEST = test_ccafe
+
+CXXSRC=stp_cxx.cxx StpMap.cxx
+
+STP_CXXFLAGS = $(CXXFLAGS) -I$(CCAFE_HOME) -I$(CCA_ROOT)/cxx/include
+
+all: $(STP_LIB)
+	@touch .allbuild.complete
+
+bins:
+	@touch .binbuild.complete
+
+src-list:
+	@$(RM) src-list
+	@echo "STOVEPIPE_LIST=\\" >> src-list
+	@for i in $(CXXSRC) ; do \
+		echo "$(srcdir)/cxx/stovepipe/$$i \\" >> src-list ; \
+	done
+	@echo "" >> src-list
+	@echo updated src-list
+
+stp.o: stp.c
+	$(CXX) $(STP_CXXFLAGS) -c `$(GCONF) --cflags glib` -o stp.o stp.c 
+
+stp_cxx.o: stp_cxx.cxx
+	$(CXX) $(STP_CXXFLAGS) -c -o stp_cxx.o stp_cxx.cxx
+
+StpMap.o: StpMap.cxx
+	$(CXX) $(STP_CXXFLAGS) -c -o StpMap.o StpMap.cxx
+
+cxxMap.o: cxxMap.cxx
+	$(CXX) $(STP_CXXFLAGS) -c -o cxxMap.o cxxMap.cxx
+
+cxxMapMain.o: cxxMap.cxx
+	(BLDFLAGS=`echo $(CXXFLAGS) | sed -e 's/ -G / /g'`; \
+	$(CXX) $$BLDFLAGS -c -DCXXMAP_MAIN -o cxxMapMain.o cxxMap.cxx)
+
+cxxTest: cxxMapMain.o
+	(BLDFLAGS=`echo $(CXXFLAGS) | sed -e 's/ -G / /g'`; \
+	$(CXX) $$BLDFLAGS -o cxxTest cxxMapMain.o)
+	./cxxTest
+
+
+libstp_glib: stp.o
+	$(RM)  libstovepipe.a
+	ar r libstovepipe.a stp.o
+	$(RANLIB) libstovepipe.a
+
+libstp_stl: stp_cxx.o StpMap.o
+	$(RM)  libstovepipe.a
+	ar r libstovepipe.a stp_cxx.o StpMap.o
+	$(RANLIB) libstovepipe.a
+
+libstp_ccafe: stp_cxx.o StpMap.o
+	$(RM)  libstovepipe.a
+	ar r libstovepipe.a stp_cxx.o StpMap.o
+	$(RANLIB) libstovepipe.a
+
+
+doc:
+	$(RD2) -r rd/rd2html-lib.rb <README.txt >README.html
+
+test: $(STP_TEST)
+
+test_glib: libstovepipe.a testStovepipe.o
+	(BLDFLAGS=`echo $(CXXFLAGS) | sed -e 's/ -G / /g'`; \
+	$(CXX) $(C2FLAGS) $$BLDFLAGS -o testStovepipe testStovepipe.o libstovepipe.a \
+		`$(GCONF) --libs glib` )
+	@echo Stovepipe picks up only args with a leading \"--\" 
+	@echo Namespaces are separated by a single "-" no white space
+	@echo \"--\" by itself indicates the end of options for Stovepipe:
+	@echo	
+	./testStovepipe --hello world -too-few-dashes --hello-world hello \
+	-- -hello- --hello-world notHello
+	@echo
+	@echo	
+	@echo the same argument used twice gets overwritten, 
+	@echo options that do not appear in the command line 
+	@echo but are requested return a C string ptr NULL:
+	@echo	
+	./testStovepipe --hello-world notHello --hello-world hello
+	@echo	
+	@echo	
+	@echo Argument values must not begin with a \"-\" or they will be 
+	@echo ignored or considered to be further options,
+	@echo options that appear in the command line but have 
+	@echo no associated value return an empty string:
+	@echo	
+	./testStovepipe --hello --world --hello-world -hello
+
+
+test_stl: libstovepipe.a testStovepipe.o
+	(BLDFLAGS=`echo $(CXXFLAGS) | sed -e 's/ -G / /g'`; \
+	$(CXX) $(STP2_CXXFLAGS) $$BLDFLAGS -o testStovepipe \
+		testStovepipe.o libstovepipe.a)
+	@echo Stovepipe picks up only args with a leading \"--\" 
+	@echo Namespaces are separated by a single "-" no white space
+	@echo \"--\" by itself indicates the end of options for Stovepipe:
+	@echo	
+	./testStovepipe --hello world -too-few-dashes --hello-world hello \
+	-- -hello- --hello-world notHello
+	@echo
+	@echo	
+	@echo The same argument used twice gets overwritten, 
+	@echo options that do not appear in the command line 
+	@echo but are requested return a C string ptr NULL:
+	@echo	
+	./testStovepipe --hello-world notHello --hello-world hello
+	@echo	
+	@echo	
+	@echo Argument values must not begin with a \"-\" or they will be 
+	@echo ignored or considered to be further options,
+	@echo options that appear in the command line but have 
+	@echo no associated value return an empty string:
+	@echo	
+	./testStovepipe --hello --world --hello-world -hello
+
+test_ccafe: libstovepipe.a testStovepipe.o
+	(BLDFLAGS=`echo $(CXXFLAGS) | sed -e 's/ -G / /g'`; \
+	$(CXX) $$BLDFLAGS -o testStovepipe \
+		testStovepipe.o libstovepipe.a \
+		$(CCAFE_HOME)/jc++/libjcpp.a $(CCAFE_HOME)/util/libcafeutil.a)
+	@echo Stovepipe picks up only args with a leading \"--\" 
+	@echo Namespaces are separated by a single "-" no white space
+	@echo \"--\" by itself indicates the end of options for Stovepipe:
+	@echo	
+	./testStovepipe --hello world -too-few-dashes --hello-world hello \
+	-- -hello- --hello-world notHello
+	@echo
+	@echo	
+	@echo The same argument used twice gets overwritten, 
+	@echo options that do not appear in the command line 
+	@echo but are requested return a C string ptr NULL:
+	@echo	
+	./testStovepipe --hello-world notHello --hello-world hello
+	@echo	
+	@echo	
+	@echo Argument values must not begin with a \"-\" or they will be 
+	@echo ignored or considered to be further options,
+	@echo options that appear in the command line but have 
+	@echo no associated value return an empty string:
+	@echo	
+	./testStovepipe --hello --world --hello-world -hello
+
+gen:
+	@echo "gen stovepipe done"
+
+.PHONY: src-list
+
+clean:
+	$(RM) *.o *.a testStovepipe src-list
+
+depend:
+	@echo "Manual dependencies written by Rob"

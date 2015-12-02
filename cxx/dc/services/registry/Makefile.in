@@ -1,0 +1,58 @@
+
+# $Revision: 1.1 $
+# $Author: baallan $
+
+CCAFE_HOME = ../../..
+
+include $(CCAFE_HOME)/Makefile.Rules
+
+SUBDIRS = 
+
+SRC= \
+OpqServiceRegistry.cc
+
+all: OpqServiceRegistry.o build
+
+lclean distclean build:
+	@for i in $(SUBDIRS) /dev/null ; do \
+		if test -d $$i ; then \
+			(cd $$i; $(MAKE) $@ ); \
+		else \
+			if test "$$i" != "/dev/null"; then \
+				echo "$$i missing. cvs update -d needed"; \
+				exit 1; \
+			fi \
+		fi \
+	done
+	@if test "$@" = "all"; then \
+		touch .allbuild.complete; \
+	fi
+
+depend:
+
+src-list:
+	@echo "DC_LIST_CXX += \\" >> ../../src-list
+	@for i in $(SRC) ; do \
+                echo "$(srcdir)/cxx/dc/services/registry/$$i \\" >> ../../src-list ; \
+        done
+	@echo "" >> ../../src-list
+	@echo "updated src-list from dc/services/registry"
+
+
+bins:
+	@touch .binbuild.complete
+
+%.o : %.cc
+	$(MPICXX) -c $(CXXFLAGS) $<
+
+%.i : %.cc
+	$(MPICXX) -E $(CXXFLAGS)  $< > $@
+%.hh.ps : %.hh
+	-enscript -2r -fCourier8 -Ecpp --color -W PostScript -p $@ $<
+ 
+%.cc.ps : %.cc
+	-enscript -2r -fCourier8 -Ecpp --color -W PostScript -p $@ $<
+
+clean:
+	$(RM) *.o *.a
+	$(MAKE) lclean

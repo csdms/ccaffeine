@@ -1,0 +1,4 @@
+Merged .cca and .scl files now that babel allows it.
+note that babel sc2004_rc1 has a bug in scanning for duplicates.
+No longer installing .scl files. instead .cca files
+go in directory next to .so/.a files.

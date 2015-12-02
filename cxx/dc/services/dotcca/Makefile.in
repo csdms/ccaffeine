@@ -1,0 +1,9 @@
+
+first clean all depend src-list:
+	(cd treeReader; $(MAKE) $@)
+	(cd dccore; $(MAKE) $@)
+	@touch .allbuild.complete
+
+bins:
+	(cd dccore; $(MAKE) bins)
+	@touch .bins.complete

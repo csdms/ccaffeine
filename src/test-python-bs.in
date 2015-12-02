@@ -1,0 +1,63 @@
+#! @SHELL@
+
+BUILD_ROOT=@CCAFE_ROOT@
+BABEL_CCA_ROOT=@BABEL_CCA_ROOT@
+BABEL_ROOT=@BABEL_ROOT@
+MPI_HOME=@MPI_HOME@
+PYTHON_VERSION=`$BABEL_ROOT/bin/babel-config --query-var=PYTHON_VERSION`
+BABEL_PYTHON_LIB=$BABEL_ROOT/lib/python$PYTHON_VERSION
+CCASPEC_PYTHON_LIB=$BABEL_CCA_ROOT/lib/python$PYTHON_VERSION/site-packages
+CCAFE_VERSION=@CCAFE_VERSION@
+SIDL_DLL_PATH="$BUILD_ROOT/lib;$BABEL_ROOT/lib;$BABEL_CCA_ROOT/lib;$BABEL_CCA_ROOT/server" ; export SIDL_DLL_PATH
+
+LD_LIBRARY_PATH="$BABEL_ROOT/lib:$BABEL_CCA_ROOT/lib:$BABEL_CCA_ROOT/server:$MPI_HOME/lib/shared" ; export LD_LIBRARY_PATH
+
+PYTHONPATH="$CCASPEC_PYTHON_LIB:$BUILD_ROOT/lib/python$PYTHON_VERSION/site-packages:$BABEL_PYTHON_LIB/site-packages/babel:$BABEL_PYTHON_LIB:$BABEL_PYTHON_LIB/site-packages" ; export PYTHONPATH
+echo
+echo "-----------------------------------"
+echo PYTHONPATH="$PYTHONPATH"
+echo LD_LIBRARY_PATH="$LD_LIBRARY_PATH"
+echo SIDL_DLL_PATH="$SIDL_DLL_PATH"
+echo "-----------------------------------"
+echo
+
+python <<EOF >python-test-out 2>&1
+
+import ccaffeine.AbstractFramework # load the framework
+a = ccaffeine.AbstractFramework.AbstractFramework() # create it
+# initialize telling the framework what components we will use and
+# where they are located.
+args = "--path /home/rob/cca/ccafe/share/ccafe-$CCAFE_VERSION/components  --load ccafe0.PrinterComponent"
+a.initialize(args)
+# We create ourselves as a component in the framework by
+# getting gov.cca.Services
+svc = a.getServices("uber", "UberComponent", a.createTypeMap());
+myid = svc.getComponentID(); # this is our ComponentID
+# We wish to act as a framework, get gov.cca.BuilderServices port
+svc.registerUsesPort("bs", "gov.cca.BuilderService", svc.createTypeMap())
+port = svc.getPort("bs")
+import gov.cca.ports.BuilderService
+bs = gov.cca.ports.BuilderService.BuilderService(port) # a Babel type cast
+# create a ccafe0.PrinterComponent, we receive an opaque ComponentID
+# This component exports a ccafe0.StringConsumerPort instance name of "string"
+cid = bs.createInstance("p", "ccafe0.PrinterComponent", svc.createTypeMap())
+# register for that port
+svc.registerUsesPort("out", "ccafe0.StringConsumerPort", svc.createTypeMap())
+# connect ourselves to the component
+bs.connect(myid, "out", cid, "string")
+# get the port
+port = svc.getPort("out");
+import ccafe0.StringConsumerPort
+out = ccafe0.StringConsumerPort.StringConsumerPort(port);
+# use it
+out.setString("\n\nHello CCA World\n\n");
+
+EOF
+
+if egrep '^Hello CCA World$' python-test-out >/dev/null
+then
+    echo "Python test seems to be working"
+else
+    echo "Python test indicates a problem, look in \"python-test-out\" for diagnostics"
+fi
+

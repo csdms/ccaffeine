@@ -1,0 +1,13 @@
+.babel-copy
+*.scl
+.babel-symlink
+*.cca
+.depend
+.dirs-made
+.gen-babel
+.make-babel
+.uncruft
+.lib-installed
+.lib-local-installed
+server
+client

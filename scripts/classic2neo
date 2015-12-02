@@ -1,0 +1,13 @@
+#!/usr/bin/perl -pi.bak
+# converts misc classic code to neo code,
+# with many errors left probably.
+s/classic::gov::cca::/neo::cca::/g;
+s/cca.h/neocca.hh/g;
+s/stdPorts.h/neoports.hh/g;
+s/Classic/Neo/g;
+s/CLASSIC/NEO/g;
+s/CONST/const/g;
+s/CFREE //g;
+s/CDELETE //g;
+s/char\*/string /g;
+s/char \*/string /g;

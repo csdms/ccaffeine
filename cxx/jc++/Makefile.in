@@ -1,0 +1,85 @@
+# $Revision: 1.1 $
+# $Author: baallan $
+
+buildroot=../..
+
+CCAFE_HOME=..
+zeroth: first
+
+include $(CCAFE_HOME)/Makefile.Rules
+VPATH := $(srcdir)/cxx/jc++
+
+# currently these are single files ONLY
+LIB= libjcpp.a
+OBJS=\
+util/libjc++util.a \
+io/libjc++io.a \
+lang/libjexception.a
+
+CXXSRC=jc++dynamic.cpp
+
+first all: lib
+	@touch .allbuild.complete
+
+bins:
+	@touch .binbuild.complete
+
+lib $(LIB): util lang io jc++dynamic.o
+	@-$(RM)  $(LIB)
+	ar ruv $(LIB) */*.o jc++dynamic.o
+	$(RANLIB) $(LIB)
+
+io:  io/.touched
+
+io/.touched:
+	(cd io; $(MAKE))
+
+util:	util/.touched
+
+util/.touched:
+	(cd util; $(MAKE))
+
+lang:	lang/.touched
+
+lang/.touched:
+	(cd lang; $(MAKE))
+
+.SUFFIXES:
+.SUFFIXES: .o .cpp
+
+.cpp.o:
+	$(CXX) -c $(CXXFLAGS) $<
+
+gen:
+	@echo "gen jc++ done"
+
+src-list:
+	$(RM) src-list
+	@echo "JCPP_LIST=\\" >> src-list
+	@(cd lang; $(MAKE) src-list)
+	@(cd io; $(MAKE) src-list)
+	@(cd util; $(MAKE) src-list)
+	@for i in $(CXXSRC) ; do \
+		echo "$(srcdir)/cxx/jc++/$$i \\" >> src-list ; \
+	done
+	@echo "" >> src-list
+	@echo updated src-list
+
+clean:
+	-(cd lang; $(MAKE) clean)
+	-(cd util; $(MAKE) clean)
+	-(cd test; $(MAKE) clean)
+	-(cd io; $(MAKE) clean)
+	-$(RM) *.o *.a *.so src-list
+
+.PHONY: src-list
+
+depend:
+	(cd lang; $(MAKE) depend)
+	(cd util; $(MAKE) depend)
+	(cd io; $(MAKE) depend)
+
+depend-sys:
+	(cd lang; $(MAKE) depend-sys)
+	(cd util; $(MAKE) depend-sys)
+	(cd io; $(MAKE) depend-sys)

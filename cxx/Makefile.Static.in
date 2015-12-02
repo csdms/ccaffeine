@@ -1,0 +1,32 @@
+# This file defines the linker flags for extra babel component libraries to be
+# directly linked with ccafeCore. This is strictly a hackaround and should
+# not be used in the long term-- see the ccagm gen-cca-main static main
+# generator for a long term solution. This actually works with either
+# static or dynamic linking.
+#
+# Note well: this does not write the code automatically that must be
+# added to cxx/dc/framework/BabelStaticFactory.cxx to register
+# specific application classes. You have to do your own C++ client
+# generation and call the c++ create for your class in addClasses.
+#
+# e.g. to preload mpi component link 
+ifeq "$(HAVE_BABEL)" "1"
+ifeq "$(CCA_USEMPI)" "1"
+BABEL_PRELOAD_COMPONENTS= -L../obj -lMPIComponent_$(CCAFE_VERSION_UNDERBAR)
+endif
+endif
+# Note that you may need to define CCAFE_USE_MPI=1 in the environment
+# depending on your configuration.
+
+# in the following 2 defines, you can use anything, not just babel libraries.
+# For babel components, the libraries of their ports and cxx clients must be
+# included.
+
+# Add your app specific libraries here. Flags will be passed to
+# babel-libtool in constructing ccafePreload.la.
+# 
+BABEL_PRELOAD_COMPONENTS +=
+
+# Add any c++ include switches needed to digest your new code in
+# cxx/dc/framework/BabelStaticFactory.cxx
+BABEL_PRELOAD_INCLUDES =

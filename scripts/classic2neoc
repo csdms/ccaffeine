@@ -1,0 +1,3 @@
+#!/usr/bin/perl -pi.bak
+# converts word classic to word neo. so what?
+s/classic/neo/g;

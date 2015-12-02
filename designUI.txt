@@ -1,0 +1,278 @@
+
+Contributors:
+BA/CP/RA
+Change history:
+v 0.0.0 baa 5/2/2000 initial
+v 0.0.1 baa 5/3/2000 htmlify
+
+Map of what is/what might be for gui/fwk communication design-
+
+WHAT IS:
+UI features (possibly GUI features) that exist currently(5/2000): 
+
+gui.title
+file.new
+file.quit
+cca.about_this_demo
+open_and_execute .bld file.
+save .bld file
+save .bld file as
+pallette.fill from framework list
+pallette.pick (nominate class for next arena drop)
+remove picked arena instance
+remove all arena instances and clear history.
+run (fire all go ports in arena. probably a really bad idea now).
+arena.component.pick (highlight in blue/nominate for next arena action)
+arena.component.drop (normal finish of pallet.pick-arena.create)
+arena.component.move (reposition in the gui)
+arena.component.port.pick_source (highlight uses port to connect)
+arena.component.port.pick_target_and_connect (select providing port)
+arena.component.port.pick_go (highlight and execute go port)
+arena.component.port.pick_config (highlight and execute config port)
+paramDialog.ok (dismiss dialog and feed configs back to fwk)
+paramDialog.cancel (dismiss dialog)
+
+GUI cannot go away and come back later, as written.
+
+
+WHAT OUGHT probably TO BE -----------
+
+One objective is to make the remote UI/gui as passive as possible.
+I.e. whereever possible, the UI is simply a listener to (and renderer of)
+the output events. 
+
+Another objective is to let the UI/gui come and go while the fwk runs.
+
+General behaviors needed at a low level:
+
+- gui can preempt (cancel) instructions (queued in fwk)  it already
+received from the user by sending fwk a later cancel/stop.
+This means the gui must not hang waiting for an answer to an instruction
+that never arrived.
+
+- fwk can silently refuse to queue new instructions from the gui.
+This means the gui must not hang waiting for an answer to an instruction
+that never arrived.
+
+- gui can immediately do every command it receives from the fwk.
+
+- gui cannot on its own flush the queue of events it
+receives from the fwk or refuse to queue new commands. gui
+can only remove itself from the listeners on the fwk by
+the appropriate detach protocol. This shouldn't be an
+issue since the gui shouldn't be running a queue of any
+sort on the fwk events in the first place.
+
+Desired product:
+A wire protocol (event strings over sockets) for managing
+a heavy, remote, "mostly single threaded" parallel 
+framework from java/tk/python/other shell languages.
+The protocol should be such that a gui can optimize
+some aspects of its rendering while becoming consistent
+with the fwk state if the user waits an appropriate amount
+of time. In particular, it should not be such that the
+gui offers services before they are really there or
+that it continues to offer services after they are definitely
+*not* there.
+
+Specific behaviors and events:
+
+gui.title:
+string from gui author.
+
+fwk title:
+goes in the container titles issued by the fwk; 
+not a separate facility.
+
+file.new:
+gui sends a request for a new named container 
+	newContainer <name>
+gui returns to passivity.
+fwk sends back event sequence
+	newContainer <name>
+	containerTitle <name> <title>
+	pallet begin <name>
+	newClass <class-name> <name>
+	[repeat newClass until list done]
+	pallet end <name>
+	arena begin <name>
+	newComponent <class-name> <instance-name> <name>
+	[repeat newComponent until list done]
+	arena end <name>
+GUI renders named pallet and arena into its collection of pages
+on receipt of the arena/pallet end <name>.
+The pallet may be empty. (The GUI has a separate facility to support
+the fwk api that adds classes to a (possibly empty) pallet.
+The arena may be empty. It may not if the framework chooses to
+preinstantiate some components always!
+Notes: 
+The gui cannot be certain the fwk is done with a
+new container and should be capable of accurate partial
+rendering of the container. Similarly, the gui cannot be
+certain of receiving either "pallet end <name>" or
+"arena end <name>". The intent of the "end" events
+is to give the gui a backstop event for those times
+where the gui wants to skip the rendering phase of
+adding to its list of managed classes/instances until
+"all" have been received or a specified timeout since
+last newClass event has occured. This allows optimization
+(minimization) of gui redraws; e.g. wait until all the
+classes are in (or a timeout) and then resize pallet
+to hold the widest label.
+
+gui.about:
+anything the gui author implements
+
+fwk.about:
+gui sends a request for about info
+	containerAbout <name>
+gui returns to passivity.
+fwk sends back event sequence
+	containerAbout <name> <html> ... </html>
+if the named container exists (and produces its "about" string).
+Between <html> and </html> there will be line breaks.
+</html> may be assumed to occur on a line by itself for
+sloppy prototype implementations if needed.
+
+
+
+file.attach:
+gui attaches to a running framework and sends introspection request:
+	fwkDump
+gui returns to passivity.
+fwk sends back event sequence which will be 
+	fwkDump begin <fwkName>
+	[0 or more newContainer sequences as described for file.new]
+	[0 or more newComponent sequences as described for file new]
+	fwkDump end <fwkName>
+fwk flushes from its queue any events that an overeager user
+tried to schedule while the gui was catching up with output
+from the fwk.
+
+container.close:
+send a single request to the fwk to close and destroy the named container.
+	containerClose <name>
+gui returns to passivity.
+fwk sends back (if lucky)
+	containerClose <name>
+gui may de-render the container at any time after containerClose
+is sent. 
+Notes: It may be desirable for the gui to queue to itself the
+teardown event to be done in X seconds. The containerClose event
+from the fwk should cause immediate de-rendering of the container
+on the gui side. A teardown event on a non-existent container must
+not be an error. Tearing down a container must cause cancel and
+teardown of any open dialogs associated with it.
+containerClose <name> may also generate messages as in
+"remove picked arena instance" below.
+
+file.detach:
+gui unregisters as a fwk listener and tears down all the renderings
+of containers.
+
+file.quit:
+gui sends exit command to the fwk.
+gui does file.detach above.
+gui exits.
+fwk will shutdown on its own at next convenient point which
+may be after a long computation finishes.
+
+file.quit_now_damnit
+gui sends stop command to the fwk.
+gui does file.detach above.
+gui displays instructions to user about how to kill
+the fwk job if it doesn't die nicely on its own.
+gui exits.
+fwk will shutdown immediately (or at next checkpoint in
+computation). If this is not soon enough, user can follow
+instructions about killing processes.
+
+cca.about_this_demo:
+see fwk.about above.
+
+open_and_execute .bld file:
+save .bld file:
+save .bld file as:
+These need further thought, as we have the following small conundrum-
+.bld is really a history file. presently it is a history of the
+gui issued commands. But if the gui comes and goes, then the history
+of a container in the fwk must be kept in the fwk not in the gui.
+So then we need a command for the gui to query the container for the
+history string. 
+
+pallette.fill from framework list:
+subsumed by container above, though implemented separately.
+
+pallette.pick (nominate class for next arena drop or other query)
+gui-only. no implication on fwk.
+
+remove picked arena instance:
+gui send remove request.
+	remove <container-name> <comp-name>
+gui return to quiescent state.
+fwk will see about tearing down connections and removing component.
+It may send back to the gui zero or more
+	disconnect <container-name> <comp> <port> <comp> <port>
+	delete <container-name> <comp-name>
+commands which cause the gui to de-render the connection or component. 
+Notes: if a component is de-rendered, any open dialogs for
+it should also be de-rendered and actions equivalent to cancel taken.
+The delete and disconnect commands must deal gracefully (silently) with
+names the gui no longer recognizes/already de-rendered.
+
+remove all arena instances and clear history:
+implement as close.container <name>;file.new <name>.
+
+run (fire all go ports in arena. probably a really bad idea now):
+just delete this feature.
+
+arena.component.pick (highlight in blue/nominate for next arena action)
+gui-only. no implication on fwk.
+
+arena.component.drop (normal finish of pallet.pick-arena.create):
+gui send create request to fwk.
+	pulldown containerName className compName
+fwk may follow up with events
+	newComponent <class-name> <instance-name> <name>
+
+arena.component.describe:
+gui send request for port and other component properties.
+	display component <containerName> <compName>
+fwk may follow up with events that add ports,
+properties, hints, etc to a component (as currently done)
+
+arena.component.move (reposition in the gui)
+gui-only. no implication on fwk.
+
+arena.component.port.pick_source (highlight uses port to connect)
+gui-only. no implication on fwk.
+
+arena.component.port.pick_target_and_connect (select providing port)
+gui send request for connection.
+	connect <containerName> <component> <port> <component> <port>
+fwk may respond (or not) with connection/port making/breaking events.
+	connect <containerName> <component> <port> <component> <port>
+	disconnect <containerName> <component> <port> <component> <port>
+	addPort/removePort/etc as currently but with <containerName> added.
+
+arena.component.port.pick_go (highlight and execute go port):
+gui send request for execution.
+	go <containerName> <component> <port>
+fwk not expected to do anything in return.
+
+arena.component.port.pick_config (highlight and execute config port):
+gui send request for config info
+	configure <containerName> <component> <port>
+gui return to passive state.
+fwk may or not subsequently issue events as now for param dialog,
+but adding in container name to args.
+
+paramDialog.ok (dismiss dialog and feed configs back to fwk)
+gui send param set requests to fwk.
+gui return to passive state.
+
+paramDialog.cancel (dismiss dialog):
+gui-only. no implication on fwk. teardown dialog window.
+
+lots more to be added. see TODO-list and then get inspired
+to extend here.

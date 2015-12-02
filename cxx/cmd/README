@@ -1,0 +1,37 @@
+/** The Cmd classes implement (or will soon enough) a simple Vector
+    driven parser for command line applications. 
+
+by Ben Allan, Sandia National Laboratories, May 1999.
+This code is based on the ASCEND IV command-line interpreter
+by Tom Epperly. It should be released to the public domain
+(or preferably the GNU License domain) as soon as possible.
+
+CmdContext is an abstract class for application specific
+data that will be defined in more detail by the application
+programmer.
+
+CmdAction is an interface class used in defining individual
+command objects. An interpreter is a collection of such
+objects sharing a common assumption about the subclass of
+CmdContext they are called in.
+
+CmdParse defines the interpreter which provides argument
+marshaling and checking services, supports command
+abbreviations, and provides help functionality.
+
+The overall scheme is that the application defines a bunch
+of CmdAction objects and hands them to the interpreter.
+
+This is not a highly intelligent scheme. It does keep a
+"hand-coded" interactive command-line manageable as each
+major command gets a separate class and implementation,
+and the control loop logic is abstracted.
+
+This scheme is ported from java, and C++ may allow us
+a simpler way to do command completion than java when
+we get a round tuit.
+
+Finally thanks to Tom Epperly a round tuit was captured
+in summer 2004 and enslaved to provide readline
+completion the the ccaffeine application.
+ */

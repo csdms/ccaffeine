@@ -1,0 +1,222 @@
+#! @SHELL@
+
+progname=`echo $0 | sed -e 's%.*/%%g'`
+curdir=`pwd`
+bindir=@bindir@
+libdir=@libdir@
+pkglibdir=@pkglibdir@
+pkgdatadir=@pkgdatadir@
+binsuffix=@PROGRAM_SUFFIX@
+tmpfile=$curdir/simpleTests.out
+CLASSIC_CCA_INSTALLED=@CLASSIC_CCA_INSTALLED@
+NEO_CCA_INSTALLED=@NEO_CCA_INSTALLED@
+BABEL_CCA_INSTALLED=@BABEL_CCA_INSTALLED@
+EGNEO_CCA_DATA=@EGNEO_CCA_DATA@
+CCASPEC_SUPPORT_SHARED=@CCASPEC_SUPPORT_SHARED@
+NEOCCA_SUPPORT_SHARED=@NEOCCA_SUPPORT_SHARED@
+CLASSIC_SUPPORT_SHARED=@CLASSIC_SUPPORT_SHARED@
+USEMPI=@USEMPI@
+
+# use a mktemp dir if we can't write to cwd
+if test ! -w $curdir ; then
+  tmpfile=`mktemp -q /tmp/$progname.out.XXXXXX`
+  if [ $? -ne 0 ]; then
+     echo "$progname: Can't create temp file /tmp/$progname.out. Exiting..."
+     exit 1
+  fi
+else
+  touch $tmpfile
+  /bin/rm  $tmpfile
+  if [ $? -ne 0 ]; then
+     echo "$progname: Can't create temp file $curdir/$progname.out. Exiting...  "
+     exit 1
+  fi
+fi
+
+#
+# LD_LIBRARY_PATH=@BABEL_ROOT@/lib:"$LD_LIBRARY_PATH"; export LD_LIBRARY_PATH
+#SIDL_DLL_PATH=$libdir;export SIDL_DLL_PATH
+answer1="Printer says the string is: Foobar!"
+answer2="Hello World"
+answer3="WITHOUT babel"
+answer4="Printer says the string is: Foobar! from bs.StarterComponent.0"
+answer5="called non-self setString.@"
+echo "====================================================================="
+echo "                  Testing the Ccaffeine build ...                    "
+
+echo "proceeding with env vars:"
+echo "# LD_LIBRARY_PATH=$LD_LIBRARY_PATH"
+echo "# SIDL_DLL_PATH=$SIDL_DLL_PATH"
+
+if test "x$NEO_CCA_INSTALLED" = "x1"; then
+if test "x$NEOCCA_SUPPORT_SHARED"  = "x1"; then
+# next assumes a standard install of neo and ccaffeine in the same prefix
+NEOTEST_INPUT="path append $EGNEO_CCA_DATA
+repository get-global eg.neo.SimpleStamper
+create eg.neo.SimpleStamper enSS1
+create eg.neo.SimpleStamper enSS2
+connect enSS1 out_port enSS2 in_port
+go enSS1 go
+"
+else
+NEOTEST_INPUT="# neo built-in, but no dynamic loading support to test."
+fi
+else
+NEOTEST_INPUT="# no neo built-in"
+fi
+
+if test "x$BABEL_CCA_INSTALLED" = "x1"; then
+if test "x$CCASPEC_SUPPORT_SHARED"  = "x1"; then
+BABELTEST_INPUT="repository get-global ccafe0.PrinterComponent
+repository get-global ccafe1.StarterComponent
+instantiate ccafe0.PrinterComponent PrinterComponent1
+instantiate ccafe1.StarterComponent StarterComponent1
+display component StarterComponent1
+display component PrinterComponent1
+connect StarterComponent1 output PrinterComponent1 string
+go StarterComponent1 go
+disconnect StarterComponent1 output PrinterComponent1 string
+"
+else
+BABELTEST_INPUT="# babel built-in, but no dynamic loading support to test."
+fi
+else
+BABELTEST_INPUT="# no babel built-in"
+fi
+
+if test "x$CLASSIC_CCA_INSTALLED" = "x1"; then
+if test "x$CLASSIC_SUPPORT_SHARED"  = "x1"; then
+CLASSICTEST_INPUT="repository get-global StarterComponent
+repository get-global TimeStamper
+repository get-global Timer
+repository get-global PrinterComponent
+repository get-global ComplicatedStarterComponent
+repository get-global ComplicatedPrinterComponent
+instantiate StarterComponent StarterComponent0
+instantiate PrinterComponent PrinterComponent0
+display component StarterComponent0
+display component PrinterComponent0
+connect StarterComponent0 out0 PrinterComponent0 printer_port
+go StarterComponent0 go_port
+"
+# repository get-global RevalidateTest
+CLASSICTEST2_INPUT="repository get-global BSTest
+instantiate BSTest bs
+go bs go
+"
+else
+CLASSICTEST_INPUT="# classic built-in, but no dynamic loading support to test."
+CLASSICTEST2_INPUT="# Presently this is tied at the makefile level to babel having dynamic load support."
+fi
+else
+CLASSICTEST_INPUT="# no classic built-in"
+CLASSICTEST2_INPUT="# no classic built-in"
+fi
+
+frame_opts="--ccafe-rc $pkgdatadir/EmptyRC"
+
+echo "# ccaffeine options = $frame_opts"
+echo "# output will be in $tmpfile"
+# CCAFE_DEBUGGER is normally empty. interesting values are:
+# valgrind -v
+# gdb
+# this is a buggy script, particularly in the face of old broken 
+# mpi-init that hangs if an mpi executable is run without mpirun.
+ccafebin=":"
+if test "x$USEMPI" = "x1"; then
+	ccafebin=ccafe-batch;
+	echo "simpleBatch: Notice: running ccafe-batch without mpiexec; may hang."
+else
+	echo "ERR: cannot run simpleBatch without a good MPI."
+	exit 1;
+fi
+if $CCAFE_DEBUGGER $bindir/$ccafebin$binsuffix $frame_opts << EOF >$tmpfile 2>&1
+
+path set $libdir
+path append $pkgdatadir/components
+
+# do classic test now or not
+$CLASSICTEST_INPUT
+
+# do neo test now or not
+$NEOTEST_INPUT
+
+# Do Babel stuff now ... or not
+$BABELTEST_INPUT
+
+# do fake classic bs test now or not
+$CLASSICTEST2_INPUT
+
+display arena
+display state
+display pallet
+bye
+EOF
+then
+	echo "didn't crash or hang up early ...  "
+else
+	echo "didn't make it all the way through ...  "
+fi
+if (grep "$answer1" $tmpfile >/dev/null 2>&1) && 
+   (grep "$answer2" $tmpfile >/dev/null 2>&1) &&
+   (grep "$answer4" $tmpfile >/dev/null 2>&1) &&
+   (grep "$answer5" $tmpfile >/dev/null 2>&1) 
+then
+	echo looks like it is working.
+	dumptrash=yes
+else
+	echo "The output indicates CLASSIC dccafe or BABEL or NEO dccafe is inoperative."
+	echo "See $tmpfile if the rest of this message is unexpected."
+fi
+if (grep "$answer1" $tmpfile >/dev/null 2>&1)
+then
+	echo "Looks like CLASSIC dccafe is working."
+else
+    if test "x$CLASSIC_CCA_INSTALLED" = "x1" ; then
+       if test "x$CCASPEC_SUPPORT_SHARED" = "x1"; then
+	    echo  "CLASSIC dccafe is NOT working."
+		echo  "This is bad."
+       else
+        echo "CLASSIC support in ccaffeine, but not dynamic loading."
+       fi
+    else
+        echo "CLASSIC support is not configured into ccaffeine."
+    fi
+fi
+if (grep "$answer2" $tmpfile >/dev/null 2>&1)
+then
+	echo "Looks like BABEL dccafe is working."
+else
+    if test "x$BABEL_CCA_INSTALLED" = "x1" ; then
+        if test "x$CCASPEC_SUPPORT_SHARED" = "x1"; then
+	    echo  "BABEL dccafe is NOT working."
+		echo  "This is bad."
+        else
+            echo "Babel support in ccaffeine, but not dynamic loading in babel."
+        fi
+    else
+        echo "BABEL support is not configured into ccaffeine."
+    fi
+fi
+if (grep "$answer5" $tmpfile >/dev/null 2>&1)
+then
+	echo "Looks like NEO dccafe is working."
+else
+    if test "x$NEO_CCA_INSTALLED" = "x1"; then
+        if test "x$CCASPEC_SUPPORT_SHARED" = "x1"; then
+	    echo  "NEO dccafe is NOT working."
+		echo  "This is bad."
+        else
+            echo "Neo support in ccaffeine, but not dynamic loading in neo."
+        fi
+    else
+        echo "NEO support is not configured into ccaffeine."
+    fi
+fi
+echo      done with Ccaffeine tests.
+if test "X$dumptrash" = "XYes" ; then
+	rm -f $tmpfile
+else
+echo "$progname: output is in $tmpfile."
+fi
+echo "====================================================================="

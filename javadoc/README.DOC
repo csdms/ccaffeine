@@ -1,0 +1,12 @@
+Our documentation scheme:
+
+dccafe/doc
+	The directory for handwritten html, official reports,
+	and whatnot that are not automagically generated from the
+	c++ and java source code.
+
+dccafe/cxx/doc
+	The directory for generated html using doc++ or other tools.
+
+dccafe/javadoc
+	The directory for generated html using javadoc or other tools.

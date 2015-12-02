@@ -1,0 +1,136 @@
+CCAFE_HOME=../..
+
+buildroot=../../..
+
+zeroth: first
+
+include $(CCAFE_HOME)/Makefile.Rules
+VPATH := $(srcdir)/cxx/dc/distributed
+
+%.o : %.C
+	$(CXX) -c $(CXXFLAGS) $(CCAFE_PTHREADS_FLAGS) $<
+%.o : %.cxx
+	$(CXX) -c $(CXXFLAGS) $(CCAFE_PTHREADS_FLAGS) $<
+%.i : %.cxx
+	$(CXX) -E $(CXXFLAGS) $(CCAFE_PTHREADS_FLAGS) $< > $@
+
+%.exe : %.cxx
+	$(CXX) -c $(CXXFLAGS) $(CCAFE_PTHREADS_FLAGS) -o $*.o $<
+	$(CXX) -DDriver_$* $(CXXFLAGS) $(CCAFE_PTHREADS_INC_FLAGS) -o $@ $< \
+	libdistributed.a libdistthreaded.a \
+	$(CCAFE_HOME)/util/IO.o $(CCAFE_HOME)/jc++/io/libjc++io.a \
+	$(CCAFE_HOME)/jc++/libjcpp.a $(CCAFE_HOME)/gnu/getopt/libgetCCAFEopt.a \
+	$(CCAFE_HOME)/jc++/util/libjc++util.a \
+	libdistributed.a libdistthreaded.a \
+	$(SOCKETLIBS) \
+	$(CCAFE_THREAD_LIBS)
+
+CXXSRC = ClientServerSocket.cxx ProcessorInfo.cxx 
+
+PTHREADSRC = ConnectionManager.cxx SocketConnectionManager.cxx \
+	LinewiseClient.cxx ServerMux.cxx DataCollectorFactory.cxx \
+	MessageData.cxx ServerOutOfBandListener.cxx
+
+CXXOBJ = $(CXXSRC:%.cxx=%.o)
+
+PTHREADOBJ = $(PTHREADSRC:%.cxx=%.o)
+
+ClientServerSocket.o:
+	$(CXX) -c $(CXXFLAGS) ClientServerSocket.cxx
+
+ProcessorInfo.o:
+	$(CXX) -c $(CXXFLAGS) ProcessorInfo.cxx
+
+first most : allobj lib tlib
+	@echo done $(CXXOBJ) 
+
+second all : allobj lib tlib RunProg.exe RunMux.exe
+	@echo done $(CXXOBJ) 
+
+lib : $(CXXOBJ)
+	ar $(ARFLAGS) libdistributed.a $(CXXOBJ) 
+	$(RANLIB) libdistributed.a
+
+tlib : $(PTHREADOBJ)
+	ar $(ARFLAGS) libdistthreaded.a $(PTHREADOBJ)
+	$(RANLIB) libdistthreaded.a
+
+allobj : $(PTHREADOBJ) base
+
+base: $(CXXOBJ) 
+
+$(CXXOBJ) : $(CXXSRC)
+
+$(PTHREADOBJ) : $(PTHREADSRC)
+
+PROGS = a.out test TestClientServer TestThread RunProg RunMux TestMessage \
+		RunProg.exe RunMux.exe
+LIBS= libdistributed.a libdistthreaded.a
+
+gen:
+	@echo "gen dc/distributed done"
+
+clean : 
+	$(RM) $(CXXOBJ) $(PTHREADOBJ) $(PROGS) $(LIBS) \
+		libdistributed.a *.ii *.o *.u
+
+src-list:
+	@$(RM) src-list
+	@echo "DC_LIST_CXX_SOCKET += \\" >> ../src-list
+	@for i in $(CXXSRC) ; do \
+                echo "$(srcdir)/cxx/dc/distributed/$$i \\" >> ../src-list ; \
+        done
+	@echo "" >> ../src-list
+	@echo "DC_LIST_CXX_PTHREAD += \\" >> ../src-list
+	@for i in $(PTHREADSRC); do \
+                echo "$(srcdir)/cxx/dc/distributed/$$i \\" >> ../src-list ; \
+        done
+	@echo "" >> ../src-list
+	@echo "updated src-list from dc/distributed"
+
+depend:
+	$(DEPEND) $(CXXFLAGS) $(CXXSRC) $(PTHREADSRC)
+
+depend-sys:
+	$(DEPENDSYS) $(CXXFLAGS) $(CXXSRC) $(PTHREADSRC)
+
+test TestClientServer : TestClientServer.cxx lib
+	$(CXX_NOPS) $(CXXFLAGS) $(CCAFE_PTHREADS_FLAGS) -o $@ TestClientServer.cxx \
+	libdistthreaded.a libdistributed.a \
+	$(CCAFE_HOME)/util/IO.o $(CCAFE_HOME)/jc++/io/libjc++io.a \
+	$(CCAFE_HOME)/jc++/libjcpp.a $(CCAFE_HOME)/jc++/util/libjc++util.a \
+	$(CCAFE_THREAD_LIBS) -lpopt
+
+TestThread : TestThread.cxx lib
+	$(CXX_NOPS) $(CXXFLAGS) $(CCAFE_PTHREADS_FLAGS) -o $@ TestThread.cxx \
+	libdistthreaded.a libdistributed.a \
+	$(CCAFE_HOME)/util/IO.o $(CCAFE_HOME)/jc++/io/libjc++io.a \
+	$(CCAFE_HOME)/jc++/libjcpp.a $(CCAFE_HOME)/jc++/util/libjc++util.a \
+	$(CCAFE_THREAD_LIBS)
+
+RunProg : RunProg.cxx lib
+	$(CXX) $(CXXFLAGS) $(CCAFE_PTHREADS_FLAGS) -o $@ RunProg.cxx \
+	libdistthreaded.a libdistributed.a \
+	$(CCAFE_HOME)/util/IO.o $(CCAFE_HOME)/jc++/io/libjc++io.a \
+	$(CCAFE_HOME)/jc++/libjcpp.a $(CCAFE_HOME)/jc++/util/libjc++util.a \
+	$(CCAFE_THREAD_LIBS)
+
+RunMux : RunMux.cxx lib
+	$(CXX) $(CXXFLAGS) $(CCAFE_PTHREADS_FLAGS) -o $@ RunMux.cxx \
+	libdistthreaded.a libdistributed.a \
+	$(CCAFE_HOME)/util/IO.o $(CCAFE_HOME)/jc++/io/libjc++io.a \
+	$(CCAFE_HOME)/jc++/libjcpp.a $(CCAFE_HOME)/jc++/util/libjc++util.a \
+	$(SOCKETLIBS) $(CCAFE_THREAD_LIBS)
+
+TestMessage : TestMessageData.cxx lib
+	$(CXX) $(CXXFLAGS) $(CCAFE_PTHREAD_FLAGS) -o $@ TestMessageData.cxx \
+	libdistthreaded.a libdistributed.a \
+	$(CCAFE_HOME)/util/IO.o $(CCAFE_HOME)/jc++/io/libjc++io.a \
+	$(CCAFE_HOME)/jc++/libjcpp.a $(CCAFE_HOME)/jc++/util/libjc++util.a \
+	$(CCAFE_THREAD_LIBS)
+
+ifneq "x$(TARGET)" "xclean"
+ifneq "x$(TARGET)" "xdistclean"
+include Makefile.depends
+endif
+endif

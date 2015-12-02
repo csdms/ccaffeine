@@ -1,0 +1,121 @@
+# Makefile generated from Makefile.in
+# makefile for simple hello world example component.
+# Created 10/2000, Ben Allan, Sandia National Labs.
+
+SHELL=/bin/sh
+
+DHLDR_MAJOR_VERSION=@DHLDR_MAJOR_VERSION@
+DHLDR_MINOR_VERSION=@DHLDR_MINOR_VERSION@
+DHLDR_PATCH_LEVEL=@DHLDR_PATCH_LEVEL@
+DHLDR_VERSION=@DHLDR_VERSION@
+
+#
+# If the 'make' on a particular system does not support
+# 'include MakeIncl.*' statements, then the contents of the 
+# included files can be pasted into this file in place
+# of the include statement.
+
+# We need to know where CCA is -- this is system specific.
+# Customarily it should be /usr/local/cca-spec.
+CCA_ROOT= @CCA_ROOT@
+
+# Get the vars we need to build with CCA by including its
+# public build variable definitions.
+include $(CCA_ROOT)/MakeIncl.CCA_Component
+
+# where we are
+DHLDR_ROOT=@DHLDR_ROOT@
+# where we might be installed, if installed.
+DHLDR_INSTALL_ROOT=@DHLDR_INSTALL_ROOT@
+
+include $(DHLDR_ROOT)/MakeIncl.DHLDR_Component
+
+# MPI Location
+
+MPI_ROOT = @MPI_ROOT@
+MPI_INCLUDE = -I$(MPI_ROOT)/include
+
+# CCAFFEINE Location
+
+CCAFFEINE_ROOT=@CCAFFEINE_ROOT@
+
+# bring in caffeine
+CCAFE_ROOT = $(CCAFFEINE_ROOT)
+include $(CCAFFEINE_ROOT)/MakeIncl.CCAFE_Component
+
+# petition the ccaffeine folks to get their act together
+# about exporting ports more cleanly.
+DHLDR_CCAFE_LIBS= $(CCAFE_PLIBS)
+
+CXX = codewizard
+CXX = insure
+CXX = @CXX@
+
+CXXFLAGS = $(EG_CXXFLAGS) $(CCA_INC) $(EG_INC) $(MPI_INCLUDE) $(CCAFE_INC) $(DHLDR_CXX_FLAGS)
+
+SRC= DataHolder.cxx DataHolder_wrapper.cxx
+OBJ= DataHolder.o DataHolder_wrapper.o
+SOBJ= DataHolder.so.o DataHolder_wrapper.so.o
+
+# local names of the hello world component library files
+DHLDR_LIB=libDataHolder.a
+DHLDR_SOLIB=libDataHolder.so
+
+all: lib solib test
+
+DataHolder.o: $(SRC)
+	$(CXX) -c $(CXXFLAGS) $(DHLDR_INC) DataHolder.cxx
+
+DataHolder_wrapper.i: $(SRC)
+	$(CXX) -E $(CXXFLAGS) $(DHLDR_INC) DataHolder_wrapper.cxx > DataHolder_wrapper.i
+
+DataHolder_wrapper.o: $(SRC)
+	$(CXX) -c $(CXXFLAGS) $(DHLDR_INC) DataHolder_wrapper.cxx
+
+DataHolder.so.o: $(SRC)
+	$(CXX) -c $(CCA_SHLIB_CFLAGS) $(DHLDR_INC) $(CXXFLAGS) \
+		-o DataHolder.so.o DataHolder.cxx
+
+DataHolder_wrapper.so.o: $(SRC)
+	$(CXX) -c $(CCA_SHLIB_CFLAGS) $(DHLDR_INC) $(CXXFLAGS) \
+		-o DataHolder_wrapper.so.o DataHolder_wrapper.cxx
+
+lib: $(OBJ)
+	-/bin/rm $(DHLDR_LIB)
+	ar ruv $(DHLDR_LIB) $(OBJ)
+	$(RANLIB) $(DHLDR_LIB)
+
+solib:  $(SOBJ)
+	$(CCA_SHLIB_LD) $(CCA_SHLIB_LDFLAGS) -o $(DHLDR_SOLIB) $(SOBJ)
+	-$(RM) $*.so.o
+
+# simplest test.
+test: DH_Test.cxx $(DHLDR_LIB)
+	@echo CCAFE_PLIBS = $(CCAFE_PLIBS)
+	$(CXX) $(CCA_INC) $(DHLDR_CXX_FLAGS) $(DHLDR_INC) \
+	        DH_Test.cxx -o DH_Test \
+		$(DHLDR_LIB) $(CCAFE_PLIBS) $(CCA_LIB) $(DHLDR_MPI_LIB)
+	./DH_Test
+	@echo 'Simplest test passed.'
+
+DH_Test.i:
+	$(CXX) -E $(CCA_INC) $(DHLDR_INC) $(DHLDR_CXX_FLAGS) DH_Test.cxx  \
+		$(DHLDR_LIB) $(CCAFE_PLIBS) $(CCA_LIB)  > DH_Test.i
+
+# 
+clean:
+	-/bin/rm *.o *.a *.so *.i tca.log tca.map
+
+distclean: clean
+	-/bin/rm config.status config.log Makefile MakeIncl.DHLDR_Component \
+		DHLDRConfig*.sh DataHolder.cca .ix* DH_Test
+
+# rules for making configure, autoconf 2.13 (possibly 2.12) or later.
+configure: configure.in
+	-/bin/rm configure
+	autoconf configure.in | sed -e 's;# $$Header;# Source;' > configure
+	chmod a+x configure
+
+test-configure: configure
+	./configure
+

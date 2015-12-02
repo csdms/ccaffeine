@@ -1,0 +1,2 @@
+#!/bin/sh
+find java -type f | grep -v CVS | grep -v 'cc$' | grep -v 'cxx$' | grep -v '.o$' | grep -v Impl | grep -v '.java$' | grep -v '.c$' | grep -v '.sed$' | grep -v '.in$' | grep -v cvsignore |  grep -v '/doc/'

@@ -1,0 +1,49 @@
+A c++ dlopen/PV interface test summary.
+
+Here the test/, test_noabst, test_samedota, and test_novirt
+subdirectories test different combinations of
+c++ features and dynamic loading.
+
+Note that trying to 'fake it' by doing a C cast or static_cast
+from a base (vPort) to a derived (sPort) will simply not compile
+under ISO c++ (which is what we're stuck with).
+
+test/		dynamic loading and pure virtual interfaces
+		make clean test # demo the way c++ abi standard requires
+		make testno # demo the way private dlopen fails c++.
+
+test_novirt/	demonstrates that you cannot eliminate the 
+		virtual keyword and still have polymorphism,
+		which is according to the c++ standard.
+		dynamic_cast fails compile and static_cast is
+		unsafe. If using static_cast to convert Port to
+		a specific port, might as well have CCA define
+		Port as void* rather than a base type. Good luck
+		ever debugging either one.
+
+test_noabst/	demonstrates that you can make pure virtual (classic)
+		interfaces such that all the functions have default
+		implementations [exit(1)] but that this does not
+		solve the dynamic loading problem.
+		make clean test # gives the same result as test/
+		make testno # gives the same fail as test/.
+
+test_samedota/	demonstrates the same thing as test_noabst above,
+		but under the condition that the .so are built
+		against the same .a. Both .so end up with a copy
+		of what's in the .a, and everything is the same at runtime.
+
+Conclusion:
+	The best way to get c++ polymorphism and uses/provides
+ala the cca is exactly as the 1999 classic and as scirun
+have it: pure virtual, [virtual int fcn()=0;].
+
+	Putting in function body dummies doesn't solve
+the dynamic loading problem and misleads new implementors
+into thinking they've successfully implemented a Port
+without doing anything but inheriting that port.
+
+	All Ports (and any virtual interface types that
+are in the function arguments of those ports) must be linked
+statically in main at build type or dynamically loaded with
+a global flag somehow specified.

@@ -1,0 +1,12 @@
+buildroot=../../..
+srcdir=@fullpathsrcdir@
+VPATH := @fullpathsrcdir@/cxx/jc++/test
+
+test1:
+	gcc -g server.c -o server.x
+	gcc -g client.c -o client.x
+	./server.x & < Makefile 
+	./client.x
+
+clean:
+	-$(RM) server.x client.x

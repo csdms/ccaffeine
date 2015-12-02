@@ -1,0 +1,52 @@
+<xml version="1.0"> 
+<!-- # generated component index. -->
+<!-- date=Wed Apr 14 13:12:38 PDT 2004 -->
+<!-- builder=baallan@ccafe.ca.sandia.gov -->
+<!-- /home/baallan/work/posthack/dccafe90/cxx/util/genDLIndexSCLXML libServiceRegistryTest_0_4_3.so dummy-create ccafe2.ServiceRegistryTest /tmp/crapola9/lib/ ccafe2.ServiceRegistryTest babel -->
+<scl>
+  <library uri="/tmp/crapola9/lib/libYComponent.la" 
+	scope="global" 
+	resolution="now" > 
+    <class name="test1.YComponent" desc="ior/impl" />
+  </library>
+  <library uri="/tmp/crapola9/lib/libtest2.so" 
+	scope="private" 
+	resolution="now" > 
+    <class name="test2.XComponent" desc="ior/impl" />
+    <class name="test2.ZComponent" desc="ior/impl" />
+  </library>
+</scl>
+<componentDeployment 
+  name="test1.YComponent"
+  paletteClassAlias="YComponent"
+>
+    <environment> 
+        <ccaSpec binding="babel" /> 
+        <library loading="static" 
+                 location="/tmp/crapola9/lib/"
+        />
+    </environment>
+</componentDeployment>
+<componentDeployment 
+  name="test2.XComponent"
+  paletteClassAlias="XComponent"
+>
+    <environment> 
+        <ccaSpec binding="babel" /> 
+        <library loading="dynamic" 
+                 location="/tmp/crapola9/lib/"
+        />
+    </environment>
+</componentDeployment>
+<componentDeployment 
+  name="test2.ZComponent"
+  paletteClassAlias="ZComponent"
+>
+    <environment> 
+        <ccaSpec binding="babel" /> 
+        <library loading="dynamic" 
+                 location="/tmp/crapola9/lib/"
+        />
+    </environment>
+</componentDeployment>
+</xml>

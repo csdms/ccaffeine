@@ -1,0 +1,4 @@
+#!/usr/bin/perl -pi.bak
+# converts ports/portInterfaces to stdPorts.h
+# usage: pspi2sp <input filenames>
+s/ports\/portInterfaces/stdPorts/g

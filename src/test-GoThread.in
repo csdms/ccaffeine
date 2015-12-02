@@ -1,0 +1,52 @@
+#! @SHELL@
+
+progname=`echo $0 | sed -e 's%.*/%%g'`
+curdir=`pwd`
+bindir=@bindir@
+libdir=@libdir@
+pkglibdir=@pkglibdir@
+pkgdatadir=@pkgdatadir@
+binsuffix=
+tmpfile=test-GoThread.out
+#
+# LD_LIBRARY_PATH=/usr/local/babel-0.8.6/lib:"$LD_LIBRARY_PATH"; export LD_LIBRARY_PATH
+#SIDL_DLL_PATH=$libdir;export SIDL_DLL_PATH
+echo "====================================================================="
+echo "       Testing the Threaded GoPort in the Ccaffeine build ..."
+
+echo "proceeding with env vars:"
+echo "# LD_LIBRARY_PATH=$LD_LIBRARY_PATH"
+echo "# SIDL_DLL_PATH=$SIDL_DLL_PATH"
+echo Please wait for about 10 seconds ...
+
+frame_opts="--ccafe-rc $pkgdatadir/EmptyRC"
+
+/bin/sh <<EOF | if $bindir/ccafe-single$binsuffix $frame_opts >$tmpfile 2>&1
+echo path set $libdir
+echo path append $pkgdatadir/components
+echo repository get-global GoThreadComponent
+echo repository get-global PrinterComponent
+echo instantiate GoThreadComponent Goer
+echo instantiate PrinterComponent Printer
+echo display component Goer
+echo display component Printer
+echo connect Goer Output Printer printer_port
+echo go Goer Go
+sleep 5 # there should be about 5 date lines output by the GoThreadComponent
+echo go Goer Stop
+echo quit
+EOF
+then
+	echo -n "didn't crash or hang up early ...  "
+else
+	echo -n "didn't make it all the way through ...  "
+fi
+if [ `grep "Printer says the string is:" $tmpfile |wc -l` -ge 4 ]
+then 
+    echo Got correct output from the spawned thread, 
+    echo looks like it is working.
+else 
+    echo Could not detect the correct output from the thread, 
+    echo something is awry.
+fi
+echo "====================================================================="

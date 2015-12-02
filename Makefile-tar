@@ -1,0 +1,31 @@
+
+# a makefile for building the tar file
+# whenever cvs is updated
+
+# ben's not a big believer in "cleaning up" a working
+# repository just for export, so instead everyone
+# can just list their own exclusions. See 
+# exclude-from-tar.all and exclude-from-tar.baallan
+# for examples.
+# Take care that your wildcarding, if any, doesn't
+# exclude other people's files by accident.
+
+EXCLUDE_FLAGS = \
+--exclude-from dccafe/exclude-from-tar.all \
+--exclude-from dccafe/exclude-from-tar.ccafe \
+--exclude dccafe/Makefile-tar
+
+SRCLIST=dccafe cca-spec
+
+# output file (and we) goes UP a directory when running
+tar:
+	(cd ..; tar cof dccafe.tar $(EXCLUDE_FLAGS) $(SRCLIST))
+
+tgz:
+	(cd ..; tar cozvf dccafe.tgz $(EXCLUDE_FLAGS) $(SRCLIST))
+
+# to update the current tree, if not current
+cvsUpdate:
+	cvs update -d
+
+.PHONY: tar tgz

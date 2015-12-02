@@ -1,0 +1,57 @@
+#! @SHELL@
+
+progname=`echo $0 | sed -e 's%.*/%%g'`
+curdir=`pwd`
+bindir=@bindir@
+libdir=@libdir@
+pkglibdir=@pkglibdir@
+pkgdatadir=@pkgdatadir@
+binsuffix=@PROGRAM_SUFFIX@
+tmpfile=""
+if test ! -w $curdir ; then
+  tmpfile=`mktemp -q /tmp/$progname.out.XXXXXXXXX`
+  if [ $? -ne 0 ]; then
+     echo "$progname: Can't create temp file /tmp/$progname.out. Exiting..."
+     exit 1
+  fi
+else
+  tmpfile=`mktemp -q $curdir/$progname.out.XXXXXXXXX`
+  if [ $? -ne 0 ]; then
+     echo "$progname: Can't create temp file $curdir/$progname.out. Exiting..."
+     exit 1
+  fi
+fi
+
+#SIDL_DLL_PATH=$libdir;export SIDL_DLL_PATH
+
+answer2="Hello World"
+echo "====================================================================="
+echo "                  Testing the BabelFactoryService ...                "
+if $bindir/ccafe-single$binsuffix --ccafe-rc $pkgdatadir/EmptyRC --babel-components 'ccafe0.PrinterComponent ccafe1.StarterComponent' <<EOF >$tmpfile 2>&1
+
+path set $libdir
+path append $pkgdatadir/components
+repository list
+repository get-global BabelFactoryService
+instantiate BabelFactoryService
+instantiate ccafe1.StarterComponent  startMe
+instantiate ccafe0.PrinterComponent  printMe
+connect startMe output printMe string
+go startMe go
+bye
+EOF
+then
+	echo -n "didn't crash or hang up early ...  "
+else
+	echo -n "didn't make it all the way through ...  "
+fi
+
+if grep "$answer2" $tmpfile >/dev/null 2>&1
+then
+	echo looks like it is working.
+else
+	echo "The output indicates that BabelFactoryService is inoperative"
+fi
+
+echo "====================================================================="
+echo "                          done.                                      "

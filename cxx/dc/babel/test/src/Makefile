@@ -1,0 +1,56 @@
+CCAFE_HOME = ../../../..
+include $(CCAFE_HOME)/Makefile.Rules
+
+ifneq "x$(TARGET)" "xclean"
+
+include babel.make
+include glue/babel.make
+
+endif
+
+CMPT_NAME=test
+
+SRC = $(IMPLSRCS)
+GLUE_SRC_CXX= $(SKELSRCS) $(STUBSRCS)
+
+OUTSRC=  tee -a src-list-driver >>  ../../../src-list
+
+HERE=$(CCAFE_ROOT)/cxx/dc/babel/test/src
+
+UNSTAMPER = $(CCAFE_ROOT)/cxx/dc/babel/bin/implUnstamper.sh
+IMPL_FILES = $(shell ls *Impl* 2>/dev/null)
+
+unstamp:
+	$(UNSTAMPER) $(IMPL_FILES)
+
+src-list:
+	@$(RM) src-list-driver
+	@echo "BABEL_TESTS += test" | $(OUTSRC)
+	@echo 'ifeq "x$$(CMPT)" "x$(CMPT_NAME)"' | $(OUTSRC)
+	@echo "CMPT_LIST_CXX = \\" | $(OUTSRC)
+	@for i in $(SRC) ; do \
+                echo "$(CCAFE_ROOT)/cxx/dc/babel/test/src/$$i \\" | $(OUTSRC) ; \
+        done
+	@for i in $(GLUE_SRC_CXX); do \
+                echo "$(CCAFE_ROOT)/cxx/dc/babel/test/src/glue/$$i \\" | $(OUTSRC) ; \
+        done
+	@echo "" | $(OUTSRC)
+	@echo "CMPT_LIST_CC = \\" | $(OUTSRC)
+	@for i in $(IORSRCS); do \
+                echo "$(CCAFE_ROOT)/cxx/dc/babel/test/src/glue/$$i \\" | $(OUTSRC) ; \
+        done
+	@echo "" | $(OUTSRC) 
+	@echo "CMPT_CXXFLAGS=-I$(HERE) -I$(HERE)/glue \\" | $(OUTSRC)
+	@echo "-I$(CCAFE_ROOT)/cxx/dc/babel/babel-cca/server" | $(OUTSRC)
+	@echo "" | $(OUTSRC)
+	@echo "CMPT_CFLAGS=-I$(HERE)/glue -I$(CCAFE_ROOT)/cxx/dc/babel/babel-cca/server" | $(OUTSRC)
+	@echo "CMPT_COMPLIBS=StarterComponent PrinterComponent ParameterPortFactoryTest StringConsumerPort" | $(OUTSRC)
+	@echo "endif" | $(OUTSRC)
+	@cat src-list-driver | sed -e 's%^CMPT%$(CMPT_NAME)_CMPT%g' > src-list-driver2
+	@$(RM) src-list-driver
+	@cp src-list-driver2 src-list-driver
+	@$(RM) src-list-driver2
+	@echo "updated src-list from dc/babel/test/src"
+
+clean:
+	-@$(RM) src-list-driver

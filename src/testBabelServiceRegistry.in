@@ -1,0 +1,91 @@
+#! @SHELL@
+
+progname=`echo $0 | sed -e 's%.*/%%g'`
+curdir=`pwd`
+bindir=@bindir@
+libdir=@libdir@
+pkglibdir=@pkglibdir@
+pkgdatadir=@pkgdatadir@
+binsuffix=@PROGRAM_SUFFIX@
+tmpfile=""
+if test ! -w $curdir ; then
+  tmpfile=`mktemp -q /tmp/$progname.out.XXXXXXXXX`
+  if [ $? -ne 0 ]; then
+     echo "$progname: Can't create temp file /tmp/$progname.out. Exiting..."
+     exit 1
+  fi
+else
+  tmpfile=`mktemp -q $curdir/$progname.out.XXXXXXXXX`
+  if [ $? -ne 0 ]; then
+     echo "$progname: Can't create temp file $curdir/$progname.out. Exiting..."
+     exit 1
+  fi
+fi
+#LD_LIBRARY_PATH=@BABEL_ROOT@/lib:"$LD_LIBRARY_PATH"; export LD_LIBRARY_PATH
+SIDL_DLL_PATH=$libdir;export SIDL_DLL_PATH
+answer1="is using output connected to Port: ccafe0.StringConsumerPort_1 provided by component FRAMEWORK"
+answer2="is using output connected to Port: scp_1 provided by component SR"
+answer3="WITHOUT babel"
+answer4="ccafe2::ServiceRegistryTest::setString(Hello World)"
+echo "====================================================================="
+echo "                  Testing the babel ServiceRegistry ...              "
+
+echo "proceeding with env vars:"
+echo "# LD_LIBRARY_PATH=$LD_LIBRARY_PATH"
+echo "# SIDL_DLL_PATH=$SIDL_DLL_PATH"
+
+frame_opts="--ccafe-rc $pkgdatadir/EmptyRC"
+
+if $bindir/ccafe-single$binsuffix $frame_opts << EOF >$tmpfile 2>&1
+
+path set $libdir
+path append $pkgdatadir/components
+# Do Babel stuff now ...
+repository get-global ccafe0.PrinterComponent
+repository get-global ccafe1.StarterComponent
+repository get-global ccafe2.ServiceRegistryTest
+instantiate ccafe1.StarterComponent cs1
+instantiate ccafe0.PrinterComponent cp1
+connect cs1 output cp1 string
+go cs1 go
+instantiate ccafe2.ServiceRegistryTest SR
+go SR go
+arena
+links
+go s4 go
+go s3 go
+go s2 go
+go s1 go
+
+bye
+EOF
+then
+	echo -n "didn't crash or hang up early ...  "
+else
+	echo -n "didn't make it all the way through ...  "
+fi
+if (grep "$answer1" $tmpfile >/dev/null 2>&1) && 
+   (grep "$answer2" $tmpfile >/dev/null 2>&1) &&
+   (grep "$answer4" $tmpfile >/dev/null 2>&1) 
+then
+	echo looks like it is working.
+	echo "Results are in $tmpfile"
+	dumptrash=yes
+else
+	echo "The output indicates babel ServiceRegistry stuff is inoperative,"
+        if (grep "$answer3" $tmpfile >/dev/null 2>&1)
+        then
+                echo  "but dccafe configured WITHOUT BABEL, so this is ok."
+        else
+                echo  "though dccafe was configured --with-cca-babel=/something."
+                echo  "This is bad."
+        fi
+
+	echo "Results are in $tmpfile"
+fi
+echo "    done with testBabelServiceRegistry"
+echo "====================================================================="
+if test "X$dumptrash" = "XYes" ; then
+	rm -f $tmpfile
+fi
+

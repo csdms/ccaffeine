@@ -1,0 +1,8 @@
+#!ccaffeine
+rep list
+pallet
+create StarterComponent StarterComponent0
+create PrinterComponent PrinterComponent0
+connect StarterComponent0 out0 PrinterComponent0 printer_port
+go StarterComponent0 go_port
+bye

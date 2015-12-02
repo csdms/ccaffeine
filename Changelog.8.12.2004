@@ -1,0 +1,44 @@
+This is a large patch release for bugs and build features:
+It requires the latest version of cca-spec-neo, 0.2.2 if neo
+support is configured in.
+
+- Go ports in all bindings are now mapped to opaque goports
+  so any component can call any go port on any other component.
+- Classic components can provide any port as both classic port and
+  neo port by doing the following:
+        1) the component must inherit from neo::cca::Port (note: NOT
+                neo::cca::Component). This is sufficient for gcc, but
+                other compilers may require that the specific port
+                itself inherit from both neo::cca::Port 
+                and classic::gov::cca::Port.
+        2) The component must provide the SupportsKind property to 
+                the framework at the time of createPortInfo/addProvidesPort
+                which inform the frame that the port can be accessed from 
+                neo components as well. E.g. in setServices:
+
+        //Provide a PerfParamPort, courtesy Nick Trebon.
+          char * props[3];
+          props[0] = "SupportsKind";
+          props[1] = "c++-cca-spec-neo";
+          props[2] = 0;
+          portInfo = frameworkServices->createPortInfo( "PerfParamPort",
+                       "perfparam.ccaports.PerfParamPort", props );
+          if (portInfo != 0) {
+            frameworkServices->addProvidesPort (this, portInfo);
+          }
+  Notes:
+        1) For classic::gov::cca::GoPort the above mechanics are not needed.
+        2) Nothing of the above applies to Babel components calling on
+           classic or neo components. 
+        3) The reverse case (classic components calling neo ports)
+           is not supported yet, if ever. All users of classic should be
+           migrating to neo or babel at this point.
+        
+- configure now accepts --with-mpi-ld=/some/executable
+  mpi-ld is used for the final linking of executables and
+  defaults to mpi-cxx if not given explicitly. If no mpi,
+  mpi-ld is c++ or equivalent.
+- Added GoComponent example in babel for testing.
+- Added PortConverter concept in classic binding.
+- Fixed mpi ports to work in neo.
+

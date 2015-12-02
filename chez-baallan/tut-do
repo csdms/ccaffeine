@@ -1,0 +1,26 @@
+Very Tentative Outline (6hrs):
+
+Title
+High-performance component programming in CCA frameworks
+
+A.M.
+Introduction to scientific component programming 
+  what's different about scientific component programming 
+    (sCmd. stationary. scientists.)
+  uses/provides pattern
+  hp data ports
+  demo
+
+Making a CCA component 
+Hands on: SCMD Hello world 
+
+
+P.M.
+Introduction to scientific frameworks
+  what's different about science frameworks
+    (batch, MxN, ...)
+  Interconnecting SCMD frameworks to non-SCMD with CCA
+
+Making new frameworks from old.
+Hands on: Embedding a framework in an existing application.
+

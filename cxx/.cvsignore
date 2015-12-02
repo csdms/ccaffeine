@@ -1,0 +1,7 @@
+Makefile
+MakeIncl.CCAFE_MPI
+Makefile.depends
+Makefile.Rules
+Makefile.Vars
+*.a
+*.x

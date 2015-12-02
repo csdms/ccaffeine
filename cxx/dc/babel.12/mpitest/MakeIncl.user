@@ -1,0 +1,40 @@
+PKG_NAME = mpitest_script_babel
+FQ_CMPT_NAME = $(PKG_NAME)
+LIBSUFFIX=$(VER_SUFFIX)$(PROGRAM_SUFFIX)$(CCAFE_SHLIB_SUFFIX)
+
+ifeq "$(OS_ARCH)" "OS_AIX"
+
+#picky
+OTHER_LINK_OBJ = \
+-L$(CCAFE_ROOT)/lib \
+-L$(CCASPEC_LIB_L_DIR_SHORT) \
+$(CCASPEC_LIB_L_SHORT) \
+-L$(BABEL_ROOT)/lib \
+-lsidl
+#allow undefined
+OTHER_LINK_OBJ = 
+
+
+else
+
+OTHER_LINK_OBJ = \
+$(CCAFE_HOME)/obj/.libs/libccafeCore.a \
+-L$(CCAFE_HOME)/obj/.libs \
+-Wl,-rpath,$(CCAFE_HOME)/obj/.libs \
+-lStarterComponent$(CCAFE_VER_SUFFIX) \
+-lPrinterComponent$(CCAFE_VER_SUFFIX) \
+-lMPIComponent$(CCAFE_VER_SUFFIX) \
+-lccaffeine \
+-lParameterPortFactoryTest$(CCAFE_VER_SUFFIX) \
+-Wl,-rpath,$(CCASPEC_LIB_L_DIR_SHORT) \
+-Wl,-rpath,$(CCASPEC_LIB_L_SHORT) \
+-L$(CCAFE_ROOT)/lib \
+$(CCASPEC_LIB_L_DIR)/$(CCASPEC_STATIC_LIB) \
+-Wl,-rpath,$(CCAFE_RPM_ROOT)/lib \
+-Wl,-rpath,$(CCAFE_RPM_ROOT)/cca/lib \
+$(BABEL_ROOT)/lib/libsidlstub_cxx.a \
+$(BABEL_ROOT)/lib/libsidl.a \
+-Wl,-rpath,$(BABEL_ROOT)/lib -ldl -lxml2\
+$(MPILD_SO_FLAGS)
+
+endif

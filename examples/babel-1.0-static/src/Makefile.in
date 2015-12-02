@@ -1,0 +1,127 @@
+
+# computed from `ccafe-config --var CCAFE_MAKEINCL`
+# at configure time
+SHELL=@SHELL@
+CCAFE_MAKEINCL=@CCAFE_MAKEINCL@
+
+VPATH= glue
+
+include $(CCAFE_MAKEINCL)
+include $(CCAFE_BABEL_CCA_CONFIG)
+
+ifneq "x$(TARGET)" "xclean"
+
+include babel.make
+include glue/babel.make
+include TestScriptBabel.make
+
+endif
+
+SRC_LIST_CXX = driver.cc $(IMPLSRCS) $(SKELSRCS) $(STUBSRCS)
+
+SRC_LIST_CC = $(IORSRCS)
+
+OBJ_LIST_CXX=$(SRC_LIST_CXX:%.cc=%.lo)
+OBJ_LIST_CC=$(SRC_LIST_CC:%.c=%.lo)
+
+
+# some options for this example most of which really belong
+# in ../MakeIncl.user
+PROFILING=yes
+PROFILING=no
+LINUXGCC_PROF_OPTS=-pg -fprofile-arcs -ftest-coverage
+
+LIBTOOL= $(CCAFE_BABEL_LIBTOOL)
+HIDELIBTOOL=$(CCAFE_HIDELIBTOOL)
+HIDECOMPILE=$(CCAFE_HIDECOMPILE)
+
+include ../MakeIncl.user
+
+LOCAL_CFLAGS= \
+-I. -Iglue \
+$(INCLUDES) \
+$(USER_INCLUDES) \
+$(TestScriptBabel_COMPONENT_INCLUDES) \
+-I$(CCAFE_pkgincludedir)/dc/babel.new/babel-cca/server \
+-I$(CCASPEC_includedir) \
+-I$(CCASPEC_includedir)/c \
+$(CCASPEC_BABEL_SIDL_CXXINCS) \
+-I$(CCAFE_pkgincludedir) \
+-Dlint \
+$(CFLAGS)
+
+LOCAL_CXXFLAGS= \
+-I. -Iglue \
+$(INCLUDES) \
+$(USER_INCLUDES) \
+$(TestScriptBabel_COMPONENT_INCLUDES) \
+-I$(CCAFE_pkgincludedir)/dc/babel.new/babel-cca/server \
+-I$(CCASPEC_includedir) \
+-I$(CCASPEC_includedir)/cxx \
+$(CCASPEC_BABEL_SIDL_CXXINCS) \
+-I$(CCAFE_pkgincludedir) \
+-Dlint \
+$(CXXFLAGS)
+
+
+objs: $(OBJ_LIST_CC) $(OBJ_LIST_CXX) driver.lo
+
+libs:
+	$(HIDELIBTOOL)$(LIBTOOL) --mode=link --tag=CXX $(HIDECOMPILE) \
+		$(CCAFE_MPICXX) $(CCASPEC_LIBTOOL_LINK_FLAGS) \
+		$(LOCAL_CXXFLAGS) \
+		$(OBJ_LIST_CC) $(OBJ_LIST_CXX) \
+		-o libcustomTest.la \
+		-rpath `pwd`
+
+bins:
+	$(HIDELIBTOOL)$(LIBTOOL) --mode=link --tag=CXX $(HIDECOMPILE) \
+		$(CCAFE_MPICXX) -all-static $(CCASPEC_LIBTOOL_LINK_FLAGS) \
+			$(LOCAL_CXXFLAGS) \
+			-o customTest.x \
+			driver.lo \
+			libcustomTest.la \
+			$(TestScriptBabel_COMPONENT_LIBS_LIBTOOL) \
+			$(USER_COMPLIBS) \
+			-L$(CCAFE_libdir) $(CCAFE_LIB_L)
+
+run:
+	@echo "#############################################"
+	@echo "#### trying to run src/customTest.x. check src/customTest.out"
+	@echo "#############################################"
+	$(LIBTOOL) --mode=execute ./customTest.x >& customTest.out
+	
+clean:
+	-@$(LIBTOOL) --mode=clean $(RM) *.lo *.la *.x *.loT
+	-@$(RM) -r glue
+
+%.lo : %.c
+	@echo building $@
+	$(HIDELIBTOOL)$(LIBTOOL) --mode=compile $(HIDECOMPILE) --tag=CXX \
+		$(CCAFE_MPICC) -c $(CCASPEC_LIBTOOL_COMPILEFLAGS) \
+		$(LOCAL_CFLAGS) -o $@ -I$(<D) $<
+
+%.lo : %.cxx
+	@echo building $@
+	$(HIDELIBTOOL)$(LIBTOOL) --mode=compile $(HIDECOMPILE) --tag=CXX \
+		$(CCAFE_MPICXX) -c $(CCASPEC_LIBTOOL_COMPILEFLAGS) \
+		$(LOCAL_CXXFLAGS) -o $@ -I$(<D) $<
+
+%.lo : %.cc
+	@echo building $@
+	$(HIDELIBTOOL)$(LIBTOOL) --mode=compile $(HIDECOMPILE) --tag=CXX \
+		$(CCAFE_MPICXX) -c $(CCASPEC_LIBTOOL_COMPILEFLAGS) \
+		$(LOCAL_CXXFLAGS) -o $@ -I$(<D) $<
+
+%.lo : %.C
+	@echo building $@
+	$(HIDELIBTOOL)$(LIBTOOL) --mode=compile $(HIDECOMPILE) --tag=CXX \
+		$(CCAFE_MPICXX) -c $(CCASPEC_LIBTOOL_COMPILEFLAGS) \
+		$(LOCAL_CXXFLAGS) -o $@ -I$(<D) $<
+
+%.lo : %.cpp
+	@echo building $@
+	$(HIDELIBTOOL)$(LIBTOOL) --mode=compile $(HIDECOMPILE) --tag=CXX \
+		$(CCAFE_MPICXX) -c $(CCASPEC_LIBTOOL_COMPILEFLAGS) \
+		$(LOCAL_CXXFLAGS) -o $@ -I$(<D) $<
+

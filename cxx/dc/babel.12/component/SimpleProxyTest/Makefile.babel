@@ -1,0 +1,74 @@
+CCAFE_HOME = ../../../../..
+include $(CCAFE_HOME)/Makefile.Rules
+BVPATH := $(srcdir)/cxx/dc/babel.12/component/SimpleProxyTest
+include $(BVPATH)/Makefile.cmpt
+
+# Change this stuff:
+
+# this is the name of the library to be created for this component
+LIB = lib$(CMPT_NAME)$(LIBSUFFIX)
+
+BABEL = $(CCASPEC_BABEL_BABEL)
+
+CLASSIC_HOME = $(CLASSIC_CCA_ROOT)
+UNCRUFTER = $(RUBY) $(CCAFE_ROOT)/cxx/dc/babel/bin/sidlUncrufter.rb
+IMPLNEWR = $(RUBY) $(CCAFE_ROOT)/cxx/dc/babel/bin/newer.rb
+CCA_SERVER_DIR = $(CCASPEC_BABEL_XML_REPOSITORY)
+BOOST_INCLUDE = $(BOOST_INC)
+
+BABL_INCLUDE = -I$(CCASPEC_BABEL_includedir) $(BABEL_CCA_INC) -I.
+
+CLASSIC_INCLUDE = $(CCA_INC)
+
+# Nothing below here should need to be changed
+
+include babel.make
+
+CCAFE_INCLUDE = -I$(CCAFE_HOME) $(CCA_INC)
+
+CXXFLAGS = $(BABL_INCLUDE) $(BOOST_INCLUDE) $(CCAFE_INCLUDE) $(CLASSIC_INCLUDE) $(PORTHEADERS)
+
+all: $(LIB)
+
+.cc.o:
+	$(CXX) -g -fPIC $(CXXFLAGS) -I$(CCASPEC_BABEL_includedir) -c $<
+.c.o:
+	$(CC) -g -fPIC  $(CXXFLAGS) -I$(CCASPEC_BABEL_includedir) -c $< 
+
+SRCS = $(IMPLSRCS) $(IORSRCS) $(SKELSRCS) $(STUBSRCS) 
+
+OBJS = ${IMPLSRCS:.cc=.o} ${IORSRCS:.c=.o} \
+       ${SKELSRCS:.cc=.o} ${STUBSRCS:.cc=.o}
+
+$(LIB): ${OBJS}
+	$(CCAFE_SHLIB_LD) -g -o $@ $(BABL_INCLUDE) $(OBJS) $(OTHER_LINK_OBJ)
+
+src-list:
+	@echo "BABEL_COMPONENT_LIST += $(CMPT_NAME)" >> ../../../../src-list
+	@echo 'ifeq "x$$(CMPT)" "x$(CMPT_NAME)"' >> ../../../../src-list
+	@echo "CMPT_LIST_CXX += \\" >> ../../../../src-list
+	@for i in $(IMPLSRCS) $(SKELSRCS) $(STUBSRCS); do \
+	        echo "$(CCAFE_ROOT)/cxx/dc/babel.12/component/$(CMPT_NAME)/server/$$i \\" >> ../../../../src-list ; \
+	done
+	@echo "" >> ../../../../src-list
+	@echo "CMPT_LIST_CC += \\" >> ../../../../src-list
+	@for i in $(IORSRCS); do \
+	        echo "$(CCAFE_ROOT)/cxx/dc/babel.12/component/$(CMPT_NAME)/server/$$i \\" >> ../../../../src-list ; \
+	done
+	@echo "" >> ../../../../src-list
+	@echo "CMPT_CXXFLAGS=-I$(CCAFE_ROOT)/cxx/dc/babel.12/babel-cca/server" >> ../../../../src-list
+	@echo "CMPT_CFLAGS=-I$(CCAFE_ROOT)/cxx/dc/babel.12/babel-cca/server" >> ../../../../src-list
+	@echo "CMPT_LTLDFLAGS=" >> ../../../../src-list
+	@echo "endif" >> ../../../../src-list
+	@echo "" >> ../../../../src-list
+	@echo "updated src-list from dc/babel.12/component/$(CMPT_NAME)/server"
+
+clean:
+	$(RM) $(OBJS) $(LIB)
+
+depend:
+	$(RM) Makefile; ln -sf Makefile.babel Makefile
+	$(DEPEND) $(CXXFLAGS) $(IORSRCS) $(SKELSRCS) $(STUBSRCS) $(IMPLSRCS)
+	$(RM) Makefile
+
+

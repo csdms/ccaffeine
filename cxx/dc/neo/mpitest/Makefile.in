@@ -1,0 +1,107 @@
+# tests for neo drivers
+
+CCAFE_HOME=../../..
+buildroot=../../../..
+include $(CCAFE_HOME)/Makefile.Rules
+VPATH := $(srcdir)/cxx/dc/neo/mpitest
+include $(EGNEO_CONFIG)
+include $(NEOTESTPARAMETER_CONFIG)
+
+
+INPUT= ./mpiTest.scr
+OUTPUT=mpiTest_scr_NeoMain
+
+B2N=$(NEOCCA_INSTALL_ROOT)/bin/bld2neo
+
+NEOFWK_INC=-I$(CCAFE_HOME)/dc/neo/ccafe-bind -I$(CCAFE_HOME)
+
+CXXFLAGS_LOCAL=$(CXXFLAGS) $(NEOCCA_INC)
+CXXFLAGS_MAIN=$(CXXFLAGS) $(NEOCCA_INC) $(NEOFWK_INC)
+
+ifneq "$(HAVE_BABEL)" "0"
+BABELGOO=\
+$(BABEL_CCA_LIBS) \
+$(BABEL_ROOT)/lib/libsidl.a
+endif
+
+LIBS= \
+$(CCAFE_HOME)/obj/libccafeCore.a \
+$(EGNEO_STATIC_LIB) \
+$(NEOTESTPARAMETER_STATIC_LIB) \
+$(NEOCCA_STATIC_LIB) \
+$(BABELGOO) \
+$(XMLLIB) \
+$(CCAFE_THREAD_LIBS) \
+$(CCAFE_DL_LIBS)
+
+
+bins: bins_$(NEO_HAVE_MPI)
+
+check: check_$(NEO_HAVE_MPI)
+
+bins_0 bins_ check_0 check_:
+	@echo "dc/neo/mpitest disabled. neo configured without mpi."
+
+bins_1 mpiDriver.x: gen_1
+	$(B2N) $(INPUT) $(OUTPUT)
+	-$(RM) mpiDriver.x
+	-$(MPICXX) -c $(CXXFLAGS_LOCAL) $(OUTPUT).cc
+	-$(MPI_LD) -o mpiDriver.x $(CXXFLAGS_MAIN) mpiDriver.cc \
+	$(OUTPUT).o \
+	$(LIBS)
+	@if ! test -x mpiDriver.x; then \
+		echo "Problem building generated code. Probably input script error." ; \
+		echo "Check in $(OUTPUT).cc for errors caused by missing components."; \
+		echo "Ccaffeine will work just fine in spite of this."; \
+	fi
+
+gen: gen_$(NEO_HAVE_MPI)
+
+gen_0:
+	@echo "no neo mpi"
+
+gen_1:
+	$(NEO_PRERUN) $(B2N) $(INPUT) $(OUTPUT)
+
+OUTSRC=  tee -a src-list-driver >>  ../../src-list
+
+src-list: src-list_$(NEO_HAVE_MPI)
+
+src-list_0:
+	@echo "no neo mpi. no neo mpitest in srclist."
+
+src-list_1:
+	@$(RM) src-list-driver
+	@echo "DRIVER_SRC_CXX += \\" | $(OUTSRC)
+	@for i in $(OUTPUT).cc ; do \
+                echo "$(CCAFE_ROOT)/cxx/dc/neo/mpitest/$$i \\" | $(OUTSRC) ; \
+        done
+	@echo "" | $(OUTSRC)
+	@echo "NEO_TESTS += neompitest" | $(OUTSRC)
+	@echo "CMPT_LIST_CXX_neompitest = \\" | $(OUTSRC)
+	@echo "$(CCAFE_ROOT)/cxx/dc/neo/mpitest/$(OUTPUT).cc" | $(OUTSRC)
+	@echo "DRIVER_SRC_neompitest=$(srcdir)/cxx/dc/neo/mpitest/mpiDriver.cc" | $(OUTSRC)
+	@echo "" | $(OUTSRC)
+	@echo "CMPT_COMPLIBS_neompitest=$(EGNEO_STATIC_LIB) $(NEOTESTPARAMETER_STATIC_LIB)" | $(OUTSRC)
+	@echo "updated src-list from dc/neo/mpitest"
+
+
+
+check_1: ./mpiDriver.x
+	-@if test -x mpiDriver.x; then \
+		echo "### Trying to run an mpi executable locally. "; \
+		echo "# This may hang or crash if your mpi does not support such execution."; \
+		./mpiDriver.x ; \
+		echo "Looks like we didn't crash the makefile at least."; \
+	else \
+		echo "Skipping check of neo-static-mpi-build-from-script. bad input."; \
+	fi
+	
+VGOPTS=-v --leak-check=yes --leak-resolution=high --show-reachable=yes
+# needs fixing, this target
+run:
+	valgrind $(VGOPTS)  ./mpiDriver.x
+	echo ./mpiDriver.x
+
+clean:
+	-$(RM) $(OUTPUT).* *.o emake.log *.x src-list-driver

@@ -1,0 +1,297 @@
+# $Revision: 1.5 $
+# $Author: baallan $
+
+# In case it wasn't obvious, this is a gnu make
+# file. It is very unlikely to work with other makes
+# as it uses, include, vpath, and text substitutions.
+# It picks test codes out of the main source tree
+# to build and link here.
+#
+# This keeps the source tree clean and builds drivers
+# all in one place.
+#
+
+buildroot=../..
+
+CCAFE_HOME = ..
+
+include ../Makefile.Rules
+
+LIBTOOL= $(BABEL_LIBTOOL)
+
+####################################
+# compiler options
+
+VPATH=$(srcdir)/cxx/dc/user_iface
+
+LOCAL_CFLAGS= \
+-Dlint=lint \
+$(INCLUDES) \
+$(CFLAGS) 
+
+LOCAL_CXXFLAGS= \
+-Dlint=lint \
+$(CXXFLAGS) \
+$(CCAFE_PTHREADS_FLAGS)
+
+####################################
+# libraries to link
+
+FWK_LIB= $(CCAFE_PRELOAD_LIB) ../obj/$(CCAFE_LIBTOOL_LIB) -rpath $(libdir) \
+-R$(libdir) $(CSNRUNTIMEFLAGS)
+
+####################################
+# executables
+
+DRIVERS = \
+ccafe-client \
+ccafe-single
+
+
+####################################
+all: tests
+
+tests: $(NOISE) $(DRIVERS)
+
+.preload-lo: $(srcdir)/cxx/dc/framework/BabelStaticFactory.cxx
+	$(HIDELIBTOOL)$(LIBTOOL) --mode=compile --tag=CXX $(HIDECOMPILE) \
+		$(MPICXX) -c $(CCASPEC_LIBTOOL_COMPILEFLAGS) \
+		$(LOCAL_CXXFLAGS) $(CCA_PLLFLAGS) \
+		$(BABEL_PRELOAD_INCLUDES) \
+		-o BabelStaticFactory.lo \
+		$(srcdir)/cxx/dc/framework/BabelStaticFactory.cxx
+	$(HIDELIBTOOL)$(LIBTOOL) --mode=link --tag=CXX $(HIDECOMPILE) \
+		$(CXX) $(CCASPEC_LIBTOOL_LINKFLAGS) $(LOCAL_CXXFLAGS) \
+		BabelStaticFactory.lo \
+		$(BABEL_PRELOAD_COMPONENTS) \
+		-o $(CCAFE_PRELOAD_LIB) -rpath $(libdir) \
+		-R$(libdir)
+	$(HIDELIBTOOL)$(LIBTOOL) --mode=link --tag=CXX $(HIDECOMPILE) \
+		$(CXX) $(CCASPEC_LIBTOOL_LINKFLAGS) $(LOCAL_CXXFLAGS) \
+		BabelStaticFactory.lo \
+		$(BABEL_PRELOAD_COMPONENTS) \
+		-o $(BUILT_PRELOAD_LIB) -rpath $(pkglibdir) \
+		-R$(libdir)
+	@touch .preload-lo
+#
+#	-rpath $(pkglibdir) \
+#	$(EXTRALIBS)
+
+
+
+.client-lo: 
+	-@$(RM) .client-lo
+	$(HIDELIBTOOL)$(LIBTOOL) --mode=compile --tag=CXX $(HIDECOMPILE) \
+		$(MPICXX) -c $(CCASPEC_LIBTOOL_COMPILEFLAGS) $(LOCAL_CXXFLAGS) \
+		-D_INTERACTIVE $(CCA_PLLFLAGS) \
+		-o CmdLineBuilderController2.lo \
+		$(srcdir)/cxx/dc/user_iface/CmdLineBuilderController2.cxx
+	$(HIDELIBTOOL)$(LIBTOOL) --mode=compile --tag=CXX $(HIDECOMPILE) \
+		$(MPICXX) -c $(CCAFE_FORCE) $(CCASPEC_LIBTOOL_COMPILEFLAGS) \
+		$(LOCAL_CXXFLAGS) $(CCA_PLLFLAGS) \
+		-o forceIsisBlasLapackLink.lo \
+		$(srcdir)/cxx/dc/user_iface/forceIsisBlasLapackLink.cxx
+	$(HIDELIBTOOL)$(LIBTOOL) --mode=compile --tag=CXX $(HIDECOMPILE) \
+		$(MPICXX) -c $(CCASPEC_LIBTOOL_COMPILEFLAGS) \
+		$(LOCAL_CXXFLAGS) $(CCA_PLLFLAGS) \
+		-o CmdLineClient.lo \
+		$(srcdir)/cxx/dc/user_iface/CmdLineClient.cxx
+	$(HIDELIBTOOL)$(LIBTOOL) --mode=compile --tag=CXX $(HIDECOMPILE) \
+		$(MPICXX) -c $(CCASPEC_LIBTOOL_COMPILEFLAGS) \
+		$(LOCAL_CXXFLAGS) $(CCA_PLLFLAGS) \
+		-o CmdLineClientMain.lo \
+		$(srcdir)/cxx/dc/user_iface/CmdLineClientMain.cxx
+	@touch .client-lo
+
+ccafe-client: clientban .client-lo .preload-lo
+	-@$(RM) $@
+	@echo "linking $@"
+	$(HIDELIBTOOL)$(LIBTOOL) --mode=link --tag=CXX $(HIDECOMPILE) \
+		$(MPICXX) $(CCASPEC_LIBTOOL_LINKFLAGS) \
+		$(LOCAL_CXXFLAGS) \
+		-o ccafe-client \
+		CmdLineClientMain.lo \
+		CmdLineClient.lo \
+		forceIsisBlasLapackLink.lo \
+		CmdLineBuilderController2.lo \
+		$(FWK_LIB) \
+		$(MATHLIBS) \
+		$(CCAFE_LD_SEARCH_FLAGS) \
+		$(CCAFE_LD_FLAGS) $(CCAFE_DL_LIBS)
+	@echo "linking ccafe-batch"
+	$(HIDELIBTOOL)$(LIBTOOL) --mode=link --tag=CXX $(HIDECOMPILE) \
+		$(MPICXX) $(CCASPEC_LIBTOOL_LINKFLAGS) \
+		$(LOCAL_CXXFLAGS) \
+		-o ccafe-batch \
+		CmdLineClientMain.lo \
+		CmdLineClient.lo \
+		forceIsisBlasLapackLink.lo \
+		CmdLineBuilderController2.lo \
+		$(FWK_LIB) \
+		$(MATHLIBS) \
+		$(CCAFE_LD_SEARCH_FLAGS) \
+		$(CCAFE_LD_FLAGS) $(CCAFE_DL_LIBS)
+	$(MAKE) ccafe-single
+
+
+ifneq "x$(PURESINGLE)" "xyes"
+ccafe-single: .client-lo
+	-@$(RM) $@
+	@echo "linking ccafe-single"
+	$(HIDELIBTOOL)$(LIBTOOL) --mode=link --tag=CXX $(HIDECOMPILE) \
+		$(MPICXX) $(CCASPEC_LIBTOOL_LINKFLAGS) \
+		$(LOCAL_CXXFLAGS) \
+		-o ccafe-single \
+		CmdLineClientMain.lo \
+		CmdLineClient.lo \
+		forceIsisBlasLapackLink.lo \
+		CmdLineBuilderController2.lo \
+		$(FWK_LIB) \
+		$(MATHLIBS) \
+		$(CCAFE_LD_SEARCH_FLAGS) \
+		$(CCAFE_LD_FLAGS) $(CCAFE_DL_LIBS)
+else
+ccafe-single: singleban
+	-@$(RM) $@ .client-lo
+	@echo "recompiling CmdLineBuilderController2"
+	$(HIDELIBTOOL)$(LIBTOOL) --mode=compile --tag=CXX $(HIDECOMPILE) \
+		$(CXX) -c $(CCASPEC_LIBTOOL_COMPILEFLAGS) \
+		$(LOCAL_CXXFLAGS) \
+		-o CmdLineBuilderController2.lo \
+		$(CCAFE_ROOT)/cxx/dc/user_iface/CmdLineBuilderController2.cxx
+	@echo "recompiling CmdLineBuilderController2_SerialMain"
+	$(HIDELIBTOOL)$(LIBTOOL) --mode=compile --tag=CXX $(HIDECOMPILE) \
+		$(CXX) -c $(CCASPEC_LIBTOOL_COMPILEFLAGS) \
+		$(LOCAL_CXXFLAGS) \
+		-o CmdLineBuilderController2_SerialMain.lo \
+		$(CCAFE_ROOT)/cxx/dc/user_iface/CmdLineBuilderController2_SerialMain.cxx
+	@echo "recompiling forceIsisBlasLapackLink"
+	$(HIDELIBTOOL)$(LIBTOOL) --mode=compile --tag=CXX $(HIDECOMPILE) \
+		$(CXX) -c $(CCAFE_FORCE) $(CCASPEC_LIBTOOL_COMPILEFLAGS) \
+		$(LOCAL_CXXFLAGS) \
+		-o forceIsisBlasLapackLink.lo \
+		$(CCAFE_ROOT)/cxx/dc/user_iface/forceIsisBlasLapackLink.cxx
+	@echo "linking $@"
+	$(HIDELIBTOOL)$(LIBTOOL) --mode=link --tag=CXX $(HIDECOMPILE) \
+		$(MPICXX) $(CCASPEC_LIBTOOL_LINKFLAGS) \
+		$(LOCAL_CXXFLAGS) \
+		-o ccafe-single \
+		CmdLineBuilderController2_SerialMain.lo \
+		forceIsisBlasLapackLink.lo \
+		CmdLineBuilderController2.lo \
+		$(FWK_LIB) \
+		$(MATHLIBS) \
+		$(CCAFE_LD_SEARCH_FLAGS) \
+		$(CCAFE_LD_FLAGS) $(CCAFE_DL_LIBS) \
+
+endif
+	
+	
+####################################
+# make debugging, user pacification
+
+clientban:
+	@echo "============================================================="
+	@echo "= building ccafe-client, ccafe-batch"
+	@echo "============================================================="
+
+singleban:
+	@echo "============================================================="
+	@echo "= building ccafe-single free of mpi calls"
+	@echo "============================================================="
+
+vpath:
+	@echo $(VPATH)
+	@echo $(CCA_PLLFLAGS)
+
+noise:
+	@$(RM) objlist
+	@echo $(VPATH)
+	@echo "C_SUPPORT_OBJ =" >> objlist
+	@echo $(C_SUPPORT_OBJ) >> objlist
+	@echo "CXX_SUPPORT_OBJ =" >> objlist
+	@echo $(CXX_SUPPORT_OBJ) >> objlist
+	@for i in $(BABEL_COMPONENT_LIST) $(BABEL_PORTS) DUMMY; do \
+		if test "x$$i" = "xDUMMY"; then \
+			continue; \
+		fi ; \
+		$(MAKE) CMPT=$$i component-noise ; \
+		echo "============= babel c named $$i done"; \
+	done
+
+component-noise:
+	@echo "For $(CMPT) CMPT_LIST_CC_OBJ = ">> objlist
+	@echo $(CMPT_LIST_CC_OBJ) >> objlist
+	@echo "For $(CMPT) CMPT_LIST_CXX_OBJ = ">> objlist
+	@echo $(CMPT_LIST_CXX_OBJ) >> objlist
+
+####################################
+# housekeeping
+
+clean:
+	$(LIBTOOL) --mode=clean $(HIDECOMPILE) $(RM) *.lo *.la objlist depline *.x *.out *.diff $(DRIVERS) ccafe-batch .client-lo .preload-lo
+
+distclean: clean
+	$(RM) Makefile.depends
+
+####################################
+# suffix rules:
+
+%.lo : %.c
+	@echo $@ ...
+	$(HIDELIBTOOL)$(LIBTOOL) --mode=compile $(HIDECOMPILE) --quiet --tag=CXX $(CC) -c $(CCASPEC_LIBTOOL_COMPILEFLAGS) $(LOCAL_CFLAGS) $(CMPT_CFLAGS) -o $@ -I$(<D) $<
+
+%.lo : %.cxx
+	@echo $@ ...
+	$(HIDELIBTOOL)$(LIBTOOL) --mode=compile $(HIDECOMPILE) --tag=CXX $(CXX) -c $(CCASPEC_LIBTOOL_COMPILEFLAGS) $(LOCAL_CXXFLAGS) $(CMPT_CXXFLAGS) -o $@ -I$(<D) $<
+
+%.lo : %.cc
+	@echo $@ ...
+	$(HIDELIBTOOL)$(LIBTOOL) --mode=compile $(HIDECOMPILE) --tag=CXX $(CXX) -c $(CCASPEC_LIBTOOL_COMPILEFLAGS) $(LOCAL_CXXFLAGS) $(CMPT_CXXFLAGS) -o $@ -I$(<D) $<
+
+%.lo : %.C
+	@echo $@ ...
+	$(HIDELIBTOOL)$(LIBTOOL) --mode=compile $(HIDECOMPILE) --tag=CXX $(CXX) -c $(CCASPEC_LIBTOOL_COMPILEFLAGS) $(LOCAL_CXXFLAGS) $(CMPT_CXXFLAGS) -o $@ -I$(<D) $<
+
+%.lo : %.cpp
+	@echo $@ ...
+	$(HIDELIBTOOL)$(LIBTOOL) --mode=compile $(HIDECOMPILE) --tag=CXX $(CXX) -c $(CCASPEC_LIBTOOL_COMPILEFLAGS) $(LOCAL_CXXFLAGS) $(CMPT_CXXFLAGS) -o $@ -I$(<D) $<
+
+####################################
+# dependency checking
+
+babel_src_list:
+	@echo $(CMPT_LIST_CXX) $(CMPT_LIST_CC) >> .babel_src_list
+
+depend:
+	@$(RM) .babel_src_list
+	@for i in $(BABEL_COMPONENT_LIST) $(BABEL_PORTS) DUMMY; do \
+		if test "x$$i" = "xDUMMY"; then \
+			continue; \
+		fi ; \
+		$(MAKE) CMPT=$$i babel_src_list ; \
+		echo "============= babel c named $$i done"; \
+	done
+	$(DEPEND) $(LOCAL_CXXFLAGS) $(LOCAL_TEST_SRCS)
+	cat Makefile.depends |sed -e 's%.o:%.lo:%g' > Makefile.depend
+	cp -f Makefile.depend Makefile.depends
+	$(RM) Makefile.depend
+
+depend-sys:
+	@$(RM) .babel_src_list
+	@for i in $(BABEL_COMPONENT_LIST) $(BABEL_PORTS) DUMMY; do \
+		if test "x$$i" = "xDUMMY"; then \
+			continue; \
+		fi ; \
+		$(MAKE) CMPT=$$i babel_src_list ; \
+		echo "============= babel c named $$i done"; \
+	done
+	(blist=`cat .babel_src_list`; \
+	$(DEPENDSYS) $(LOCAL_CXXFLAGS) $(BABEL_COMPONENT_INCLUDES) \
+		$$blist $(C_SUPPORT_SRC) $(CXX_SUPPORT_SRC) )
+	cat Makefile.depends |sed -e 's%.o:%.lo:%g' > Makefile.depend
+	cp -f Makefile.depend Makefile.depends
+	$(RM) Makefile.depend
+
+.PHONY: $(TEST_BINS) $(TEST_BINS_XML)
+

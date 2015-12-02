@@ -1,0 +1,614 @@
+----------- From Ben Allan -----------------------
+I put the redraft of your slides into C++ up for your
+perusal (too big to mail...) at
+http://z.ca.sandia.gov/~baallan/drafts/collective
+You might even recognize parts of it, but at a guess I'd
+say it needs some rethink. rob might like bits of it.
+
+Ben
+----------- endo Ben Allan 1 -----------------------
+
+see v1.h for the source of the web stuff cited.
+
+----------- From Jim Kohl -----------------------
+    From baallan@z.ca.sandia.gov  Mon Aug 28 23:39:31 2000
+    Subject: collective port scribbles
+
+Hey Ben,
+
+Got your voice mail today, too.
+
+    I put the redraft of your slides into C++ up for your
+    perusal (too big to mail...) at
+    http://z.ca.sandia.gov/~baallan/drafts/collective
+
+Looks really good so far.  Almost useful in its current state!  :-)
+
+    You might even recognize parts of it, but at a guess I'd
+    say it needs some rethink. rob might like bits of it.
+    Ben
+
+Right, so here are some comments on your interpretation of the
+interface definitions.  As a running example to use in the
+discussion, let's suppose we have 2 parallel components, A and B,
+within which each parallel task is attached to its own collective
+component Ca or Cb, respectively:
+
+  [A(i) i=1,N]  <-->  [Ca(i) i=1,N]  <-->  [Cb(i) i=1,M]  <-->  [B(i) i=1,M]
+
+And say that A contains distributed data field "Foo" and B contains
+distributed data field "Bar".
+
+So if A and B want to share their data fields "Foo" and "Bar", each
+one must instantiate and set up their own local descriptions of their
+respective data field, as in:
+
+	A.dataFoo.setData( fooPtr );
+	A.dataFoo.setType( "int" );
+	. . .
+	A.dataFieldFoo.setField( "A's Foo", A.dataFoo );
+	Ca.addDataField( A.dataFieldFoo );
+
+	B.dataBar.setData( barPtr );
+	B.dataBar.setType( "int" );
+	. . .
+	B.dataFieldBar.setField( "B's Bar", B.dataBar );
+	Cb.addDataField( B.dataFieldBar );
+
+Now the first question, that proliferates your comments, is do we need
+a bunch of "get" methods to match up with all the "set" methods?
+
+Well, I don't know.  :-)
+
+Certainly, it is true that a component shouldn't need to do a get*()
+on anything that it set*() locally, since it can always access the
+information directly.
+
+The question here is with the two sets of collective components, Ca(i)
+and Cb(i) - do they need get*() methods to extract the information from
+the DataField/Data/RectangularData/Decomposition/Info/ProcArray/Time
+instances, or do the set methods in those instances directly scribble
+into the collective Ca/Cb component implementations / storage, so they
+can just access the information directly?
+
+I'm betting the simple answer is, "Yeah, sure, add some get*() methods,
+this is how we do things in Object-land...".  :-)
+
+The bottom line is that, e.g. RectangularData.setValidSize() is called
+locally, whereas any RectangularData.getValidSize() method would be
+a "provides" port method called from an externally-connected component.
+
+---
+
+In answer to another common question you've posed, I think the *only*
+actual "collective" method invocation is the "CollectivePort.getDataField()"
+method, and probably the various "Convolution.convolute()" methods, too.
+*Everything* else is called locally to describe local state / data.
+
+In other words, A(i) describes its local data, its local time, its local
+index into the overall A proc array, and how its local data fits into
+the global A.Foo data decomposition.  Then Collective Component Ca(i)
+gets the information it needs from A(i) to be able to do MxN extraction
+and such.
+
+Does that make sense?  Please lemme know.
+
+O.K., now on to specific comments.
+
+CollectivePort:
+---------------
+	The reason you need an "add" and "remove" is that you really
+	want to have yet another provides method:
+	
+		getDataFields( DataField *fields[] );
+	
+	that will return a list of available DataFields to an attached
+	collective component.  This makes a lot of sense in the context
+	of viz stuff like CUMULVS, where the front-end viewer doesn't
+	care what the fields are for, it just wants a list to pop up
+	in a dialog box for selection from the GUI.
+
+	For this though you need to associate specific DataField
+	instances with the given collective component, so you can
+	organize your data fields and decide which ones are actually
+	"collectively exportable".
+
+	Clearly, if the DataField et al classes are *only* used for
+	collective stuff (which I don't think we need to restrict them
+	to) then I suppose we could just dispense with the add/remove
+	methods and assume that *any* defined DataField is meant to
+	be exportable.  Probably not...
+
+getDataField():
+---------------
+	O.K., so we discussed this with the LANL folks on Friday
+	afternoon.  There are a few more things that need to go
+	along with the getDataField() method to complete the set.
+
+	To start with, the getDataField() method will be a blocking
+	call that does a "one-shot" exchange between the 2 given data
+	fields.  When the call is complete, the data in the source data
+	field will have been collected and munged into the destination
+	data field, and any connection or mapping information between
+	the 2 data fields or invoking components will then be discarded.
+
+	Another method that needs to be added is for "persistent" data
+	connections, something like:
+
+		void coupleDataFields(
+			in DataField *dst_field, in DataField *src_field,
+			in Time frequency, in int sync_flag,
+			in int static_flag );
+	
+	The idea here is way-cool - you set up a persistent connection
+	between the 2 parallel components, so that whenever the
+	DataField.setReady() method is called (locally by each parallel
+	task), then each respective piece of the distributed data field
+	will be either collected from the source or deposited into the
+	destination data field storage.
+
+	Note that this means setReady() is called at both ends of the
+	connection, so when src_field.setReady() is called the data
+	can be extracted, and when dst_field.setReady() is called the
+	munged data can be deposited.
+
+	[If I haven't lost you yet, then another thing to consider is
+	whether we should actually create a CoupledDataField interface
+	that encapsulates the coupleDataFields() method, and pulls
+	out the frequency, sync_flag and static_flag properties so they
+	can be independently set or modified over the course of the
+	coupling.]
+
+setReady():
+-----------
+	While we're at it, we need to bastardize the setReady() method
+	a bit.  It needs to have an extra argument to say whether the
+	call should block or not:
+
+		void setReady( in boolean block, in boolean incrTime );
+	
+	So the idea here is that there are two ways to call setReady(),
+	"block until everyone has been serviced" (block=TRUE) or "my data
+	field is ready to be read/written now, so do it at your leisure"
+	(block=FALSE).
+
+	In the latter case (block=FALSE), what you're really doing is
+	setting up for an asynchronous connection, so like if you know
+	the data is ready to be accessed for a while, you can let everyone
+	else know it and they can come get it when they need it, etc.
+	
+	Clearly, you need another method:
+
+		void waitData();
+	
+	which you can call later to make sure that everybody has serviced
+	their requests before you go forward to read or scribble on the
+	given DataField again...
+
+setUnits():
+-----------
+	If you guys have a better way of defining data units than the
+	two strings for unitScale and unitPrefix, I'm all for it.  This
+	was an off-the-top-of-my-head solution, I'm sure there's a way
+	better interface.  Go for it!  :-)
+
+setData()/setType():
+--------------------
+	If it makes sense to merge these, that's fine by me.  How about:
+
+		void setData( void *dataPtr, char *dataType );
+	
+	Whatever floats your boat.
+
+setSize():
+----------
+	Interesting possibility - what if we allow nDimensions > 1 for
+	unstructured, too, so we can represent sparse matrices, etc?
+
+	Also, I'd be happy to add an argument to setSize() (or another
+	method) to set the data layout as "RowMajor" or "ColumnMajor"
+	to cover the C versus Fortran way of doing things.  CUMULVS
+	and PAWS already do these ugly transformations between storage
+	orders anyway.
+
+setGhostList():
+---------------
+	What the hell is a Ghost?  Is it a scary object that comes out
+	at Halloween to collect data candy from all the kiddie components?
+	Fill me in.  :-)
+
+RectangularInfo.addBounds():
+----------------------------
+	This thingy is used for "explicit" data decompositions, i.e. ones
+	that won't fit into "standard" block/cyclic definitions.  If I'm
+	a component that stores several random sub-arrays of some big global
+	array, I can set the bounds along each axis for each sub-array:
+
+		Global array is Foo[100][100][100]
+		I have Foo[10:20][20:30][30:40] and Foo[71:73][50:90][80:99]
+
+		So I describe these regions via:
+		XInfo.addBounds( 2, { 10, 71 }, { 20, 73 } );
+		YInfo.addBounds( 2, { 20, 50 }, { 30, 90 } );
+		ZInfo.addBounds( 2, { 30, 80 }, { 40, 99 } );
+	
+	Those bounds define the global context of the two sub-array regions
+	stored locally.
+
+setProcAddress():
+-----------------
+	The idea here is that setProcShape() defines the topology, as you
+	inferred, and setProcAddress() is a local call which says where
+	the caller resides in the given process topology.
+
+	E.g., if there are 6 processes in a 2x3 array, and I'm the instance
+	that has the decomposition for row 1 and column 2, my ProcAddress
+	would be { 0, 1 } out of ProcShape { 2, 3 }.
+
+	Maybe setProcIndex() would be a better name?
+
+Convolution.convolute():
+------------------------
+	I like it.  :-)  Nice abstraction to enclose all the interpolation
+	and unit conversion.
+
+Time.incrTime():
+----------------
+	O.K., so the incrTime() method takes an explicit argument which
+	is the increment value to be applied.  Think of it this way:
+
+		setTime( 3 )   -->   t = 3;
+		incrTime( 4 )  -->   t += 4;
+	
+	This is independent from the DataField.setPeriod() interface.
+	You use these Time interface methods to create time values that
+	you can shove around in other methods like setPeriod()...
+
+class Unit:
+-----------
+	It would ne nice if we could make a general enough interface to
+	handle the silly unit conversions like Celsius and Farenheit...  :)
+
+	Any suggestions?
+
+Dimensions:
+-----------
+	I donna gets it.  Is there some hidden list of well-known
+	quantities that the exponents[] array refers to?  Where does
+	it say that exponents[0] is "kg"s...?  Perhaps this was a
+	work in progress.  :-)
+
+--------------
+
+I think we're DAMN close to the right spec / interfaces here.  After
+this grueling email I have been beaten into submission and am pretty
+well convinced that we need a zillion get*() methods everywhere to
+extract all the good info we've specified in the set*() methods.
+
+Feel free to splatter get*() methods around like candy, I'll bite.
+
+As far as a particle interface, here's a quick sketch of CUMULVS-land:
+
+	class Particle {
+		void addDataField( in DataField *dataField );
+		( void removeDataField( in Data *dataField );  why needed??? )
+		void getDataFields( out Data *data_fields[] );
+		void setParticleDecomp( in ParticleDecomp partDecomp );
+		void setCoordinates( in int dimGlobal, in int *globalCoords );
+	}
+
+	class ParticleDecomp {
+		void setParticleBounds( in int dimGlobal,
+			in int *globalLowerBounds, in int *globalUpperBounds );
+		void setNProcs( in int nProcs );
+	}
+
+I think that about covers it.  Each "DataField" can be a regular Data
+thingy, for all sorts of toxic data organization nesting...  huhuhuhuhuh...
+
+Whaddya think?  Ben...?  Rob...?  Are you all right?  Wake Up!  Oh No!!
+
+Damn, Brain Explosion.  I've killed them.  Oh Well.
+
+See you on the other side, Dudes.  :-)
+
+	Jeembo
+----------- endo Jim Kohl 2-----------------------
+
+----------- From Ben Allan -----------------------
+
+Jim,
+
+I'm still trying to reflect what you said into the header,
+but it appears we're not quite on the same pages yet.
+
+Nonetheless, the collective stuff on the web is updated:
+http://z.ca.sandia.gov/~baallan/drafts/collective
+
+On Tue, Aug 29, 2000 at 03:43:35PM -0400, James Arthur Kohl wrote:
+>     From baallan@z.ca.sandia.gov  Mon Aug 28 23:39:31 2000
+>     Subject: collective port scribbles
+> 
+> Hey Ben,
+> 
+> 
+> Right, so here are some comments on your interpretation of the
+> interface definitions.  As a running example to use in the
+> discussion, let's suppose we have 2 parallel components, A and B,
+> within which each parallel task is attached to its own collective
+> component Ca or Cb, respectively:
+> 
+>   [A(i) i=1,N]  <-->  [Ca(i) i=1,N]  <-->  [Cb(i) i=1,M]  <-->  [B(i) i=1,M]
+ 
+So in the pictures I try to draw, and pseudo code I try to sketch,
+I cannot successfully imagine how Ca and Cb would be implemented
+without being two halves of a single component C that lives
+across the union of all the processes (1..M and 1..N). At least
+not with MPI.
+Do you know of an implementation counterexample?
+
+> And say that A contains distributed data field "Foo" and B contains
+> distributed data field "Bar".
+> 
+> Now the first question, that proliferates your comments, is do we need
+> a bunch of "get" methods to match up with all the "set" methods?
+> 
+> Certainly, it is true that a component shouldn't need to do a get*()
+> on anything that it set*() locally, since it can always access the
+> information directly.
+> 
+> The question here is with the two sets of collective components, Ca(i)
+> and Cb(i) - do they need get*() methods to extract the information from
+> the DataField/Data/RectangularData/Decomposition/Info/ProcArray/Time
+> instances, or do the set methods in those instances directly scribble
+> into the collective Ca/Cb component implementations / storage, so they
+> can just access the information directly?
+> 
+> I'm betting the simple answer is, "Yeah, sure, add some get*() methods,
+> this is how we do things in Object-land...".  :-)
+
+I'm betting the answer isn't simple.
+It's likely that we actually have here two different sets of interface,
+one for "clients" with the "set" functions and one for controllers/external
+clients with the get functions.
+ 
+We're also talking past each other a little in overall design terms.
+See the beginning comment of the revised Collective.h which I'll attach.
+We probably need to exchange a lot of pictures in real time.
+Damn, I wish the internet would support a shared white board sensibly.
+
+> The bottom line is that, e.g. RectangularData.setValidSize() is called
+> locally, whereas any RectangularData.getValidSize() method would be
+> a "provides" port method called from an externally-connected component.
+ 
+It might be desirable, or even necessary, to raise the "details"
+of the collective port data to the surface, so that I can't accidentally
+connect a data source of rectangular data to a convolution expecting
+particle data. If a convolution component can support either type,
+it can supply two ports. What worries me is that a single "component"
+which has a ton of ports that have to be drilled down into to use
+presents a huge barrier to a "component-oriented/dragNdrop-idiot
+level programmer" or to a time-pressed doe programmer or grad
+student.
+
+ 
+> In answer to another common question you've posed, I think the *only*
+> actual "collective" method invocation is the "CollectivePort.getDataField()"
+> method, and probably the various "Convolution.convolute()" methods, too.
+> *Everything* else is called locally to describe local state / data.
+
+That's another symptom of my question: areent convolute and
+getDataField the same thing, getDataField being mysteriously different.
+ 
+> In other words, A(i) describes its local data, its local time, its local
+> index into the overall A proc array, and how its local data fits into
+> the global A.Foo data decomposition.  Then Collective Component Ca(i)
+> gets the information it needs from A(i) to be able to do MxN extraction
+> and such.
+> 
+> Does that make sense?  Please lemme know.
+
+I suspect so. But essentially you've stated that A 'knows' the
+global decomposition of itself on the local processor. Otherwise it
+can't know "how its local data fits into the global A.Foo data decomposition".
+ 
+-----------------
+
+> CollectivePort:
+> ---------------
+> 	The reason you need an "add" and "remove" is that you really
+> 	want to have yet another provides method:
+> 	
+> 		getDataFields( DataField *fields[] );
+> 	
+> 	that will return a list of available DataFields to an attached
+> 	collective component.  This makes a lot of sense in the context
+> 	of viz stuff like CUMULVS, where the front-end viewer doesn't
+> 	care what the fields are for, it just wants a list to pop up
+> 	in a dialog box for selection from the GUI.
+> 
+> 	For this though you need to associate specific DataField
+> 	instances with the given collective component, so you can
+> 	organize your data fields and decide which ones are actually
+> 	"collectively exportable".
+> 
+> 	Clearly, if the DataField et al classes are *only* used for
+> 	collective stuff (which I don't think we need to restrict them
+> 	to) then I suppose we could just dispense with the add/remove
+> 	methods and assume that *any* defined DataField is meant to
+> 	be exportable.  Probably not...
+ 
+So then we're getting down to cases. Let us assume for purposes
+of discussion that an uber-component has several data fields, and
+lots of smarts besides. Further that it wants to do several things:
+A) implement a convolution that can transform datafields it doesn't own.
+B) apply an externally supplied convolution to map one of its
+datafields into another.
+C) provide a datafield to an external collective critter so that
+data copying/shifting occurs (either MxN or load balancing)
+D) implement a collective ability which also does a convolution
+simultaneously (scale data and pack buffer in one step) for 
+performance optimization reasons.
+
+We know that A,B,C exist in practice, at least as special cases.
+I imagine D, if it exists in practice, is either not
+reusable because it handles exactly one specific case or
+is taking a performance hit for dealing with everything
+rather abstractly.
+
+For:
+
+A) Performance would suck if either of the two fields supplied were
+not on the process, i.e. if the DataField* was a proxy obtained
+from a collective component with getDataFields. Sometime you
+want to do that anyway. Usually both fields are on the process
+or at least one is. Perhaps we should rule out the "both are off-process"
+case and insist that at least one field be made local by a prior
+setDataField on an MxN collective component.
+
+B) Is essentially trivial, provided the convolution is
+compatible with the two fields supplied. A clean, simple
+way of testing compatibility is highly desirable.
+
+C) We need to get the dataField to contain enough info,
+somehow or other, to feed the load balancers. Preferably
+through a simple interface accessible at the top,
+so that the load-balance component writer doesn't
+have to learn and drill down to a bunch of specific
+"Decomposition" schemes. Drilling down doesn't scale well
+in software engineering terms.
+
+D) We should decide if this case is in the last 5/10/20 %
+and should be deferred out of the design process or not,
+unless someone has an example implemented already which
+proves my imaginings wrong.
+
+> getDataField():
+> ---------------
+> 	O.K., so we discussed this with the LANL folks on Friday
+[...]
+> 
+> setReady():
+> -----------
+> 	While we're at it, we need to bastardize the setReady() method
+[...]
+
+Did these, but see comments in Collective.h again. some new
+classes appeared.
+
+> setUnits():
+> -----------
+> 	If you guys have a better way of defining data units than the
+> 	two strings for unitScale and unitPrefix, I'm all for it.  This
+> 	was an off-the-top-of-my-head solution, I'm sure there's a way
+> 	better interface.  Go for it!  :-)
+
+Clearly better is in the eye of the beholder.
+ 
+> setData()/setType():
+> --------------------
+> 	If it makes sense to merge these, that's fine by me.  How about:
+
+Done.
+
+> setSize():
+> ----------
+> 	Interesting possibility - what if we allow nDimensions > 1 for
+> 	unstructured, too, so we can represent sparse matrices, etc?
+> 
+> 	Also, I'd be happy to add an argument to setSize() (or another
+> 	method) to set the data layout as "RowMajor" or "ColumnMajor"
+> 	to cover the C versus Fortran way of doing things.  CUMULVS
+> 	and PAWS already do these ugly transformations between storage
+> 	orders anyway.
+
+Done, but see comments. I came up with a "layout" argument which is
+0 (C arrays) 1(f77-contiguous) 2(f77-transpose contiguous).
+ 
+> setGhostList():
+> ---------------
+> 	What the hell is a Ghost?  Is it a scary object that comes out
+> 	at Halloween to collect data candy from all the kiddie components?
+> 	Fill me in.  :-)
+
+In structured grids you have overlap. Ghost elements/nodes are
+the terminology (I think) in unstructured grids. I'm guessing there
+wouldn't be "ghost particles" in molec. sims.
+ 
+> RectangularInfo.addBounds():
+> ----------------------------
+> setProcAddress():
+> -----------------
+
+Just so, sahib.
+ 
+> Convolution.convolute():
+> ------------------------
+> 	I like it.  :-)  Nice abstraction to enclose all the interpolation
+> 	and unit conversion.
+
+Damn right. blame rob.
+
+> Time.incrTime():
+
+ok.
+ 
+> class Unit:
+> -----------
+> 	It would ne nice if we could make a general enough interface to
+> 	handle the silly unit conversions like Celsius and Farenheit...  :)
+> 
+> 	Any suggestions?
+
+Done.
+ 
+> Dimensions:
+> -----------
+> 	I donna gets it.  Is there some hidden list of well-known
+> 	quantities that the exponents[] array refers to?  Where does
+> 	it say that exponents[0] is "kg"s...?  Perhaps this was a
+> 	work in progress.  :-)
+
+Well, it was a theft in progress. Done.
+ 
+> Feel free to splatter get*() methods around like candy, I'll bite.
+
+Well, candy is bad for you. Its often good to split get and set
+into different interfaces. As I'm relatively new to all this
+data motion stuff, my 'taste' is suspect.
+ 
+> As far as a particle interface, here's a quick sketch of CUMULVS-land:
+> 
+> 	class Particle {
+> 		void addDataField( in DataField *dataField );
+> 		( void removeDataField( in Data *dataField );  why needed??? )
+> 		void getDataFields( out Data *data_fields[] );
+> 		void setParticleDecomp( in ParticleDecomp partDecomp );
+> 		void setCoordinates( in int dimGlobal, in int *globalCoords );
+> 	}
+> 
+> 	class ParticleDecomp {
+> 		void setParticleBounds( in int dimGlobal,
+> 			in int *globalLowerBounds, in int *globalUpperBounds );
+> 		void setNProcs( in int nProcs );
+> 	}
+
+So from our conversation yesterday, it appears you're thinking of a
+single particle interface (and decompinfo/etc) wrapped around
+every application particle instance. We need to group things up
+better so that massed communication is relatively straight forward...
+Will need to think more on what this means for C++ interfaces;
+still haven't put anything 'Particle" in the header.
+ 
+> Whaddya think?  Ben...?  Rob...?  Are you all right?  Wake Up!  Oh No!!
+> Damn, Brain Explosion.  I've killed them.  Oh Well.
+
+Apparently, I'm a thin-film thinker, able to function even when smeared
+all over the walls.
+Rob's been playing hooky... or hanging out in management-row or something...
+
+
+Ben
+----------- endo Ben Allan 3 -----------------------
+
+see v2.h for the source of the web stuff cited.

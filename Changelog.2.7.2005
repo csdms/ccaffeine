@@ -1,0 +1,21 @@
+baallan@ca.sandia.gov
+* Renamespaced mpicomponent, parameterportfactorytest, and gocomponent
+to work around bug in babel (nonreentrant package headers).
+* Updated babel-static example to work with xml build data.
+e.g.
+  $(CCASPEC_GENSCLCCA_SH) cca \
+		$(CCAFE_RPM_libdir)/$(LTLIB) \
+		$(FQ_CMPT_NAME) $(FQ_CMPT_NAME) \
+		dynamic global now \
+		headers $(pkgincludedir) dc/babel/component/$(CMPT_NAME)/server/$(NAME_SPACE) >$@
+
+which if made specific looks something like:
+
+ 	/home/baallan/work/sc04/install/csb10/bin/genSCLCCA.sh_0_7_5_b_0.10.0 cca \
+/home/baallan/work/sc04/install/ccafe10/lib/libGoComponent_0_5_6.la \
+ccafe5.GoComponent ccafe5.GoComponent \
+dynamic global now \
+headers /home/baallan/work/sc04/install/ccafe10/include/ccafe-0.5.6 dc/babel/component/GoComponent/server/ccafe5 > GoComponent.depl.cca 
+
+Note we use the babel package header ccafe5, not the specific component
+header ccafe5_GoComponent.

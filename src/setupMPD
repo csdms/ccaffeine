@@ -1,0 +1,14 @@
+#! /bin/sh
+# This script doesn't actually start mpd, but
+# it sets up the needed rc file in the user's home
+# directory.
+if test ! -f ~/.mpd.conf; then
+  echo 'password=somempdpassword' > ~/.mpd.conf
+	chmod 600 ~/.mpd.conf
+  echo "Created ~/.mpd.conf. You really should edit it and change the password."
+else
+  echo "It appears you already have a ~/.mpd.conf."
+  echo "If mpd still won't take it, you may need to chmod 600 ~/.mpd.conf."
+fi
+echo "See http://www-unix.mcs.anl.gov/mpi/mpich/docs.html info on the ch_p4mpd device."
+exit 0

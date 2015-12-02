@@ -1,0 +1,38 @@
+
+# $Revision: 1.1 $
+# $Author: baallan $
+
+# Needed for VIS for some strange reason
+CCAFE_HOME = ../..
+
+include $(CCAFE_HOME)/Makefile.Rules
+
+SUBDIRS = \
+ContextEventManager \
+registry \
+dotcca
+
+
+all clean distclean depend src-list:
+	@for i in $(SUBDIRS) /dev/null ; do \
+		if test -d $$i ; then \
+			(cd $$i; $(MAKE) $@ ); \
+		else \
+			if test "$$i" != "/dev/null"; then \
+				echo "$$i missing. cvs update -d needed"; \
+				exit 1; \
+			fi \
+		fi \
+	done
+	@if test "$@" = "all"; then \
+		touch .allbuild.complete; \
+	fi
+
+gen:
+	@echo "gen dc/services done"
+
+bins:
+	(cd dotcca; $(MAKE) bins)
+	@touch .binbuild.complete
+
+

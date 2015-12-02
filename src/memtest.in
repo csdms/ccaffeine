@@ -1,0 +1,128 @@
+#! @SHELL@
+progname=`echo $0 | sed -e 's%.*/%%g'`
+if test "x$VALGRIND" = "x" ; then
+  echo "$progname: env(VALGRIND) undefined. Will not run."
+  echo "  Set VALGRIND as full path to bin/valgrind and"
+  echo "  try again if you have valgrind built on a PIII processor."
+  exit 1
+fi
+curdir=`pwd`
+bindir=@bindir@
+libdir=@libdir@
+pkglibdir=@pkglibdir@
+pkgdatadir=@pkgdatadir@
+binsuffix=@PROGRAM_SUFFIX@
+tmpfile=""
+if test ! -w $curdir ; then
+  tmpfile=`mktemp -q /tmp/$progname.out.XXXXXXXXX`
+  if [ $? -ne 0 ]; then
+     echo "$progname: Can't create temp file /tmp/$progname.out. Exiting..."
+     exit 1
+  fi
+else
+  tmpfile=`mktemp -q $curdir/$progname.out.XXXXXXXXX`
+  if [ $? -ne 0 ]; then
+     echo "$progname: Can't create temp file $curdir/$progname.out. Exiting..."
+     exit 1
+  fi
+fi
+#
+# LD_LIBRARY_PATH=@BABEL_ROOT@/lib:"$LD_LIBRARY_PATH"; export LD_LIBRARY_PATH
+#SIDL_DLL_PATH=$libdir;export SIDL_DLL_PATH
+answer1="Printer says the string is: Foobar!"
+answer2="Hello World"
+answer3="WITHOUT babel"
+answer4="BSTest components that provide StringConsumerPort: bs.PrinterComponent.0 PrinterComponent0"
+echo "====================================================================="
+echo "                  Memory testing ccafe                    "
+
+echo "proceeding with env vars:"
+echo "# LD_LIBRARY_PATH=$LD_LIBRARY_PATH"
+echo "# SIDL_DLL_PATH=$SIDL_DLL_PATH"
+echo "# VALGRIND=$VALGRIND"
+
+
+Valgrind=$VALGRIND
+# these options work for version 1.92
+vgoptions='--leak-check=yes --leak-resolution=high --show-reachable=yes'
+frame_opts="--ccafe-rc $pkgdatadir/EmptyRC"
+
+if $Valgrind $vgoptions $bindir/ccafe-single$binsuffix $frame_opts << EOF >$tmpfile 2>&1
+
+path set $libdir
+path append $pkgdatadir/components
+repository get-global StarterComponent
+repository get-global TimeStamper
+repository get-global Timer
+repository get-global PrinterComponent
+# repository get-global RevalidateTest
+
+instantiate StarterComponent
+instantiate PrinterComponent
+display component StarterComponent0
+display component PrinterComponent0
+connect StarterComponent0 out0 PrinterComponent0 printer_port
+go StarterComponent0 go_port
+# Do Babel stuff now ...
+repository get-global ccafe0.PrinterComponent
+repository get-global ccafe1.StarterComponent
+instantiate ccafe0.PrinterComponent
+instantiate ccafe1.StarterComponent
+display component StarterComponent1
+display component PrinterComponent1
+connect StarterComponent1 output PrinterComponent1 string
+go StarterComponent1 go
+
+repository get-global BSTest
+repository get-global ComplicatedStarterComponent
+repository get-global ComplicatedPrinterComponent
+instantiate BSTest bs
+go bs go
+display arena
+display state
+bye
+EOF
+then
+	echo -n "didn't crash or hang up early ...  "
+else
+	echo -n "didn't make it all the way through ...  "
+fi
+if (grep "$answer1" $tmpfile >/dev/null 2>&1) && 
+   (grep "$answer2" $tmpfile >/dev/null 2>&1) &&
+   (grep "$answer4" $tmpfile >/dev/null 2>&1) 
+then
+	echo looks like it is working.
+	dumptrash=yes
+else
+	echo "The output indicates CLASSIC dccafe or BABEL dccafe is inoperative."
+	echo "See $tmpfile if the rest of this message is unexpected."
+fi
+if (grep "$answer1" $tmpfile >/dev/null 2>&1)
+then
+	echo "Looks like CLASSIC dccafe is working."
+else
+	echo  "CLASSIC dccafe is NOT working."
+fi
+if (grep "$answer2" $tmpfile >/dev/null 2>&1)
+then
+	echo "Looks like BABEL dccafe is working."
+else
+	echo  "BABEL dccafe is NOT working"
+	if (grep "$answer3" $tmpfile >/dev/null 2>&1)
+	then
+		echo  "but dccafe configured WITHOUT BABEL, so this is ok."
+	else
+		echo  "though dccafe was configured --with-cca-babel=/something."
+		echo  "This is bad."
+	fi
+fi
+if (grep 'loading shared libraries' $tmpfile >/dev/null 2>&1)
+then
+	echo "Looks like there a problem with LD_LIBRARY_PATH or linking."
+fi
+echo      Done with Ccaffeine tests.
+echo "====================================================================="
+if test "X$dumptrash" = "XYes" ; then
+	rm -f $tmpfile
+fi
+

@@ -1,0 +1,18 @@
+* Debugged libtool usage in build. 
+ - MPI support works at least for mpich style compiler wrappers.
+ - When using mpiCC with libtool, broken mpiCC' may need fixing: 
+     '-Wl,-rpath /libdir' should have been '-Wl,-rpath,/libdir'
+ - Depend is now a developer-only option as it eats a lot of 
+   useless build time. --enable-developer at configure time 
+   turns on depend targets for those editing code.
+ - Updated simpleTests to use valgrind or a debugger if CCAFE_DEBUGGER
+   is set manually in the environment. Set CCAFE_DEBUGGER to the XYZ
+   tool you are using that would normally appear 'XYZ ./ccafe-client'
+   when invoking ccaffeine+debugger.
+ - Added make post-install-check for those tests that require
+   an installed directory of component shared libraries/.cca files.
+ - Added correctly handling of -R flags for libtool since neocca lib is
+   not libtoolified.
+ - Added build progress counter. Conceivably this should be a developer
+   only thing.
+ - Got rid of redundant build of ccaffeine objects in various components.

@@ -1,0 +1,39 @@
+#!/bin/sh
+
+# script to convert bld or benspeak to
+# fake component input files, showing only
+# ports connected.
+# optionally includes configure ports if you
+# edit the variable in the .tcl file.
+export Tcl="/usr/bin/tclsh"
+if [ "x$1" = "x" ] ; then
+  echo "bld2fake requires an input file argument"
+  exit 1
+fi
+sdir=/home/baallan/bin
+if [ "x$Tcl" = "x" ] ; then
+	echo 'tclsh not found';
+	echo 'Please rerun configure with \"--with-tclsh=/path/to/your/tclsh\" added'
+	exit 1;
+fi
+
+if [ -f $sdir/bld2fake.tcl ] ; then
+	Simp=$sdir/bld2fake.tcl;
+fi
+
+if [ 'x$Simp' = 'x' ] ; then
+	echo 'bld2fake.tcl not found in pwd';
+	exit 1;
+fi
+
+# strip comments
+ftemp=`mktemp $1.XXXXXX`
+cat $1 | sed -e 's/^#.*//g' | sed -e 's/^!.*//g' >> $ftemp
+
+echo '#'
+echo "# Generated from $1"
+echo '#'
+exec $Tcl $Simp -- $ftemp
+
+rm $ftemp
+exit 0

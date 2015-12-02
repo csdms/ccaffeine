@@ -1,0 +1,3 @@
+#!/usr/bin/perl -pi.bak
+# convert CNS macros to cca namespace
+s/CNS\(([^)]*)\)/gov::cca::$1/g

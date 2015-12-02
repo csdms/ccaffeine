@@ -1,0 +1,28 @@
+
+# $Revision: 1.1 $
+# $Author: baallan $
+
+CCAFE_HOME = ../..
+
+include $(CCAFE_HOME)/Makefile.Rules
+
+SUBDIRS = \
+	ccafe-bind
+
+
+all:
+	for i in $(SUBDIRS); do if ! (cd $$i;$(MAKE));then exit -1;fi done
+
+clean:
+	for i in $(SUBDIRS); do if ! (cd $$i;$(MAKE) clean);then exit -1;fi done
+
+depend: 
+	for i in $(SUBDIRS); do if ! (cd $$i;$(MAKE) depend);then exit -1;fi done
+
+src-list: 
+	@for i in $(SUBDIRS); do if ! (cd $$i;$(MAKE) src-list);then exit -1;fi done
+
+gen:	
+	@echo "gen dc/classic done"
+
+# DO NOT DELETE

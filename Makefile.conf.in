@@ -1,0 +1,69 @@
+# This isn't really for configure use, but we gen it to
+# make vpath builds work.
+#
+# Most folks need to set a values here.
+# It is setup so that you can define the following env vars:
+# CCA_ROOT: where the current spec lives.
+# STV_ROOT: where CUMULVS lives
+# PVM_ROOT: where PVM lives
+# ISIS_ROOT: where the ISIS++ distribution lives
+# SNLCPP_ROOT: where the Sandia ESI code lives
+# ESI_ROOT: where the ESI standard headers live.
+# JAVA_HM: where the JDK1.2x is located
+# MPI_HOME: where MPI is located
+# JAKARTA_HOME: where the jakarta servlet server is found.
+# 
+#---------------------------------------------------------
+# Where the cca spec lives
+CCA_ROOT = $(shell echo $$CCA_ROOT)
+
+# where cumulus lives (note, cumulvs and pvm
+# won't work unless STV_ROOT/PVM_ROOT is set in the shell
+# environment. They also don't publish clean
+# includable makefile configuration info ala MakeIncl.* we use.
+STV_ROOT= $(shell echo $$STV_ROOT)
+PVM_ROOT= $(shell echo $$PVM_ROOT)
+
+# where esi,isis lives (ISIS,ESI have no env var natively)
+ISIS_ROOT= $(shell echo $$ISIS_ROOT)
+SNLCPP_ROOT= $(shell echo $$SNLCPP_ROOT)
+ESI_ROOT= $(shell echo $$ESI_ROOT)
+# defined when the wrapper is not in the cumulvs distribution
+EYES_ROOT = $(STV_ROOT)
+# non-cumulvs viz component
+EYES2_ROOT = $(shell echo $$EYES2_ROOT)
+
+# Where java lives
+# typically someplace/jdk/someplace
+# NOTE: jdk1.2.2rc4 and later likely do not require
+# existence of environment var JAVA_HOME.
+# This points to the top of the java distribution,
+# e.g. /usr/local/jdk1.2.2rc4 (which contains bin/javac and jre)
+JAVA_HM = $(shell echo $$JAVA_HOME)
+
+#Where Jakarta lives 
+JAKARTA_HOME = $(shell echo $$JAKARTA_HOME)
+
+# Where MPI lives
+# typically /usr/local/mpich
+MPI = $(MPI_HOME)
+
+# where you hide your blas/lapack/(f77||f90) libraries.
+# give full paths.
+MATHLIBS= $(shell echo $$MATHLIBS)
+
+
+# Most folks probably don't need to set anything below here.
+
+JAVA = $(JAVA_HM)/bin/java
+APPLETVIEWER = $(JAVA_HM)/bin/appletviewer
+JAVADOC = $(JAVA_HM)/bin/javadoc
+JAVAC = $(JAVA_HM)/bin/javac
+JAR = $(JAVA_HM)/bin/jar
+
+# Certainly don't need to set anything below here.
+JAVA = $(JAVA_HM)/bin/java
+APPLETVIEWER = $(JAVA_HM)/bin/appletviewer
+JAVADOC = $(JAVA_HM)/bin/javadoc
+JAVAC = $(JAVA_HM)/bin/javac
+JAR = $(JAVA_HM)/bin/jar

@@ -1,0 +1,42 @@
+# Use only absolute paths in the following definitions, please.
+
+CCAFE_CXX_ROOT = $(CCAFE_ROOT)/cxx
+
+include $(CCAFE_ROOT)/MakeIncl.CCAFE_Siloon
+include $(CCA_ROOT)/MakeIncl.CCA_Component
+include $(CCAFE_CXX_ROOT)/MakeIncl.CCAFE_Component
+include $(CCAFE_CXX_ROOT)/MakeIncl.CCAFE_MPI
+
+SILOON_CXX       = $(CCA_CXX)
+SILOON_CXX_FLAGS = $(CCA_CXX_FLAGS)
+SILOON_AR        = ar
+SILOON_ARFLAGS   = -rv
+SILOON_DEFS      = 
+LANGUAGES        =  python
+
+CCA_INCLUDES = $(CCA_INC) -I$(CCA_ROOT)/cxx/eg/include -I$(CCA_ROOT)/cxx/eg/ccaComponent
+CCAFE_INCLUDES = -I$(CCAFE_CXX_ROOT) $(JCP_INC)
+
+BS_ROOT    = $(CCAFE_ROOT)/chez-rob/protoBS
+BS_SILOON  = $(CCAFE_ROOT)/chez-craig
+
+BS_OBJS= \
+$(BS_SILOON)/VectorStringList.o \
+$(BS_SILOON)/siloon_casts.o
+
+BS_EXTRA = $(CCAFE_CXX_ROOT)/gnu/getopt/libgetCCAFEopt.a
+
+# Source files for which to generate interfaces
+SILOON_USER_SOURCES=$(BS_ROOT)/testBuilderService.cxx $(BS_SILOON)/VectorStringList.cc $(BS_SILOON)/siloon_casts.cc
+
+# Include paths and variables needed during the siloon-parse stage
+SILOON_PARSE_INCLUDES  = $(CCA_INCLUDES) $(CCAFE_INCLUDES) -I$(BS_ROOT) -I$(BS_SILOON)
+
+# Any include paths.  Ex: -I/home/user/project/include -DDEBUG
+SILOON_USER_INCLUDES   = ${SILOON_PARSE_INCLUDES}
+
+# Any library paths and names.  Ex: -L/home/user/project/lib -lm
+SILOON_USER_LIBRARIES  = $(MPI_LDFLAGS)
+
+# Any object files.  Ex: /home/user/project/library.o
+SILOON_USER_OBJECTS    = $(BS_OBJS) $(CCAFE_BSLIB) $(BS_EXTRA) $(MPILIB)

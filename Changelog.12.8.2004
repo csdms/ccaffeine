@@ -1,0 +1,8 @@
+baallan@ca.sandia.gov dec 8  04
+
+* Added examples subdirectory for various post-install demos.
+* Added examples/classic-static for static linking user classic components.
+* Added static-link factory vtable to DefaultBuilderModel constructor.
+
+
+

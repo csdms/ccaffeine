@@ -1,0 +1,8 @@
+#
+# So here's a likely to work option for configures
+# in this subtree
+configure --with-ccafe-config=@bindir@/ccafe-config@PROGRAM_SUFFIX@
+
+# here's some info (not necessarily useful) on how ccaffeine
+# was configured:
+# ./configure @CONFIG_ARGS@

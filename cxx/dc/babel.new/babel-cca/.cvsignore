@@ -1,0 +1,14 @@
+.babel-copy
+ccafe.sidl
+.babel-symlink
+py-client
+.unstamp.*
+.depend
+.dirs-made
+.gen-babel
+.make-babel
+.uncruft
+.lib-installed
+.lib-local-installed
+server
+client

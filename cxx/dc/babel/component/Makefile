@@ -1,0 +1,34 @@
+
+# $Revision: 1.13 $
+# $Author: baallan $
+
+CCAFE_HOME = ../../..
+
+include $(CCAFE_HOME)/Makefile.Rules
+
+ifeq "x$(CCA_USEMPI)" "x1"
+MPICOMPS=MPIComponent TestMPI
+endif
+
+# order matters in the following list.
+SUBDIRS = \
+	StringConsumerPort \
+	GUIServiceTest \
+	ParameterPortFactoryTest \
+	PrinterComponent  \
+	SCPProxy \
+	StarterComponent  \
+	GoComponent  \
+	PortTranslatorStarter \
+	SimpleProxyTest \
+	ConnectionEventServiceTest \
+	ServiceRegistryTest $(MPICOMPS)
+
+
+all:
+	for i in $(SUBDIRS); do if ! (cd $$i;$(MAKE));then exit -1;fi done
+
+depend gen clean src-list:
+	@for i in $(SUBDIRS); do if ! (cd $$i;$(MAKE) $@);then exit -1;fi done
+
+

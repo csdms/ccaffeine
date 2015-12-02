@@ -1,0 +1,84 @@
+buildroot=../../..
+
+CCAFE_HOME=../..
+zeroth: first
+
+include $(CCAFE_HOME)/Makefile.Rules
+VPATH := $(srcdir)/cxx/gnu/getopt
+
+OTHERFLAGS=  -Wall -ansi -pedantic -I. -g 
+
+
+%.o : %.C $(CCAFE_HOME)/Makefile.Rules
+	$(MPICXX) -c $(CXXFLAGS) $(OTHERFLAGS) $<
+
+%.o : %.cxx $(CCAFE_HOME)/Makefile.Rules
+	$(MPICXX) -c $(CXXFLAGS) $(OTHERFLAGS) $<
+
+%.i : %.cxx $(CCAFE_HOME)/Makefile.Rules
+	$(CXX) -c -E $(CXXFLAGS) $(OTHERFLAGS) $< > $@
+
+%.o :%.c 
+	$(CC) -c $(CFLAGS) $<
+
+%.i :%.c 
+	$(CC) -E $(CFLAGS) $(OTHERFLAGS) $< |grep '[a-z]' > $@
+
+SRC = \
+getCCAFEopt.c \
+getCCAFEopt1.c
+
+OBJ = $(SRC:%.c=%.o)
+
+LIB=libgetCCAFEopt.a
+OBJS=$(OBJ)
+
+first all : lib
+
+lib $(LIB): $(OBJ) 
+	@-$(RM)  $(LIB)
+	ar ruv $(LIB) *.o
+	$(RANLIB) $(LIB)
+	@echo done $(OBJ)
+
+src-list:
+	-@$(RM) src-list
+	@echo "GNU_GETOPT_LIST=\\" >> src-list
+	@for i in $(SRC) ; do \
+		echo "$(srcdir)/cxx/gnu/getopt/$$i \\" >> src-list ; \
+	done
+	@echo "" >> src-list
+	@echo updated src-list
+
+ctest1:
+	$(CC) -c $(OTHERFLAGS) -Wall getCCAFEopt.c
+	$(CC) -DTEST $(OTHERFLAGS) getCCAFEopt1.c getCCAFEopt.o -o ctest1.x
+	./ctest1.x
+	./ctest1.x -a b -c d 
+	./ctest1.x -a b -c d -d 2
+
+ctest:
+	$(CC) -c -Wall -c -g -I. getCCAFEopt1.c
+	$(CC) -c -Wall -c -g -I. getCCAFEopt.c
+	$(CC) -DTEST $(OTHERFLAGS) getCCAFEopt.c getCCAFEopt1.o -o ctest.x
+	./ctest.x -a b -c d 
+	./ctest.x -a b -c d -d
+
+
+
+clean : 
+	$(RM)  $(OBJ) $(LIB) *.o *.a *.i *.x src-list
+
+depend:
+	$(DEPEND) $(CFLAGS) $(SRC)
+
+depend-sys:
+	$(DEPENDSYS) $(CFLAGS) $(SRC)
+
+.PHONY: src-list
+
+ifneq "x$(TARGET)" "xclean"
+ifneq "x$(TARGET)" "xdistclean"
+include Makefile.depends
+endif
+endif

@@ -1,0 +1,50 @@
+// MPIComponent.sidl is a configure-generated file.
+
+@CCAFE6_SIDL_START_0@
+@CCAFE6_SIDL_START_1@
+    
+/** Externally added to the abstractframework, or loaded into
+ an environment which already supports mpi (mpi_init has been called).
+*/
+class MPIComponent implements-all gov.cca.Component, gov.cca.ComponentRelease,
+	ccaffeine.ports.MPIBorrow, ccaffeine.ports.MPIService
+{
+
+////////
+// If treating a instance as from an external driver.
+////////
+	/** Create and add to the framework MPIService and MPIBorrow
+         * support services. This will appear in the frame as an
+         * MPISetup component. MPI_Init must have been called before
+         * this is called.
+	 * This entry point should work for any cca framework.
+	 *
+         * @param borrowComm  the shared communicator 
+         *   for those using MPIBorrow.
+         * @param dupComm  the communicator to duplicate 
+         *   for those using MPIService.
+         * @param af The frame into which the services will be added.
+         */
+	void initialize(in long borrowComm, in long dupComm, inout gov.cca.AbstractFramework af) throws gov.cca.CCAException;
+
+	/** Create and add to the framework MPIService and MPIBorrow
+         * support services. This will appear in the frame as an
+         * MPISetup component. MPI_Init must have been called before
+         * this is called.
+	 * This initializer assumes the MPIComponent is going into a
+	 * Ccaffeine framework, and fishes up the communicators accordingly.
+         * @param af The frame into which the services will be added.
+         */
+	void initializeCcafe(inout gov.cca.AbstractFramework af) throws gov.cca.CCAException;
+
+        /**
+         * Shutdown the previous mpi-related services.
+         * @param reclaim if reclaim true, try to release communicator
+         * resources allocated in MPIService support.
+         * Otherwise, lose them.
+         */
+	void finalize(in bool reclaim) throws gov.cca.CCAException;
+
+} // end class MPIComponent
+
+} // end namespace

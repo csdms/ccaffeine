@@ -1,0 +1,12 @@
+// StarterComponent.sidl is a configure generated file.
+
+@CCAFE1_SIDL_START_0@
+@CCAFE1_SIDL_START_1@
+
+  /** When the GoPort is hit, use the StringConsumerPort to send a
+   * string. */
+  class StarterComponent implements-all gov.cca.Component, 
+    gov.cca.ports.GoPort {
+  }
+}
+

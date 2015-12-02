@@ -1,0 +1,37 @@
+#!/bin/sh
+# This script generates a c++/c wrapper for the class it is
+# given, under loose cca assumptions. That is the wrapper
+# includes only the cca headers, the CCAFFEINE nominees for
+# CCA port headers,  and the component's class
+# file header.
+
+idString="$1 built sloppy by $USER@$HOST in `pwd` on `date`."
+cat << __EOF1
+// This is a generated file. Do not commit to CVS.
+#include <cca.h>
+#include <stdPorts.h>
+#include <ports/StringConsumerPort.h>
+#include <ports/TimeProducerPort.h>
+#include "parameters/parametersStar.h"
+#include "port/portInterfaces.h"
+#include "port/supportInterfaces.h"
+#include "dc/export/AllExport.hh"
+#include "dc/component/$1.h"
+
+extern "C" {
+
+classic::gov::cca::Component *create_$1() {
+	classic::gov::cca::Component *comp_ptr;
+	$1 *component;
+	component = new $1();
+	comp_ptr = dynamic_cast<classic::gov::cca::Component *>(component);
+	return comp_ptr;
+}    
+
+}
+namespace {
+char id[]="\$Id: genDLWrapperSloppy,v 1.1 2003/10/07 08:04:22 baallan Exp $idString $";
+} ENDSEMI
+__EOF1
+
+exit 0

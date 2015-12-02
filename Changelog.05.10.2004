@@ -1,0 +1,4 @@
+port to babel 0.9.2. all back-compatibility dropped.
+supports ServiceRegistry.
+Uses genSCLCCA.sh from cca-spec-babel.
+See README.babel_0_9_2.txt for additional details.

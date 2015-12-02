@@ -1,0 +1,80 @@
+CCAFE_HOME = ../../../../..
+include $(CCAFE_HOME)/Makefile.Rules
+BVPATH := $(srcdir)/cxx/dc/babel.new/component/PrinterComponent
+include $(BVPATH)/Makefile.cmpt
+
+# Change this stuff:
+
+#nothing here requires mpi, so we don't need that lib at this .so.
+LOCAL_LINK_OBJ = $(OTHER_LINK_OBJ) $(CCAFE_HOME)/util/libcafeutil.a $(CCAFE_THREAD_LIBS)
+
+# this is the name of the library to be created for this component
+LIB = lib$(CMPT_NAME)$(LIBSUFFIX)
+
+BABEL = $(CCASPEC_BABEL_BABEL)
+
+CLASSIC_HOME = $(CLASSIC_CCA_ROOT)
+UNCRUFTER = $(RUBY) $(CCAFE_ROOT)/cxx/dc/babel/bin/sidlUncrufter.rb
+IMPLNEWR = $(RUBY) $(CCAFE_ROOT)/cxx/dc/babel/bin/newer.rb
+CCA_SERVER_DIR = $(CCASPEC_BABEL_XML_REPOSITORY)
+BOOST_INCLUDE = $(BOOST_INC)
+
+BABL_INCLUDE = $(BABEL_INC) $(BABEL_CCA_INC) -I.
+
+#CLASSIC_INCLUDE = $(CLASSIC_CCA_INC)
+
+# Nothing below here should need to be changed
+
+include babel.make
+
+CCAFE_INCLUDE = -I$(CCAFE_HOME) $(CCA_INC)
+
+BCXXFLAGS = \
+$(BABL_INCLUDE) $(BOOST_INCLUDE) \
+$(CCAFE_INCLUDE) $(CLASSIC_INCLUDE) \
+$(CXXFLAGS) $(CMPT_EXTRA_CXXFLAGS)
+
+all: $(LIB)
+
+.cc.o:
+	$(CXX) $(BCXXFLAGS) -I$(CCASPEC_BABEL_includedir) -c $<
+.c.o:
+	$(CC) $(BCXXFLAGS) -I$(CCASPEC_BABEL_includedir) -c $< 
+
+SRCS = $(IMPLSRCS) $(IORSRCS) $(SKELSRCS) $(STUBSRCS) 
+
+OBJS = ${IMPLSRCS:.cc=.o} ${IORSRCS:.c=.o} \
+       ${SKELSRCS:.cc=.o} ${STUBSRCS:.cc=.o} 
+
+$(LIB): ${OBJS}
+	$(CCAFE_SHLIB_LD) $(BCXXFLAGS) -o $@ $(BABL_INCLUDE) $(OBJS) $(OTHER_LINK_OBJ) $(LOCAL_LINK_OBJ)
+
+src-list:
+	@echo "BABEL_COMPONENT_LIST += $(CMPT_NAME)" >> ../../../../src-list
+	@echo 'ifeq "x$$(CMPT)" "x$(CMPT_NAME)"' >> ../../../../src-list
+	@echo "CMPT_LIST_CXX += \\" >> ../../../../src-list
+	@for i in $(IMPLSRCS) $(SKELSRCS) $(STUBSRCS); do \
+	        echo "$(CCAFE_ROOT)/cxx/dc/babel.new/component/$(CMPT_NAME)/server/$$i \\" >> ../../../../src-list ; \
+	done
+	@echo "" >> ../../../../src-list
+	@echo "CMPT_LIST_CC += \\" >> ../../../../src-list
+	@for i in $(IORSRCS); do \
+	        echo "$(CCAFE_ROOT)/cxx/dc/babel.new/component/$(CMPT_NAME)/server/$$i \\" >> ../../../../src-list ; \
+	done
+	@echo "" >> ../../../../src-list
+	@echo "CMPT_CXXFLAGS=-I$(CCAFE_ROOT)/cxx/dc/babel.new/component/StringConsumerPort/server" >> ../../../../src-list
+	@echo "CMPT_CFLAGS=-I$(CCAFE_ROOT)/cxx/dc/babel.new/component/StringConsumerPort/server" >> ../../../../src-list
+	@echo "CMPT_LTLDFLAGS=libStringConsumerPort$(VER_SUFFIX)$(PROGRAM_SUFFIX).la" >> ../../../../src-list
+	@echo "endif" >> ../../../../src-list
+	@echo "" >> ../../../../src-list
+	@echo "updated src-list from dc/babel.new/component/$(CMPT_NAME)/server"
+
+clean:
+	$(RM) $(OBJS) $(LIB)
+
+depend:
+	$(RM) Makefile; ln -sf Makefile.babel Makefile
+	$(DEPEND) $(BCXXFLAGS) $(IORSRCS) $(SKELSRCS) $(STUBSRCS) $(IMPLSRCS)
+	$(RM) Makefile
+
+

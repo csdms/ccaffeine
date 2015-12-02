@@ -1,0 +1,14 @@
+
+#define CCAFE_PS "@PROGRAM_SUFFIX@"
+// packaged or dev
+#define CCA_BUNDLE_VERSION "@CCA_BUNDLE_VERSION@"
+// ccaffeine
+#define CCAFE_VERSION "@CCAFE_VERSION@"
+// sidl spec
+#define CCASPEC_VERSION "@CCASPEC_VERSION@"
+// neo spec
+#define NEOCCA_VERSION "@NEOCCA_VERSION@"
+// classic spec
+#define CLASSIC_VERSION "@CLASSIC_VERSION@"
+// babel tool
+#define CCASPEC_BABEL_VERSION "@CCASPEC_BABEL_VERSION@"

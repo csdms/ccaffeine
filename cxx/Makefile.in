@@ -1,0 +1,132 @@
+# $Revision: 1.5 $
+# $Author: baallan $
+
+#
+# happy new year 2005.
+# We've updated to a single
+# makefile that knows how to build
+# object files and libraries, regardless
+# of where the sources are in the tree.
+# The subsidiary makefiles are now only in charge
+# of invoking code generators and defining
+# file sub-lists.
+#
+# Key improvments:
+# - If a file fails, the make fails immediately -- no hidden
+#   errors in the recursion any more.
+# - Source dependencies are now tracked correctly everywhere.
+# - libtool is used to deal with compiling for dynamic libraries.
+# - All the tests are now built in a single test directory so it
+#   is much easier to organize SQA/QC.
+
+buildroot=..
+
+CCAFE_HOME = .
+
+include Makefile.Rules
+VPATH := $(srcdir)/cxx
+
+# in BUILDDIRS dc has to come after all the support directories
+BUILDDIRS= jc++ parameters port util cmd stovepipe dc 
+
+all: objs libs bins
+	
+objs: 
+	(if test -f dc/babel$(BSUF)/babel-cca/ccafe.sidl; then \
+		cd dc/babel$(BSUF)/babel-cca; $(MAKE) all; \
+	fi)
+	(if test -f dc/babel$(BSUF)/component/PrinterComponent/PrinterComponent.sidl; then \
+		cd dc/babel$(BSUF)/component/PrinterComponent; $(MAKE) all; \
+	fi)
+	(cd obj; $(MAKE) $(CCA_PMAKE) objs)
+
+libs:
+	(cd obj; $(MAKE) libs)
+
+bins: 
+	(cd drivers; $(MAKE))
+
+check:
+	(cd tests; $(MAKE))
+
+cxx-doc: $(BUILDDOCS)
+
+doc:
+	(cd doc; $(MAKE))
+
+gen: gen-tree src-list
+	(cd obj; $(MAKE) fnumbers)
+
+gen-tree:
+	@for i in $(BUILDDIRS); do \
+		if [ -z "$(BUILDDIRS)" -a ! -d $$i ] ; then \
+			echo "*** You need to checkout/update -d $$i"; \
+			exit 1 ; \
+		fi ; \
+		echo $$i; \
+		(cd $$i ; $(MAKE) gen ); \
+	done
+
+src-list: 
+	(cd gnu;$(MAKE) $@)
+	@for i in $(BUILDDIRS); do \
+		if [ -z "$(BUILDDIRS)" -a ! -d $$i ] ; then \
+			echo "*** You need to checkout/update -d $$i"; \
+			exit 1 ; \
+		fi ; \
+		echo $$i; \
+		(cd $$i ; $(MAKE) --no-print-directory $@ ); \
+	done
+
+clean:
+	(cd obj; $(MAKE) TARGET=clean clean)
+	(cd gnu; $(MAKE) TARGET=clean clean)
+	@for i in $(BUILDDIRS) /dev/null ; do \
+		if test $$i != "/dev/null" -a -d $$i ; then \
+			(cd $$i ; $(MAKE) TARGET=clean clean) ; \
+		fi ; \
+		if test $$i != "/dev/null" -a ! -d $$i ; then \
+			echo "* * * You need to checkout/update -d $$i"; \
+			exit 1 ; \
+		fi ; \
+	done
+	(cd drivers; $(MAKE) TARGET=clean clean)
+	(cd tests; $(MAKE) TARGET=clean clean)
+
+dirt:
+	@echo '==== leftover objects ===='
+	@find . -name '*.class' -print
+	@find . -name '*.cca' -print
+	@find . -name '*.exe' -print
+	@find . -name '*.a' -print
+	@find . -name '*.o' -print
+	@find . -name '*.la' -print
+	@find . -name '*.lo' -print
+	@find . -name '*.u' -print
+	@find . -name '*.ii' -print
+	@find . -name '*.i' -print
+	@find . -name '*.x' -print
+	@find . -name 'src-list*' -print
+	@echo '=========================='
+
+#do not put .cca in nodirt
+nodirt:
+	find . -name '*.o' -print -exec rm {} \;
+	find . -name '*.class' -print -exec rm {} \;
+	find . -name '*.exe' -print -exec rm {} \;
+	find . -name '*.a' -print -exec rm {} \;
+	@find . -name '*.ii' -print -exec rm {} \;
+	@find . -name '*.i' -print -exec rm {} \;
+	@find . -name '*.x' -print -exec rm {} \;
+
+depend: reset-depend
+	(cd obj; $(MAKE) depend)
+
+reset-depend: nodepend newdepend
+
+nodepend no-depend:
+	@find . -name Makefile.depends -exec rm {} \;
+
+newdepend new-depend:
+	@find . -name Makefile -exec $(VPATH)/util/newdepend {} \;
+

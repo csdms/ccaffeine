@@ -1,0 +1,39 @@
+#ifndef opq_config_hh_seen
+#define opq_config_hh_seen
+
+#include "configh.hh"
+
+/* put ; at ends of namespaces if compiler is cranky. */
+#define CCAFE_NAMESPACE_ENDSEMICOLON @NAMESPACE_NEEDS_ENDSEMI@
+#define ENDSEMI @NAMESPACE_NEEDS_ENDSEMI@
+
+/* put -DHAVE_NEO everywhere if installed */
+#define NEO_CCA_INSTALLED @NEO_CCA_INSTALLED@
+#if NEO_CCA_INSTALLED
+#define HAVE_NEO 1
+#endif
+
+/* put -DHAVE_CLASSIC everywhere if installed */
+#define CLASSIC_CCA_INSTALLED @CLASSIC_CCA_INSTALLED@
+#if CLASSIC_CCA_INSTALLED
+#define HAVE_CLASSIC 1
+#else
+#undef HAVE_CLASSIC
+#endif
+
+#define SIZEOF_LONG_INT @SIZEOF_LONG_INT@
+#define SIZEOF_LONG_LONG_INT @SIZEOF_LONG_LONG_INT@
+#define SIZEOF_INT64_T @SIZEOF_INT64_T@
+
+#define _RCPATH "@CCAFE_RPM_ROOT@/share/ccafe/cxx/dc/user_iface/CcaffeineRC"
+
+@NO_HAVE_LIBREADLINE@ #define HAVE_LIBREADLINE 1 
+@NO_HAVE_READLINE_READLINE_H@ #define HAVE_READLINE_READLINE_H 1
+@NO_HAVE_READLINE_H@ #define HAVE_READLINE_H 1
+@NO_HAVE_READLINE_HISTORY@ #define HAVE_READLINE_HISTORY 1
+@NO_HAVE_READLINE_HISTORY_H@ #define HAVE_READLINE_HISTORY_H 1
+@NO_HAVE_HISTORY_H@ #define HAVE_HISTORY_H 1
+@NO_CCAFE_THREADS@ #define CCAFE_THREADS 1
+@NO_CCAFE_SOCKETS@ #define CCAFE_SOCKETS 1
+
+#endif // opq_config_hh_seen

@@ -1,0 +1,42 @@
+jc++util.h
+	package header
+
+JString:
+	Javalike wrapper of C string operations.
+
+StringTokenizer
+	String tokenization at whitespace.
+	uses String
+
+StringBuffer
+	Auto-growing string.
+  
+Vector
+	Vector of Objects
+StringVector
+	Vector of strings (char *)
+
+Hashtable
+	Object keyed table of Objects
+	uses HashBucket
+StringHash
+	String keyed table of Objects
+	uses StringHashBucket
+ResourceHash
+	String keyed table of strings
+	uses ResourceBucket
+
+Enumeration
+	Enumeration which returns element Objects
+StringEnumeration
+	Enumeration which returns element strings
+
+HashEnum
+	implements Enumeration with own memory.
+VectEnum
+	implements Enumeration with Vect memory.
+
+StringHashEnum
+	implements StringEnumeration with own memory.
+StringVectEnum
+	implements StringEnumeration with Vect memory.

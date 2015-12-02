@@ -1,0 +1,187 @@
+
+CCAFE_HOME=../../..
+buildroot=../../../../..
+include $(CCAFE_HOME)/Makefile.Rules
+BVPATH := $(srcdir)/cxx/dc/babel@BSUF@/babel-cca
+
+ifneq ($(CCAFE_BUILD_PY),) # is it empty?
+GEN_PY = .gen-babel-py
+OBJ_PY = .obj-babel-py
+endif
+
+BABEL_HOME = $(BABEL_ROOT)
+BABEL = $(CCASPEC_BABEL_BABEL)
+
+DIRS = server
+SIDL_FILES = ccafe.sidl
+LIB = server/libccaffeine$(VER_SUFFIX)$(PROGRAM_SUFFIX)$(CCAFE_SHLIB_SUFFIX)
+LIBA = server/libccaffeine$(VER_SUFFIX)$(PROGRAM_SUFFIX).a
+
+DEPRECATED=
+
+IMPL_FILES = \
+     ccaffeine_ports_GUIServiceWrap_Impl.cxx \
+     ccaffeine_ports_GoPortWrap_Impl.cxx \
+     ccaffeine_ports_ServiceRegistryWrap_Impl.cxx \
+     ccaffeine_CCAException_Impl.cxx  \
+     ccaffeine_CCAException_Impl.hxx  \
+     ccaffeine_ComponentClassDescription_Impl.cxx  \
+     ccaffeine_ComponentClassDescription_Impl.hxx  \
+     ccaffeine_ComponentID_Impl.cxx  \
+     ccaffeine_ComponentID_Impl.hxx  \
+     ccaffeine_ConnectionEventService_Impl.cxx  \
+     ccaffeine_ConnectionEventService_Impl.hxx  \
+     ccaffeine_ConnectionID_Impl.cxx  \
+     ccaffeine_ConnectionID_Impl.hxx  \
+     ccaffeine_ports_BuilderService_Impl.cxx  \
+     ccaffeine_ports_BuilderService_Impl.hxx  \
+     ccaffeine_ports_ComponentRepository_Impl.cxx  \
+     ccaffeine_ports_ComponentRepository_Impl.hxx  \
+     ccaffeine_ports_ConnectionEvent_Impl.cxx  \
+     ccaffeine_ports_ConnectionEvent_Impl.hxx  \
+     ccaffeine_ports_PortTranslator_Impl.cxx  \
+     ccaffeine_ports_PortTranslator_Impl.hxx  \
+     ccaffeine_ports_BasicParameterPortWrap_Impl.cxx \
+     ccaffeine_ports_BasicParameterPortWrap_Impl.hxx \
+     ccaffeine_ports_ParameterPortWrap_Impl.cxx \
+     ccaffeine_ports_ParameterPortWrap_Impl.hxx \
+     ccaffeine_ports_ParameterPortFactoryWrap_Impl.cxx \
+     ccaffeine_ports_ParameterPortFactoryWrap_Impl.hxx \
+     ccaffeine_Services_Impl.cxx  \
+     ccaffeine_Services_Impl.hxx  \
+     ccaffeine_TypeMap_Impl.cxx  \
+     ccaffeine_TypeMap_Impl.hxx  \
+     ccaffeine_TypeMismatchException_Impl.cxx  \
+     ccaffeine_TypeMismatchException_Impl.hxx  \
+     ccaffeine_AbstractFramework_Impl.cxx  \
+     ccaffeine_AbstractFramework_Impl.hxx  \
+
+
+UNCRUFTER = $(RUBY) $(BVPATH)/../bin/sidlUncrufter.rb
+UNSTAMPER = $(srcdir)/cxx/dc/babel/bin/implUnstamper.sh
+
+
+SIDL_LIB_DIR = $(CCASPEC_BABEL_libdir)
+
+CLASSIC_HOME = $(CLASSIC_CCA_ROOT)
+
+CCAFE_INCLUDE = -I$(CCAFE_HOME) $(CCA_INC)
+
+SERVER_DIR = ./server
+CCA_SERVER_DIR = $(CCASPEC_BABEL_XML_REPOSITORY)
+
+LOCAL_FLAGS=$(BABEL_CCA_INC) -I$(CCASPEC_BABEL_includedir)
+
+COPY_HDRS = $(BVPATH)/allCcaffeine.hxx 
+COPY_FILES = $(BVPATH)/Makefile.babel
+
+all: $(OBJ_PY)
+
+# next target probably should go away.
+locallib: .lib-local-installed
+
+debug:
+	echo $(GEN_PY)
+
+%.o : %.cxx
+	(cd server; $(MAKE) -f ../Makefile.babel $@)
+
+%.i : %.cxx
+	(cd server; $(MAKE) -f ../Makefile.babel $@)
+
+$(DIRS) .dirs-made : 
+	-mkdir server
+	-mkdir client
+	-mkdir py-client
+	-cp $(COPY_FILES) .
+	cp $(COPY_HDRS) $(SERVER_DIR)
+	touch .dirs-made
+
+gen: gen-babel $(GEN_PY)
+
+src-list:
+	@(cd server; $(MAKE) -f ../Makefile.babel src-list)
+
+gen-babel .gen-babel : .dirs-made $(SIDL_FILES) 
+	$(BABEL) $(BABEL_FLAGS) -s$(CXX_SERVER_LANG) \
+		--output-directory=server --vpath=$(BVPATH) \
+		--repository-path=$(CCA_SERVER_DIR) $(SIDL_FILES)
+	$(BABEL) $(BABEL_FLAGS) $(CCA_BABEL_XMLFLAGS) \
+		--output-directory=server --vpath=$(BVPATH) \
+		--repository-path=$(CCA_SERVER_DIR)  $(SIDL_FILES)
+	@if test -f ccaffeine_ports_GoPortWrap_Impl.cxx; then \
+		$(MAKE) unstamp; \
+	fi
+	touch .gen-babel
+
+# Generates the Python client for Ccaffiene needed for BuilderService
+
+INCLUDEDIR = $(CCASPEC_BABEL_includedir)
+INCLUDEDIR2 = .
+SIDLPYTHONLIB = $(CCASPEC_BABEL_libdir)
+PYTHON_VERSION = $(CCASPEC_BABEL_PYTHON_VERSION)
+BABEL_RUNTIME_INCLUDE = $(INCLUDEDIR)/python$(PYTHON_VERSION)/babel
+BABEL_RUNTIME_INCLUDE2 = $(INCLUDEDIR)/python$(PYTHON_VERSION)/llnl_babel
+CCASPEC_PYTHON_INCLUDE_DIR = $(BABEL_CCA_ROOT)/include/python$(PYTHON_VERSION)/babel
+CCASPEC_PYTHON_INCLUDE_DIR2 = $(BABEL_CCA_ROOT)/include/python$(PYTHON_VERSION)/llnl_babel
+
+gen-babel-py $(GEN_PY) :  $(SIDL_FILES) .dirs-made .gen-babel
+	(cd py-client;$(BABEL) -cpython \
+		--repository-path $(CCA_SERVER_DIR) -E ../$(SIDL_FILES) )
+	touch .gen-babel-py
+
+obj-py $(OBJ_PY): py-client/setup.py
+	@echo "===== Compiling python binding ====="
+	(cd py-client; python setup.py \
+	  --include-dirs=$(CCASPEC_BABEL_PYTHONINC) \
+	  --include-dirs=$(INCLUDEDIR) \
+	  --include-dirs=$(INCLUDEDIR2)	\
+	  --include-dirs=$(BABEL_RUNTIME_INCLUDE2) \
+	  --include-dirs=$(BABEL_RUNTIME_INCLUDE) \
+	  --include-dirs=$(CCASPEC_pkgincludedir)/c \
+	  --include-dirs=$(CCASPEC_pkgincludedir) \
+	  --include-dirs=$(CCASPEC_PYTHON_INCLUDE_DIR2) \
+	  --include-dirs=$(CCASPEC_PYTHON_INCLUDE_DIR) \
+	  --library-dirs=$(SIDLPYTHONLIB) \
+	  build_ext --inplace --force )
+	@echo "===== Compiling python finished ====="
+	touch .obj-babel-py
+
+unstamp:
+	$(UNSTAMPER) $(IMPL_FILES)
+
+make-babel .make-babel : .gen-babel .uncruft .depend $(IMPL_FILES)
+	(cd server;$(MAKE) -f ../Makefile.babel)
+	touch .make-babel
+
+install-lib .lib-local-installed : .make-babel $(LIB) $(LIBA) 
+	$(INSTALL) $(LIB) $(CCAFE_HOME)/lib
+	$(INSTALL_DATA) $(LIBA) $(CCAFE_HOME)/lib
+	touch .lib-local-installed
+
+.uncruft uncruft : .gen-babel
+	(cd server; $(UNCRUFTER) --re-to-delete gov_cca --re-to-delete sidl_ \
+               --re-to-delete sidl\.h )
+	touch .uncruft
+
+typeMapTempl:
+	$(RUBY) typemapGen.rb --overwrite ccaffeine_CcafeTypeMap_Impl.cxx
+
+tester: tester.o
+	$(CXX) $(CXXFLAGS) -o tester tester.o -L $(SIDL_LIB_DIR) -lsidl
+	LD_LIBRARY_PATH=$(SIDL_LIB_DIR):$(LD_LIBRARY_PATH) ./tester
+copy-back: 
+	-if [ -d server ]; then cp `$(RUBY) ../bin/newer.rb --exclusive server .` .; fi
+
+clean: 
+	$(RM) -rf client server *.o tester .babel-copy .lib-local-installed .dirs-made .gen-babel .make-babel .uncruft .depend py-client .install-babel-py .gen-babel-py
+
+# Not quite clean
+cl: 
+	$(RM) -rf server/*.o tester .lib-local-installed .make-babel 
+
+
+.depend depend: .gen-babel .uncruft
+	touch server/Makefile.depends
+	(cd server;$(MAKE) -f ../Makefile.babel depend)
+	touch .depend

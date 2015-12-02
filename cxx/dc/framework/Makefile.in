@@ -1,0 +1,324 @@
+# comment the following line if CCAFE_HOME is defined in your
+# environment or in a calling makefile
+buildroot=../../..
+CCAFE_HOME = ../..
+zeroth: first
+
+include $(CCAFE_HOME)/Makefile.Rules
+VPATH := $(srcdir)/cxx/dc/framework
+
+CCA_SERVER_DIR = $(CCASPEC_BABEL_XML_REPOSITORY)
+
+BABEL_CCAFE_CCA_INCLUDE = -I$(CCAFE_HOME)/dc/babel/ccafe-cca/server
+
+ifeq "$(HAVE_BABEL)" "1"
+BABEL_INCLUDE = \
+-I$(CCASPEC_BABEL_includedir) \
+$(BABEL_CCA_INC)     \
+$(BABEL_CCAFE_CCA_INCLUDE) 
+else
+BABEL_INCLUDE=
+endif
+
+ifeq "$(NEO_CCA_INSTALLED)" "1"
+NEO_INCLUDE=$(NEOCCA_INC)
+else
+NEO_INCLUDE=
+endif
+
+# if -DCCAFE_NO_DL appears in the flags, the factory
+# and related classes will assume static linkage is
+# desired.
+CXXFLAGS_LOCAL = $(CXXFLAGS) -DCCAFE_NO_DL -g
+CXXFLAGS_LOCAL = $(CXXFLAGS) $(BABEL_INCLUDE)  $(NEO_INCLUDE)
+# arbitrary string. set to anything you want for debugging build/link process.
+TIMESTAMP=-DDSTRING='"sun 10/5-1"'
+TIMESTAMP=
+
+FILTERS= | grep -v 'std::exception::what' | grep -v 'ccafeopq.hh:21' | grep -v 'Exception::what'
+FILTERS=
+
+%.o : %.C
+	$(CXX) -c $(CXXFLAGS_LOCAL)  $<
+%.o : %.cxx
+	$(MPICXX) -c $(CXXFLAGS_LOCAL) $(TIMESTAMP) $(CCA_PLLFLAGS) $< $(FILTERS)
+%.o : %.cc
+	$(MPICXX) -c $(CXXFLAGS_LOCAL) $(TIMESTAMP) $(CCA_PLLFLAGS) $< $(FILTERS)
+
+%.i : %.cxx
+	$(MPICXX) -E $(CXXFLAGS_LOCAL)  $(CCA_PLLFLAGS) $< > $@
+%.h.ps : %.h
+	-enscript -2r -fCourier8 -Ecpp --color -W PostScript -p $@ $<
+
+%.c.ps : %.cxx
+	-enscript -2r -fCourier8 -Ecpp --color -W PostScript -p $@ $<
+
+ifeq "$(HAVE_BABEL)" "1"
+BABELCXXSRC=TypeMapPortInfo.cxx
+BABELCXXSRC=
+else
+BABELCXXSRC=
+endif
+
+BENSRC=
+ROBSRC= 
+
+CXXSRC = \
+	Frame.cxx \
+	KernelPort.cxx \
+	ComponentRecord_Impl.cxx \
+	ComponentFactory.cxx \
+	OpqAbstractFramework.cxx \
+	CmpBox.cxx \
+	ServicesHelper.cxx  \
+	ComponentInfo.cxx \
+	ConnectedConnectionEvent.cxx \
+	DisconnectingConnectionEvent.cxx \
+	UserPortData.cxx \
+	ProviderPortData.cxx \
+	PropertyStrings.cxx \
+	PropertiesHelper.cxx \
+	OpqSupportPort.cxx \
+	OpqPortInfo.cxx \
+	OpqGUIService.cxx \
+	OpqBuilderService.cxx \
+	Gizzard.cxx \
+	ConnectionFramework.cxx \
+	ComponentChangedEvent.cxx \
+	GizzardComponentChangedEvent.cxx  \
+	ComponentID.cxx \
+	ConnectionID.cxx \
+	GoThread.cxx \
+	OpqConnectionEventService.cxx \
+	BabelStaticFactory.cxx \
+	$(BABELCXXSRC)
+
+DXCXXSRC= XService.cc \
+	CcafeServiceFactoryContainer.cxx
+XCXXSRC= DefaultXCmptFactory.cc
+
+XCXXOBJ = $(XCXXSRC:%.cc=%.o)
+
+CXXOBJ = $(CXXSRC:%.cxx=%.o) $(XCXXOBJ)
+
+PARSEOBJ= \
+../services/dotcca/dccore/DotCCAComponentCore.o \
+../services/dotcca/treeReader/*.o \
+../services/ContextEventManager/*.o \
+../services/ContextEventManager/eventCons/*.o \
+../services/registry/*.o
+
+HDR= \
+ComponentRecord_Impl.h \
+Frame.h \
+OpqAbstractFramework.h \
+CmpBox.h \
+ComponentFactory.h \
+ComponentInfo.h \
+ConnectionFramework.h \
+ConnectedConnectionEvent.h \
+DisconnectingConnectionEvent.h \
+FrameworkConnectionEvent.h \
+Gizzard.h \
+ComponentChangedEvent.h \
+GizzardComponentChangedEvent.h \
+ComponentChangedListener.h \
+ServicesHelper.h
+
+PS=$(HDR:%.h=%.h.ps) $(CXXSRC:%.cxx=%.c.ps)
+
+
+LIB=libdc_fwk.a
+
+
+first all : $(CXXOBJ) lib
+	@echo done $(CXXOBJ)
+
+ifeq "x$(EYES2_ROOT)" "x"
+EYE2FLAGS=
+else
+EYE2FLAGS=-DEYES2_ROOT
+endif
+
+ifeq "x$(STV_ROOT)" "x"
+EYEFLAGS=
+else
+EYEFLAGS=-DSTV_ROOT
+endif
+
+src-list:
+	@echo "DC_LIST_CXX += \\" >> ../src-list
+	@for i in $(CXXSRC) $(XCXXSRC); do \
+                echo "$(srcdir)/cxx/dc/framework/$$i \\" >> ../src-list ; \
+        done
+	@echo "" >> ../src-list
+	@echo "updated src-list from dc/framework"
+
+#-DCCAFE_COMPONENT_LIST_PATH=\"`pwd`/../component/ComponentList\" 
+
+ComponentFactory.o : ComponentFactory.cxx
+	echo CCA_PLLFLAGS = $(CCA_PLLFLAGS)
+	$(MPICXX) -c $(CXXFLAGS_LOCAL) \
+	$(EYEFLAGS) $(EYE2FLAGS) \
+	$(ESI_INC) \
+	$(ESICCA_INC) \
+	$(CCA_INC) \
+	$(ISIS_INC) \
+	$(SNLCPP_INC) \
+	$(CCA_PLLFLAGS) $<
+
+lib $(LIB): $(CXXOBJ)
+	@-$(RM) $(LIB)
+	ar ruv $(LIB) $(CXXOBJ) $(PARSEOBJ)
+	$(RANLIB) $(LIB)
+
+
+BABEL_LIB1=$(CCAFE_HOME)/lib/libccaffeine$(VER_SUFFIX)$(PROGRAM_SUFFIX)$(CCAFE_SHLIB_SUFFIX)
+ifeq "$(OS_ARCH)" "OS_AIX"
+LINK_BABEL_LIB1= \
+-L$(CCAFE_HOME)/lib \
+-L$(libdir) \
+-L$(CCAFE_RPM_libdir) \
+-lccaffeine$(VER_SUFFIX)$(PROGRAM_SUFFIX)
+else
+LINK_BABEL_LIB1= \
+-L$(CCAFE_HOME)/lib \
+-Wl,-rpath,$(CCAFE_HOME)/lib \
+-Wl,-rpath,$(libdir) \
+-Wl,-rpath,$(CCAFE_RPM_libdir) \
+-lccaffeine$(VER_SUFFIX)$(PROGRAM_SUFFIX)
+endif
+
+BABEL_LIB2=$(CCAFE_HOME)/dc/babel/ccafe-bind/libBblCcafe.a
+BABEL_LIB3= $(BABEL_CCA_LIBS) $(BABEL_ROOT)/lib/libsidl.a
+BABELSTUFF_INC= $(BABEL_INC) $(BABEL_CCA_INC) 
+
+
+ifeq "$(HAVE_BABEL)" "0"
+BABEL_LIB1= 
+LINK_BABEL_LIB1= 
+BABEL_LIB2=
+BABEL_LIB3= 
+BABELSTUFF_INC= 
+endif
+
+
+LIBS= \
+$(CCAFE_HOME)/cmd/libcmd.a \
+$(CCAFE_HOME)/dc/user_iface/ccacmd/libccacmd.a \
+$(CCAFE_HOME)/dc/classic/ccafe-bind/libClsCcafe.a \
+$(NEO_LIBRARY) \
+$(LINK_BABEL_LIB1) \
+$(CCAFE_HOME)/dc/framework/libdc_fwk.a \
+$(CCAFE_HOME)/dc/distributed/libdistributed.a \
+$(CCAFE_HOME)/dc/component/libcomponent$(VER_SUFFIX)$(PROGRAM_SUFFIX).a \
+$(CCAFE_HOME)/dc/port/libports.a \
+$(CCA_LIB) \
+$(CCAFE_HOME)/gnu/getopt/libgetCCAFEopt.a \
+$(BABEL_LIB2) \
+$(CCAFE_HOME)/parameters/libparameters.a \
+$(CCAFE_HOME)/stovepipe/libstovepipe.a \
+$(CCAFE_HOME)/dc/port/libports.a \
+$(CCAFE_HOME)/dc/user_iface/libccafeBM.a \
+$(CCAFE_HOME)/util/libcafeutil.a \
+$(CCAFE_HOME)/dc/classic/ccafe-bind/libClsCcafe.a \
+$(NEO_LIBRARY) \
+$(CCAFE_HOME)/dc/port/libports.a \
+$(CCAFE_HOME)/jc++/libjcpp.a \
+$(BABEL_LIB3) \
+$(MATHLIBS) \
+$(CCAFE_THREAD_LIBS)
+
+# fixme put in configure soon
+ifeq "$(OS_ARCH)" "OS_AIX"
+MISCLIBS=
+else
+MISCLIBS= -lg2c -lstdc++
+endif
+
+UIFORCE=../user_iface/forceIsisBlasLapackLink.o 
+TESTLIBS=../../lib/libccafeCore.a \
+$(LINK_BABEL_LIB1) \
+$(BABEL_LIB2) \
+$(BABEL_LIB3) \
+
+testComponentFactory.x testComponentFactory : all
+	(BFLFLAGS=`echo $(CXXFLAGS_LOCAL) | sed -e 's; -G ; ;g'`; \
+	$(MPI_LD) $$BFLFLAGS  \
+		-o testComponentFactory.x testComponentFactory.cxx \
+	$(TESTLIBS) $(MISCLIBS) $(LIBS) $(XMLLIB) \
+	$(CCA_PLLFLAGS) \
+	$(CXXLDFLAGS) $(CCAFE_LD_FLAGS) $(CCAFE_DL_LIBS) )
+
+testConnectionFwk.x testConnectionFwk : all
+	(BFLFLAGS=`echo $(CXXFLAGS_LOCAL) | sed -e 's; -G ; ;g'`; \
+	$(MPI_LD) $$BFLFLAGS $(CXXLDFLAGS)  \
+		-o testConnectionFwk.x testConnectionFwk.cxx \
+	$(TESTLIBS) $(MISCLIBS) $(LIBS) $(XMLLIB) \
+	$(CCA_PLLFLAGS)\
+	$(CCAFE_LD_FLAGS) $(CCAFE_DL_LIBS) )
+
+testBS.x testBS : all
+	(BFLFLAGS=`echo $(CXXFLAGS_LOCAL) | sed -e 's; -G ; ;g'`; \
+	$(MPI_LD) $$BFLFLAGS $(CXXLDFLAGS)  \
+		-o testBS.x testBS.cxx \
+	$(TESTLIBS) $(MISCLIBS) $(LIBS) $(XMLLIB) \
+	$(CCA_PLLFLAGS)\
+	$(CCAFE_LD_FLAGS) $(CCAFE_DL_LIBS) )
+
+# These two tests only test something when babel is disabled.
+# otherwise the linking is too convoluted.
+# we really have to get every trace of babel and classic
+# out of the core framework and into bindings.
+test tests: testComponentFactory.x testConnectionFwk.x testBS.x
+	@echo "####################### testing component create #"
+	./testComponentFactory.x ../component
+	@echo "####################### create test completed "
+	@echo "####################### testing component connect #"
+	./testConnectionFwk.x ../component
+	@echo "####################### connect test completed "
+	@echo "####################### testing builderservice #"
+	./testBS.x ../component
+	@echo "####################### builderservice test completed "
+
+ptestComponentFactory.x ptestComponentFactory : all
+	$(PURIFY) $(CXX) $(CXXFLAGS) \
+		-o ptestComponentFactory.x testComponentFactory.cxx $(LIBS) \
+		$(XMLLIB) $(CXXLDFLAGS) $(CCAFE_DL_LIBS)
+
+ptestConnectionFwk.x ptestConnectionFwk : all
+	$(PURIFY) $(CXX) $(CXXFLAGS) $(CXXLDFLAGS) \
+		-o ptestConnectionFwk.x testConnectionFwk.cxx \
+	$(LIBS) $(XMLLIB) \
+	$(CCAFE_HOME)/jc++/util/libjc++util.a $(CCAFE_DL_LIBS)
+
+ptest ptests: ptestComponentFactory.x ptestConnectionFwk.x
+	./ptestComponentFactory.x `pwd`/../user_iface/CcaffeineRC
+	./ptestConnectionFwk.x `pwd`/../user_iface/CcaffeineRC
+
+ps: $(PS)
+	-mkdir PSdir
+	mv $(PS) PSdir
+
+warning: 
+	@echo CCAFE_HOME=$(CCAFE_HOME)
+	@echo Make sure CCAFE_HOME is set correctly.
+
+clean : 
+	$(RM) $(CXXOBJ) $(LIB) \
+		*.x test*.o *.u *.a *.o
+
+gen:
+	@echo "gen dc/framework done"
+
+depend:
+	$(DEPEND) $(CXXFLAGS_LOCAL) $(CXXSRC) $(XCXXSRC)
+
+depend-sys:
+	$(DEPENDSYS) $(CXXFLAGS_LOCAL) $(CXXSRC) $(XCXXSRC)
+
+ifneq "x$(TARGET)" "xclean"
+ifneq "x$(TARGET)" "xdistclean"
+include Makefile.depends
+endif
+endif

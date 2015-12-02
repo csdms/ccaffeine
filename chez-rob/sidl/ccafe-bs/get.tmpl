@@ -1,0 +1,34 @@
+// prefix = 'ccaffeine.CcafeTypeMap.get'
+// %type%
+// ccaffeine::CcafeTypeMap_impl::get%name%(
+//   /*in*/ std::string key,
+//   /*in*/ %type% defaultValue ) 
+// throw ( 
+//   gov::cca::TypeMismatchException
+// ){
+
+{
+  // Fix the assumption of an array
+
+  OPtr optr = table[key]; // I hope this causes a real copy.
+  if(optr.get() == 0) {
+    fprintf(stderr, "ccaffeine::CcafeTypeMap_impl::get%name%: "
+	    "no such key: %s\n", key.c_str());
+    return defaultValue;
+  }
+  if(optr->getType() != %name%) {
+    fprintf(stderr, "ccaffeine::CcafeTypeMap_impl::get%name%:"
+	    " no such type: %s\n", ObjectBase::getTypeAsString(%name%).c_str());
+    // should throw an exception
+    // throw new ccaffeine::TypeMismatchException();
+  }
+  ObjectBase* ob = optr.get();
+  Object< %type% >* o = 
+    dynamic_cast< Object< %type% >* >(ob);
+  if(o == 0) {
+    fprintf(stderr, ":-( could not cast Object< %type% >* " 
+	    "from ObjectBase*: this can't happen\n");
+    // throw new ccaffeine::TypeMismatchException();
+  }
+  return o->get();
+}

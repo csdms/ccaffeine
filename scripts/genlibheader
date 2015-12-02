@@ -1,0 +1,92 @@
+#!/bin/sh
+# created: Ben Allan, Sandia Labs/CA Livermore 8/1/2000
+# This script (at least in gnu platforms) generates a minimal header of
+# functions for C consumption given a library and its dependencies.
+# e.g.
+# ./genlibheader /usr/local/lib/libblas.a /usr/lib/gcc-lib/i386-redhat-linux/egcs-2.90.29/libf2c.a -lm
+# ./genlibheader /usr/local/lib/liblapack.a -lblas.a /usr/lib/gcc-lib/i386-redhat-linux/egcs-2.90.29/libf2c.a -lm
+# 
+# The output will not be correct, probably, but it will satisfy the linker and compiler.
+# used in this script.
+flist=`nm --defined -f p $1 | grep ' T ' | sed -e 's% T % %g' |sed -e 's% 0.......% %g'`
+LDFLAGS="$*"
+LIBS=""
+ac_ext=c
+ac_exeext=.exe
+outfile=ftypes.h
+errfile=ftypes.log
+/bin/rm $outfile
+/bin/rm $errfile
+echo "generating $outfile"
+echo "/* $0 analysis of $* */" > $outfile
+echo "/* types are sufficient to satisfy the linker, but not 100% accurate. */" >> $outfile
+echo "messages in $errfile"
+echo "/* $0 log of analyzing $* */" > $errfile
+for fn in $flist; do
+
+	echo "testing $fn"
+	intcode="extern int $fn(); main() { int i; i = $fn(); exit(0); }"
+	intfunc=no
+	voidcode="extern void $fn(); main() { $fn(); exit(0); }"
+	voidfunc=no
+	floatcode="extern float $fn(); main() { float f; f = $fn(); exit(0); }"
+	floatfunc=no
+	doublecode="extern double $fn(); main() { double d; d = $fn(); exit(0); }"
+	doublefunc=no
+
+	ac_compile='${CC-cc} -c conftest.$ac_ext 1>>$errfile'
+	ac_link="cc -o conftest${ac_exeext} conftest.$ac_ext $LDFLAGS $LIBS 1>>$errfile"
+
+	/bin/rm -f conftest.$ac_ext
+	echo $voidcode > conftest.$ac_ext
+        echo -n "trying void, "
+	if { (eval $ac_link) 2>>$errfile; } && test -s conftest${ac_exeext}; then
+  		voidfunc=yes
+		echo "extern void $fn();" >> $outfile
+        	echo "yes"
+		continue
+	else
+		echo "SRC=$voidcode" >>$errfile
+	fi
+
+	/bin/rm -f conftest.$ac_ext
+	echo $doublecode > conftest.$ac_ext
+        echo -n "double, "
+	if { (eval $ac_link) 2>>$errfile; } && test -s conftest${ac_exeext}; then
+  		doublefunc=yes
+		echo "extern double $fn();" >> $outfile
+        	echo "yes"
+		continue
+	else
+		echo "SRC=$doublecode" >>$errfile
+	fi
+
+	/bin/rm -f conftest.$ac_ext
+	echo $floatcode > conftest.$ac_ext
+        echo -n "float, "
+	if { (eval $ac_link) 2>>$errfile; } && test -s conftest${ac_exeext}; then
+  		floatfunc=yes
+		echo "extern float $fn();" >> $outfile
+        	echo "yes"
+		continue
+	else
+		echo "SRC=$floatcode" >>$errfile
+	fi
+
+	/bin/rm -f conftest.$ac_ext
+	echo $intcode > conftest.$ac_ext
+        echo -n "int, "
+	if { (eval $ac_link) 2>>$errfile; } && test -s conftest${ac_exeext}; then
+  		intfunc=yes
+		echo "extern int $fn();" >> $outfile
+        	echo "yes"
+		continue
+	else
+		echo "SRC=$intcode" >>$errfile
+	fi
+
+        echo "none."
+	echo "FAILED -- $fn -- $ac_link"
+
+done
+

@@ -1,0 +1,12 @@
+// GoComponent.sidl is a configure generated file.
+
+@CCAFE5_SIDL_START_0@
+@CCAFE5_SIDL_START_1@
+
+  /** When the GoPort is hit spew to stdout, stderr.
+   * string. */
+  class GoComponent implements-all gov.cca.Component, 
+    gov.cca.ports.GoPort {
+  }
+}
+

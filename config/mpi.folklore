@@ -1,0 +1,105 @@
+# hello
+#-/-!/bin/sh
+# we're supposed to set:
+# MPI, MPI_HOME, MPIRUN, MPILIB, MPILDFLAGS, MPICC, MPICXX
+# FIXME
+
+# see if we're running from config/ directly instead of by inclusion in
+# configure. configure defines CCAFE_MPI_HUNT.
+if test -z "$CCAFE_MPI_HUNT" ; then
+   host_os=`uname -s`
+   . mpihome.guess
+fi
+
+# look up host-specific stuff we know, then stuff from host info
+mdone=no
+case $HOST in
+    sass3065-atm)
+        MPI_ARCH=solaris
+        ARCH=solaris
+        MPI=/usr/local/mpi
+        MPIRUN=$MPI/mpirun
+        MPI_HOME=$MPI
+        MPI_LDFLAGS="-L/opt/SUNWspro/SC4.2/lib -lnsl -lsocket -lM77 -lF77 -lsunmath"
+        MPILIB="-L$MPI/lib/solaris/ch_p4 -lmpi"
+        mdone=yes
+    ;;
+    teepee|teepee.ca.sandia.gov|gs|gs.ca.sandia.gov)
+        MPI_ARCH=LINUX
+        MPI=/usr/local/mpich
+        MPIRUN=$MPI/mpirun
+        MPI_HOME=$MPI
+        if test -d "$MPI/build/$ARCH/ch_p4" ; then
+            MPI_LDFLAGS="-L$MPI/build/$ARCH/ch_p4/lib -lmpich -lmpich"
+            MPICXX="$CXX -I$MPI/include -I$MPI/build/$ARCH/ch_p4/include"
+        else
+            MPI_LDFLAGS="-L$MPI/lib -lmpich -lmpich"
+            MPI_INCLUDES="-I$MPI/include -I$MPI/include/mpi2c++"
+        fi
+        MPICC=$MPICXX
+        mdone=yes
+    ;;
+    blue.llnl.gov)
+        MPICC=mpcc
+        MPICXX=mpCC
+        MPI_LDFLAGS=""
+        MPIRUN=FIXME_FOLKLORE
+        mdone=yes
+    ;;
+esac
+
+if test "X$mdone" = Xno ; then
+    if test ! "X$MPI" = X ; then
+        case $host_os in
+            linux-gnu|LINUX|Linux)
+                MPI_ARCH=LINUX
+                ARCH=LINUX
+                MPI=/usr/local/mpich
+                MPIRUN=$MPI/mpirun
+                MPI_HOME=$MPI
+                if test -d "$MPI/build/$ARCH/ch_p4" ; then
+                    MPI_LDFLAGS="-L$MPI/build/$ARCH/ch_p4/lib -lmpich -lmpich"
+                    MPI_INCLUDES="-I$MPI/include -I$MPI/build/$ARCH/ch_p4/include"
+                else
+                    MPI_LDFLAGS="-L$MPI/lib -lmpich -lmpich"
+                    MPI_INCLUDES="-I$MPI/include -I$MPI/include/mpi2c++"
+                fi
+            ;;
+            solaris)
+                MPI_ARCH=solaris
+                ARCH=solaris
+                MPI=/usr/local/mpi
+                MPIRUN=$MPI/mpirun
+                MPI_HOME=$MPI
+                MPI_LDFLAGS="-L$MPI/build/$ARCH/ch_p4/lib -lmpich++ -lmpich -lmpich -lsocket -lnsl -lnsl"
+                MPI_INCLUDES="-I$MPI/include -I$MPI/build/$ARCH/ch_p4/include"
+            ;;
+        esac
+    fi
+fi
+
+
+# try compile
+# if bad, make mpi no
+if test "X$MPICC" = Xbroken ; then
+    MPICC="$CC $MPI_INCLUDES"
+fi
+
+
+# try compile with $MPI_LDFLAGS at end
+# if bad, make mpi no
+if test "X$MPICXX" = Xbroken ; then
+    MPICXX="$CXX $MPI_INCLUDES"
+fi
+
+if test -z "$CCAFE_MPI_HUNT" ; then
+    echo "MPI=$MPI"
+    echo "MPI_HOME=$MPI_HOME"
+    echo "MPI_ARCH=$MPI_ARCH"
+    echo "ARCH=$ARCH"
+    echo "MPIRUN=$MPIRUN"
+    echo "MPICC=$MPICC"
+    echo "MPICXX=$MPICXX"
+    echo "MPI_LDFLAGS=$MPI_LDFLAGS"
+    echo "MPILIB=$MPILIB"
+fi

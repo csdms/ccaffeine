@@ -1,0 +1,460 @@
+# $Revision: 1.5 $
+# $Author: baallan $
+
+# In case it wasn't obvious, this is a gnu make
+# file. It is very unlikely to work with other makes
+# as it uses, include, vpath, and text substitutions.
+# It queries the whole ccaffeine subtree to find the
+# required sources and then compiles them all in
+# this directory. This keeps the source tree clean
+# and actually provides a non-redundant rebuild
+# because we can finally compute whole-tree dependencies.
+#
+# With regard to building components, this will compile
+# babel components individually from the cxx/dc/$(BABEL_BINDING_DIR)/component
+# subtree when invoked with 
+# $(MAKE) CMPT=$(COMPONENT_NAME) component-objs
+
+CCAFE_HOME = ..
+
+buildroot=../..
+
+include ../Makefile.Rules
+# vpath is a computed monster, not VPATH := $(srcdir)/cxx/obj
+
+LIBTOOL= $(BABEL_LIBTOOL)
+QUIETMAKE=--no-print-directory
+
+HIDELIBTOOL=
+#HIDECOMPILE=
+
+LOCAL_CFLAGS= \
+-Dlint \
+$(INCLUDES) \
+$(CCA_PLLFLAGS) \
+$(CCAFE_CFLAGS) \
+$(CFLAGS) 
+
+LOCAL_CXXFLAGS= \
+-Dlint \
+$(CXXFLAGS) \
+$(CCA_PLLFLAGS) \
+$(CCAFE_PTHREADS_FLAGS)
+
+ifneq "x$(TARGET)" "xclean"
+
+GNU_GETOPT = $(CCAFE_ROOT)/cxx/gnu/getopt
+# get GNU_GETOPT_LIST
+include $(GNU_GETOPT)/src-list
+
+JCPP=$(CCAFE_ROOT)/cxx/jc++
+# get JCPP_LIST
+include $(JCPP)/src-list
+
+PARAMETERS=$(CCAFE_ROOT)/cxx/parameters
+# get PARAMETERS_LIST
+include $(PARAMETERS)/src-list
+
+UTIL=$(CCAFE_ROOT)/cxx/util
+# get UTIL_LIST_[C,CXX]
+include $(UTIL)/src-list
+
+CMD= $(CCAFE_ROOT)/cxx/cmd
+# get CMD_LIST
+include $(CMD)/src-list
+
+STOVEPIPE=$(CCAFE_ROOT)/cxx/stovepipe
+# get STOVEPIPE_LIST
+include $(STOVEPIPE)/src-list
+
+DC_SRC=  $(CCAFE_ROOT)/cxx/dc
+# get DC_LIST_CC, DC_LIST_CXX, 
+# DC_LIST_CXX_PTHREAD, DC_LIST_CXX_SOCKET, 
+# BABEL_COMPONENT_LIST, CLASSIC_COMPONENT_LIST_CXX
+# DC_LIST_CXX_* DC_LIST_CC_*
+include $(DC_SRC)/src-list
+
+endif
+
+ifeq "$(HAVE_BABEL)" "1"
+BABEL_COMPONENT_INCLUDES= -I$(BABEL_FWK) $(addprefix -I$(CCAFE_ROOT)/cxx/dc/$(BABEL_BINDING_DIR)/component/, $(addsuffix /server, $(BABEL_COMPONENT_LIST) $(BABEL_PORT_LIST))) 
+BABEL_TEST_INCSRC= $(addprefix -I$(CCAFE_ROOT)/cxx/dc/$(BABEL_BINDING_DIR)/, $(addsuffix /src, $(BABEL_TESTS))) 
+BABEL_TEST_GLUESRC= $(addprefix -I$(CCAFE_ROOT)/cxx/dc/$(BABEL_BINDING_DIR)/, $(addsuffix /src/glue, $(BABEL_TESTS))) 
+BABEL_TEST_INCLUDES= $(BABEL_TEST_INCSRC) $(BABEL_TEST_GLUESRC)
+endif
+ifeq "$(CCAFE_THREADS)" "1"
+PTHREAD_CXX=$(DC_LIST_CXX_PTHREAD)
+endif
+CXX_SUPPORT_SRC= \
+$(DC_LIST_CXX_SOCKET) \
+$(PTHREAD_CXX) \
+$(STOVEPIPE_LIST) \
+$(CMD_LIST) \
+$(UTIL_LIST_CXX) \
+$(PARAMETERS_LIST) \
+$(JCPP_LIST) \
+$(DC_LIST_CXX)
+
+C_SUPPORT_SRC = \
+$(GNU_GETOPT_LIST) \
+$(UTIL_LIST_C) \
+$(DC_LIST_CC)
+
+C_SUPPORT_OBJ=$(sort $(notdir $(C_SUPPORT_SRC:%.c=%.lo)))
+CXX_SUPPORT_OBJ=$(sort $(addsuffix .lo, $(basename $(notdir $(CXX_SUPPORT_SRC)))))
+DRIVER_OBJ_CXX=$(sort $(addsuffix .lo, $(basename $(notdir $(DRIVER_SRC_CXX)))))
+CMPT_LIST_CC_OBJ=$(sort $(notdir $(CMPT_LIST_CC:%.c=%.lo)))
+CMPT_LIST_CXX_OBJ=$(sort $(addsuffix .lo, $(basename $(notdir $(CMPT_LIST_CXX) ))))
+LIBCCAFFEINE_OBJ=$(sort $(addsuffix .lo, $(basename $(notdir $(LIBCCAFFEINE_SRC)))))
+
+CLASSIC_COMPONENT_OBJ= $(addsuffix .lo, $(CLASSIC_COMPONENT_LIST_CXX))
+CLASSIC_COMPONENT_WRAPPER_OBJ= $(addsuffix _wrapper.lo, $(CLASSIC_COMPONENT_LIST_CXX))
+
+# We compute vpath from all sources, rather than having to accumulate
+# it manually in the src-lists
+VPATH = $(sort $(dir $(C_SUPPORT_SRC) $(CXX_SUPPORT_SRC) $(CMPT_LIST_CXX) $(DRIVER_SRC_CXX) ))
+
+all: fnumbers objs libs
+
+##################################
+# objects section
+
+objs: $(NOISE) objs-bin
+
+objs-bin: cobjs cppobjs babel-cobjs babel-cppobjs
+
+
+cobjs: $(C_SUPPORT_OBJ)
+	@echo "============= c support $$i done"
+
+babel-cobjs:
+	@for i in $(BABEL_COMPONENT_LIST) $(BABEL_PORT_LIST) $(BABEL_TESTS) DUMMY; do \
+		if test "x$$i" = "xDUMMY"; then \
+			continue; \
+		fi ; \
+		touch .error ; \
+		$(MAKE) CMPT=$$i $(CCA_PMAKE) component-objs-c ; \
+		if test -f .error ; then \
+			exit 1; \
+		fi ; \
+		echo "============= babel c named $$i done"; \
+	done
+
+cppobjs: $(DRIVER_OBJ_CXX) $(CXX_SUPPORT_OBJ)
+	@echo "============= cxx support $$i done"
+
+babel-cppobjs:
+	@for i in $(BABEL_COMPONENT_LIST) $(BABEL_PORT_LIST) $(BABEL_TESTS) DUMMY; do \
+		if test "x$$i" = "xDUMMY"; then \
+			continue; \
+		fi ; \
+		touch .error ; \
+		$(MAKE) CMPT=$$i $(CCAFE_PMAKE) component-objs-cpp ; \
+		if test -f .error ; then \
+			echo "error compiling component $$i" ; \
+			exit 1; \
+		fi ; \
+		echo "============== babel cpp named $$i done"; \
+	done
+
+
+component-objs: component-objs-c component-objs-cpp
+
+component-objs-c: $(CMPT_LIST_CC_OBJ)
+	-@$(RM) .error
+
+component-objs-cpp: $(CMPT_LIST_CXX_OBJ)
+	-@$(RM) .error
+
+
+##################################
+# libraries section
+
+#CSBLFLAGS=-L$(CCASPEC_libdir) $(CCASPEC_LIB_L) -L$(CCASPEC_BABEL_libdir) -lsidl
+#CSNLFLAGS=-L$(NEOCCA_libdir) $(NEOCCA_LIB_L) -R$(NEOCCA_libdir)
+EXTRALIBS= \
+$(CSBLFLAGS) $(CSNLFLAGS) \
+$(LIBREADLINE_LIBS) $(FLIBS) $(SOCKETLIBS) $(CCAFE_THREAD_LIBS) $(XMLLIB)
+
+libs: $(CCAFE_LIBTOOL_LIB) $(BUILT_LIBTOOL_LIB) \
+	$(CCAFE_LIBTOOL_DRIVER_LIB) $(BUILT_LIBTOOL_DRIVER_LIB) \
+	lib-classic-$(HAVE_CLASSIC) lib-babel-$(HAVE_BABEL)
+
+$(CCAFE_LIBTOOL_LIB): $(C_SUPPORT_OBJ) $(CXX_SUPPORT_OBJ)
+	@echo "assembling $@"
+	$(HIDELIBTOOL)$(LIBTOOL) --mode=link --tag=CXX $(HIDECOMPILE) \
+		$(CXX) $(CCASPEC_LIBTOOL_LINKFLAGS) $(LOCAL_CXXFLAGS) \
+		$(C_SUPPORT_OBJ) $(CXX_SUPPORT_OBJ) \
+		-o $(CCAFE_LIBTOOL_LIB) \
+		-rpath $(libdir) \
+		$(EXTRALIBS)
+
+
+$(BUILT_LIBTOOL_LIB): $(C_SUPPORT_OBJ) $(CXX_SUPPORT_OBJ)
+	@echo "assembling $@"
+	$(HIDELIBTOOL)$(LIBTOOL) --mode=link --tag=CXX $(HIDECOMPILE) \
+		$(CXX) $(CCASPEC_LIBTOOL_LINKFLAGS) $(LOCAL_CXXFLAGS) \
+		$(C_SUPPORT_OBJ) $(CXX_SUPPORT_OBJ) \
+		-o $(BUILT_LIBTOOL_LIB) \
+		-rpath $(pkglibdir) \
+		$(EXTRALIBS)
+
+
+$(CCAFE_LIBTOOL_DRIVER_LIB): $(C_SUPPORT_OBJ) $(CXX_SUPPORT_OBJ) $(DRIVER_OBJ_CXX)
+	@echo "assembling $@"
+	$(HIDELIBTOOL)$(LIBTOOL) --mode=link --tag=CXX $(HIDECOMPILE) \
+		$(CXX) $(CCASPEC_LIBTOOL_LINKFLAGS) $(LOCAL_CXXFLAGS) \
+		$(C_SUPPORT_OBJ) $(CXX_SUPPORT_OBJ) $(DRIVER_OBJ_CXX) \
+		-o $(CCAFE_LIBTOOL_DRIVER_LIB) \
+		-rpath $(libdir) \
+		$(EXTRALIBS)
+
+$(BUILT_LIBTOOL_DRIVER_LIB): $(C_SUPPORT_OBJ) $(CXX_SUPPORT_OBJ) $(DRIVER_OBJ_CXX)
+	@echo "assembling $@"
+	$(HIDELIBTOOL)$(LIBTOOL) --mode=link --tag=CXX $(HIDECOMPILE) \
+		$(CXX) $(CCASPEC_LIBTOOL_LINKFLAGS) $(LOCAL_CXXFLAGS) \
+		$(C_SUPPORT_OBJ) $(CXX_SUPPORT_OBJ) $(DRIVER_OBJ_CXX) \
+		-o $(BUILT_LIBTOOL_DRIVER_LIB) \
+		-rpath $(pkglibdir) \
+		$(EXTRALIBS)
+
+# libccaffeine for ancient chemists. should we leave off extralibs?
+$(CCAFE_BABEL_LIBTOOL_LIB): $(LIBCCAFFEINE_OBJ)
+	@echo "assembling $@"
+	$(HIDELIBTOOL)$(LIBTOOL) --mode=link --tag=CXX $(HIDECOMPILE) \
+		$(CXX) $(CCASPEC_LIBTOOL_LINKFLAGS) $(LOCAL_CXXFLAGS) \
+		$(LIBCCAFFEINE_OBJ) \
+		-o $(CCAFE_BABEL_LIBTOOL_LIB) \
+		-rpath $(libdir) \
+		$(EXTRALIBS)
+
+# libccaffeine for ancient chemists. should we leave off extralibs?
+$(BUILT_BABEL_LIBTOOL_LIB): $(LIBCCAFFEINE_OBJ)
+	@echo "assembling $@"
+	$(HIDELIBTOOL)$(LIBTOOL) --mode=link --tag=CXX $(HIDECOMPILE) \
+		$(CXX) $(CCASPEC_LIBTOOL_LINKFLAGS) $(LOCAL_CXXFLAGS) \
+		$(LIBCCAFFEINE_OBJ) \
+		-o $(BUILT_BABEL_LIBTOOL_LIB) \
+		-rpath $(pkglibdir) \
+		$(EXTRALIBS)
+
+lib-classic-1: $(CLASSIC_COMPONENT_WRAPPER_OBJ) $(CLASSIC_COMPONENT_OBJ)
+	@for i in $(CLASSIC_COMPONENT_LIST_CXX) DUMMY; do \
+		if test "x$$i" = "xDUMMY"; then \
+			continue; \
+		fi ; \
+		$(MAKE) $(QUIETMAKE) CLASSIC_CMPT=$$i \
+			libclassic$${i}$(VER_SUFFIX)$(PROGRAM_SUFFIX).la ; \
+	done
+
+libclassic$(CLASSIC_CMPT)$(VER_SUFFIX)$(PROGRAM_SUFFIX).la: $(CLASSIC_CMPT).lo $(CLASSIC_CMPT)_wrapper.lo
+	@echo "assembling classic component library $(CLASSIC_CMPT)";
+	@$(HIDELIBTOOL)$(LIBTOOL) --mode=link --tag=CXX $(HIDECOMPILE) \
+		$(CXX) -module $(CCASPEC_LIBTOOL_LINKFLAGS) $(LOCAL_CXXFLAGS) \
+		$(CLASSIC_CMPT).lo $(CLASSIC_CMPT)_wrapper.lo \
+		-o libclassic$(CLASSIC_CMPT)$(VER_SUFFIX)$(PROGRAM_SUFFIX).la  \
+		-rpath $(libdir) 
+
+libclassic.la:
+	@echo "Attempt to make classic component without defining CLASSIC_CMPT."
+	-@$(RM) libclassic.la
+
+lib-babel-1: $(CCAFE_BABEL_LIBTOOL_LIB) $(BUILT_BABEL_LIBTOOL_LIB)
+	@for i in $(BABEL_PORT_LIST) $(BABEL_COMPONENT_LIST) DUMMY; do \
+		if test "x$$i" = "xDUMMY"; then \
+			continue; \
+		fi ; \
+		$(MAKE) $(QUIETMAKE) CMPT=$$i lib$${i}$(VER_SUFFIX)$(PROGRAM_SUFFIX).la ; \
+	done
+
+lib$(CMPT)$(VER_SUFFIX)$(PROGRAM_SUFFIX).la: $(CMPT_LIST_CC_OBJ) $(CMPT_LIST_CXX_OBJ)
+	@echo "assembling babel component library $(CMPT)"
+	$(HIDELIBTOOL)$(LIBTOOL) --mode=link --tag=CXX $(HIDECOMPILE) \
+		$(CXX) $(CCASPEC_LIBTOOL_LINKFLAGS) $(LOCAL_CXXFLAGS) \
+		$(CMPT_LIST_CC_OBJ) $(CMPT_LIST_CXX_OBJ) \
+		-o lib$(CMPT)$(VER_SUFFIX)$(PROGRAM_SUFFIX).la \
+		-rpath $(libdir) $(CMPT_LTLDFLAGS)
+
+lib.la:
+	@echo "Attempt to make babel component without defining CMPT."
+	-@$(RM) lib.la
+
+# do nothing rule when configured without a binding
+lib-classic- lib-classic-0 lib-babel- lib-babel-0:
+
+##################################
+# exception rules:
+
+ascDynaLoad.lo: ascDynaLoad.c
+	@$(srcdir)/cxx/util/progress.sh $@
+	$(HIDELIBTOOL)$(LIBTOOL) --mode=compile $(HIDECOMPILE) --tag=CXX $(MPICXX) -c $(CCASPEC_LIBTOOL_COMPILEFLAGS) $(LOCAL_CXXFLAGS) $(CMPT_CXXFLAGS) -o $@ -I$(<D) $<
+
+##################################
+# suffix rules:
+
+%.lo : %.c
+	@$(srcdir)/cxx/util/progress.sh $@
+	$(HIDELIBTOOL)$(LIBTOOL) --mode=compile $(HIDECOMPILE) --tag=CXX $(MPICC) -c $(CCASPEC_LIBTOOL_COMPILEFLAGS) $(LOCAL_CFLAGS) $(CMPT_CFLAGS) -o $@ -I$(<D) $<
+
+%.lo : %.cxx
+	@$(srcdir)/cxx/util/progress.sh $@
+	$(HIDELIBTOOL)$(LIBTOOL) --mode=compile $(HIDECOMPILE) --tag=CXX $(MPICXX) -c $(CCASPEC_LIBTOOL_COMPILEFLAGS) $(LOCAL_CXXFLAGS) $(CMPT_CXXFLAGS) -o $@ -I$(<D) $<
+
+%.lo : %.cc
+	@$(srcdir)/cxx/util/progress.sh $@
+	$(HIDELIBTOOL)$(LIBTOOL) --mode=compile $(HIDECOMPILE) --tag=CXX $(MPICXX) -c $(CCASPEC_LIBTOOL_COMPILEFLAGS) $(LOCAL_CXXFLAGS) $(CMPT_CXXFLAGS) -o $@ -I$(<D) $<
+
+%.lo : %.C
+	@$(srcdir)/cxx/util/progress.sh $@
+	$(HIDELIBTOOL)$(LIBTOOL) --mode=compile $(HIDECOMPILE) --tag=CXX $(MPICXX) -c $(CCASPEC_LIBTOOL_COMPILEFLAGS) $(LOCAL_CXXFLAGS) $(CMPT_CXXFLAGS) -o $@ -I$(<D) $<
+
+%.lo : %.cpp
+	@$(srcdir)/cxx/util/progress.sh $@
+	$(HIDELIBTOOL)$(LIBTOOL) --mode=compile $(HIDECOMPILE) --tag=CXX $(MPICXX) -c $(CCASPEC_LIBTOOL_COMPILEFLAGS) $(LOCAL_CXXFLAGS) $(CMPT_CXXFLAGS) -o $@ -I$(<D) $<
+
+##################################
+# doc building
+
+doc:
+	(cd ../doc; $(MAKE))
+
+##################################
+# make debugging and boredom management
+
+vpath:
+	@echo $(VPATH)
+
+vpath2:
+	@for i in $(VPATH) ; do \
+		echo $$i; \
+	done
+cmd:
+	@echo $(CMD_LIST)
+
+cflags:
+	@echo "$(CFLAGS)"
+	@echo "$(CXXFLAGS)"
+	@echo "$(LOCAL_CFLAGS)"
+	@echo "$(LOCAL_CXXFLAGS)"
+
+flags:
+	@echo $(CSBLFLAGS)
+	@echo $(CSNLFLAGS)
+	@echo $(CXXFLAGS)
+
+noise:
+	@$(RM) objlist
+	@echo $(VPATH)
+	@echo "C_SUPPORT_OBJ =" >> objlist
+	@echo $(C_SUPPORT_OBJ) >> objlist
+	@echo "CXX_SUPPORT_OBJ =" >> objlist
+	@echo $(CXX_SUPPORT_OBJ) >> objlist
+	@for i in $(BABEL_COMPONENT_LIST) $(BABEL_PORT_LIST) $(BABEL_TEST) DUMMY; do \
+		if test "x$$i" = "xDUMMY"; then \
+			continue; \
+		fi ; \
+		$(MAKE) CMPT=$$i component-noise ; \
+		echo "============= babel c named $$i noised"; \
+	done
+
+component-noise:
+	@echo "For $(CMPT) CMPT_LIST_CC_OBJ = ">> objlist
+	@echo $(CMPT_LIST_CC_OBJ) >> objlist
+	@echo "For $(CMPT) CMPT_LIST_CXX_OBJ = ">> objlist
+	@echo $(CMPT_LIST_CXX_OBJ) >> objlist
+
+fnumbers:
+	-@$(RM) .fnumbers .counter .total
+	@for i in $(C_SUPPORT_OBJ) $(CXX_SUPPORT_OBJ) $(DRIVER_OBJ_CXX) ; do \
+		echo "(`$(srcdir)/cxx/util/counter.sh`/__TOT__) $$i ..." >> .fnumbers; \
+	done
+	@for i in $(BABEL_COMPONENT_LIST) $(BABEL_PORT_LIST) $(BABEL_TESTS) DUMMY; do \
+		if test "x$$i" = "xDUMMY"; then \
+			continue; \
+		fi ; \
+		$(MAKE) $(QUIETMAKE) CMPT=$$i component-fnumbers ; \
+	done
+	@(tot=`cat .fnumbers | wc -l | sed -e 's% %%g'`; \
+	  cat .fnumbers | sed -e "s%__TOT__%$$tot%g" > .fnumbers2)
+	@$(RM) .fnumbers
+	@mv .fnumbers2 .fnumbers
+	
+
+component-fnumbers:
+	@for i in $(CMPT_LIST_CC_OBJ) $(CMPT_LIST_CXX_OBJ) ; do \
+		echo "(`$(srcdir)/cxx/util/counter.sh`/__TOT__) $$i ..." >> .fnumbers; \
+	done
+
+
+##################################
+# housekeeping
+
+clean:
+	$(LIBTOOL) --mode=clean $(HIDECOMPILE) $(RM) *.lo *.la \
+		objlist depline .fnumbers .counter .total
+
+distclean: clean
+	$(RM) Makefile.depends
+
+##################################
+# dependency checking
+
+babel_src_list:
+	@echo $(CMPT_LIST_CXX) $(CMPT_LIST_CC) >> .babel_src_list
+
+ifeq "x$(CCAFE_DEVELOPER)" "xyes"
+
+depend:
+	@echo "Computing dependencies"
+	-@$(RM) .babel_src_list
+	@touch .babel_src_list
+	for i in $(BABEL_COMPONENT_LIST) $(BABEL_PORT_LIST) $(BABEL_TESTS) DUMMY; do \
+		if test "x$$i" = "xDUMMY"; then \
+			continue; \
+		fi ; \
+		$(MAKE) $(QUIETMAKE) CMPT=$$i babel_src_list ; \
+	done
+	(blist=`cat .babel_src_list`; \
+	echo "for `echo $$blist $(C_SUPPORT_SRC) $(CXX_SUPPORT_SRC) |wc -w` object files" ; \
+	$(DEPEND) $(LOCAL_CXXFLAGS) \
+		$(BABEL_COMPONENT_INCLUDES) $(BABEL_TEST_INCLUDES) \
+		$$blist $(C_SUPPORT_SRC) $(CXX_SUPPORT_SRC) )
+	@cat Makefile.depends |sed -e 's%.o:%.lo:%g' > Makefile.depend
+	@cp -f Makefile.depend Makefile.depends
+	@$(RM) Makefile.depend
+	@echo "Done computing dependencies"
+
+depend-sys:
+	@echo "Computing dependencies with system headers"
+	@$(RM) .babel_src_list
+	@for i in $(BABEL_COMPONENT_LIST) $(BABEL_PORT_LIST) $(BABEL_TESTS) DUMMY; do \
+		if test "x$$i" = "xDUMMY"; then \
+			continue; \
+		fi ; \
+		$(MAKE) $(QUIETMAKE) CMPT=$$i babel_src_list ; \
+		echo "============= babel c named $$i done"; \
+	done
+	@(blist=`cat .babel_src_list`; \
+	echo "for `echo $$blist $(C_SUPPORT_SRC) $(CXX_SUPPORT_SRC) |wc -w` object files" ; \
+	$(DEPENDSYS) $(LOCAL_CXXFLAGS) \
+		$(BABEL_COMPONENT_INCLUDES) $(BABEL_TEST_INCLUDES) \
+		$$blist $(C_SUPPORT_SRC) $(CXX_SUPPORT_SRC) )
+	@cat Makefile.depends |sed -e 's%.o:%.lo:%g' > Makefile.depend
+	@cp -f Makefile.depend Makefile.depends
+	@$(RM) Makefile.depend
+	@echo "Done computing dependencies with system headers"
+
+else
+
+depend:
+	@echo "depends skipped. used only in developer mode."
+	@echo "reconfigure with --enable-developer if wanted."
+
+endif
+
+cll:
+	@echo $(CLL)
+
+ifneq "x$(TARGET)" "xclean"
+include Makefile.depends
+endif

@@ -1,0 +1,150 @@
+#! @RUBY@ -w
+
+# This changes the namespace for c++ files.  Unless you are really
+# sure what you are doing you probably should not use this.  This will
+# hose your entire tree in the blink of an eye.
+
+class Grepper
+
+  attr_reader :match
+  attr_reader :last_pos
+  attr_reader :buf
+  attr_reader :modified
+  attr_accessor :verbose
+
+
+  def initialize(buf)
+    @buf = buf
+    @modified = false
+    @verbose = nil
+  end
+
+
+  def findLineAt(location = @match.begin(0))
+    return nil if ! location
+    start = @buf.rindex(/\n/, location) 
+    if start == nil
+      start = 0
+    end
+    start += 1
+    endx = @buf.index(/\n/, location)
+    if endx == nil
+      endx = @buf.length
+    end
+    @buf[start..endx]
+  end
+
+  def locate(re, f)
+    return nil if ! ((/.*\.cxx$/ =~ f) || (/.*\.h$/ =~ f ) || (/.*\.cc$/ =~ f))
+    if @last_pos = @buf.index(re)
+      @match = Regexp.last_match
+      return @buf[@match.begin(0)..(@match.end(0) - 1)]
+    end
+  end
+
+  def insertAfterAll(re, insert)
+    @buf.gsub!(re) {
+      m = Regexp.last_match
+      @modified = true
+      q = m[0]+insert
+      puts "replacing #{m[0]} \n\nwith\n\n #{q}" if @verbose
+      q
+    }
+    @modified
+  end
+  def insertBeforeAll(re, insert)
+    @buf.gsub!(re) {
+      m = Regexp.last_match
+      @modified = true
+      q = insert+m[0]
+      puts "replacing #{m[0]} \n\nwith\n\n #{q}" if @verbose
+      q
+    }
+    @modified
+  end
+end
+
+
+class InsertClassicNamespace
+
+  def initialize(validFileRegexpArray)
+    @validFileRegexpArray = validFileRegexpArray
+  end
+
+  def validFile?(f)
+    return nil if ! File.file?(f)
+    if ! FileTest.readable?(f)
+      $stderr.puts(":-( File: #{f} is not readable, "+
+		   "skipping and continuing ...") 
+      return nil
+    end
+    if ! FileTest.writable?(f)
+      $stderr.puts(":-( File: #{f} is not writeable,"+
+		   "skipping and continuing ...") 
+      return nil
+    end
+    ans = nil
+    @validFileRegexpArray.each { |re|
+      ans = ans || (re =~ f)
+    }
+    ans
+  end
+
+  def doRecursiveInsert(dirName, re, insert)
+    Find.find(dirName) { |f|
+      next if ! validFile? f
+      fil = open(f, 'r')
+      g = Grepper.new(fil.read)
+      g.verbose = true
+      fil.close
+      next if ! g.insertBeforeAll(re, insert)
+      if ! BkupFile.createBkup(f)
+	$stderr.puts "could not create backup file for #{f}; skipping ..."
+	next
+      end
+      fil = open(f, 'w') 
+      fil.write g.buf
+      fil.close
+      puts "modified #{f} successfully"
+    }
+  end
+
+  def findMatchingFiles(dirName, regexp)
+    Find.find(dirName) { |f|
+      next if ! validFile? f
+      g = Grepper.new(open(f, 'r').read) 
+      if str = g.locate(regexp, f)
+	puts "================================================="
+	puts "In file "+f
+	puts g.findLineAt
+      end
+    }
+  end
+end
+
+if $0 == __FILE__
+
+  require 'bkupFile'
+  require 'find'
+
+
+ validFiles = [/.*\.cxx$/, /.*\.h$/, /.*\.hh$/, /.*\.cc$/,
+    /.*\.cpp$/,/.*\.C$/,  /.*\.h.in$/]
+
+  clas = InsertClassicNamespace.new(validFiles)
+
+  regexp = Regexp.new(Regexp.escape('gov::cca::'))
+  ins = 'classic::'
+
+  regexp0 = /\s+namespace\s+gov\s*/
+  ins0 = "namespace classic {\n"
+
+  regexp1 = Regexp.new(Regexp.escape('gov_o_cca_o_'))
+  ins1 = 'classic_o_'
+
+
+
+  clas.findMatchingFiles '.', regexp1
+#  clas.doRecursiveInsert('.', regexp1, ins1)
+  
+end

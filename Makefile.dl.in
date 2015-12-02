@@ -1,0 +1,73 @@
+#
+# NOTE: the authors of ccaffeine are *extremely* skeptical
+# of all known automatic dynamic-loading dependency tracking
+# and resolution schemes (most break readily).
+#
+# As such, our code is written to require FULL path names
+# to .so files being loaded. The files are loaded privately
+# (not into the global symbol table), with symbol access
+# being explicitly through CCA_DynamicSymbol/dlsym.
+#
+# baa, 8/2000
+
+
+# This is the directory where shared object components live:
+LIB_RUNTIME_DIR = $(CCAFE_CXX_ROOT)/dc/component
+BABEL_ROOT=@BABEL_ROOT@
+
+###
+### Stuff for building applications/frameworks.
+###
+
+#       DL_LIBS -       Library file(s) to include in demo and other base
+#                       applications in order for the "repository" 
+#			command to work.
+CCAFE_DL_LIBS= @CCAFE_DL_LIBS@
+
+#       LD_FLAGS -      Flags to pass to the compiler when linking object
+#                       files into an executable application binary such
+#                       as demo-client.
+CCAFE_LD_FLAGS= @CCAFE_LD_FLAGS@
+
+#       LD_SEARCH_FLAGS-Flags to pass to ld, such as "-R /usr/local/cca/lib",
+#                       that tell the run-time dynamic linker where to look
+#                       for shared libraries such as libTextView.so.  Depends on
+#                       the variable LIB_RUNTIME_DIR in the Makefile.
+# 			Not needed for absolute pathnamed files.
+#			In ccaffeine, we force absolute pathnames.
+CCAFE_LD_SEARCH_FLAGS= @CCAFE_LD_SEARCH_FLAGS@
+
+###
+### Stuff for building components.
+###
+
+#       SHLIB_CFLAGS -  Flags to pass to cc when compiling the components
+#                       of a shared library (may request position-independent
+#                       code, among other things).
+CCAFE_SHLIB_CFLAGS= @CCAFE_SHLIB_CFLAGS@
+
+#SHLIB_LD_LDFLAGS -     Flags to pass to the dynamic linker when creating
+#                       a shared library.
+CCAFE_SHLIB_LDFLAGS= @CCAFE_SHLIB_LDFLAGS@
+
+#SHLIB_LD -      Base command to use for combining object files
+#                       into a shared library.
+CCAFE_SHLIB_LD= @CCAFE_SHLIB_LD@
+
+#       SHLIB_LD_LIBS - Dependent libraries for the linker to scan when
+#                       creating shared libraries.  This symbol typically
+#                       goes at the end of the "ld" commands that build
+#                       shared libraries. The value of the symbol is
+#                       "${LIBS}" if all of the dependent libraries should
+#                       be specified when creating a shared library.  If
+#                       dependent libraries should not be specified (as on
+#                       SunOS 4.x, where they cause the link to fail, or in
+#                       general if demo mains aren't themselves shared
+#                       libraries), then this symbol has an empty string
+#                       as its value.
+CCAFE_SHLIB_LD_LIBS= @CCAFE_SHLIB_LD_LIBS@
+
+#       SHLIB_SUFFIX -  Suffix to use for the names of dynamically loadable
+#                       extensions.  An empty string means we don't know how
+#                       to use shared libraries on this platform.
+CCAFE_SHLIB_SUFFIX= @CCAFE_SHLIB_SUFFIX@

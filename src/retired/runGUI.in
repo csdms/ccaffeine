@@ -1,0 +1,11 @@
+#! @SHELL@
+CCA_JAR=@CCA_JAR@
+prefix=@prefix@
+version=@CCAFE_VERSION@
+JAVA=@JAVA@
+export JAVA
+JAVARUNFLAGS="-Djava.compiler=NONE -classpath $CCA_JAR:$prefix/cca/ccafe-$version/java"
+export JAVARUNFLAGS
+echo "######################"
+echo "$0: $JAVA $JAVARUNFLAGS gov.sandia.ccaffeine.dc.user_iface.BuilderClient $*"
+$JAVA $JAVARUNFLAGS gov.sandia.ccaffeine.dc.user_iface.BuilderClient $*

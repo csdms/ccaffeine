@@ -1,0 +1,9 @@
+* Cleaning up the main tree.
+* Created a last snapshot module in /home/cvs/ccaffeine/repository/dccafe-java-2005_01_31.
+* Got rid of java subdirectory and all fancy java-related configure junk.
+knowing any more about java than just invoking 'java' is no longer the
+c++ tree's problem.
+* Got rid of efence support.
+* Got rid of pvm support.
+* Got rid of tomcat support. goes in some ccafe-gui project.
+* Got rid of chasm/siloon support.

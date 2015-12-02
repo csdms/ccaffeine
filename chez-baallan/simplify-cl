@@ -1,0 +1,33 @@
+#!/bin/sh
+# wrapper to launch the tcl script to simplify the bld files to commandline
+# input scripts
+if [ -x /usr/bin/tclsh ] ; then
+	Tcl=/usr/bin/tclsh;
+fi
+if [ -x /usr/local/bin/tclsh ] ; then
+	Tcl=/usr/local/bin/tclsh;
+fi
+if [ -x $HOME/bin/tclsh ] ; then
+	Tcl=$HOME/bin/tclsh;
+fi
+
+if [ "x$Tcl" = "x" ] ; then
+	echo 'tclsh not found';
+	exit 1;
+fi
+
+if [ -x ./simplify-cl.tcl ] ; then
+	Simp=./simplify-cl.tcl;
+fi
+
+if [ -x ./simplify-cl.tcl ] ; then
+	Simp=./simplify-cl.tcl;
+fi
+
+if [ 'x$Simp' = 'x' ] ; then
+	echo 'simplify-cl.tcl not found in pwd';
+	exit 1;
+fi
+
+exec $Tcl $Simp -- $*
+exit 0

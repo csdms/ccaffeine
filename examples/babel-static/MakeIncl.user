@@ -1,0 +1,26 @@
+# changing the next line means a lot of Impl code rewrite.
+PKG_NAME = test_script_babel
+
+# note: libsuffix is not .so, .a, etc, but version info
+# which may be needed.
+LIBSUFFIX=$(CCAFE_VER_SUFFIX)$(CCAFE_PROGRAM_SUFFIX)
+
+# Where any extra headers needed for user components are.
+# component headers are determined from the .depl.cca files.
+# USER_INCLUDES will be searched before those from .depl.cca files.
+USER_INCLUDES=
+
+# flags for linking user components.
+# normally only application-specific ports or
+# support libraries are needed here. 
+# The component libraries are determined from the xml.
+# libraries given here will appear in the link order after
+# the component libraries.
+USER_COMPLIBS= \
+-L$(CCAFE_libdir) \
+-lStringConsumerPort$(LIBSUFFIX)
+
+# uncomment the following lines to show libtool and compiler actions.
+# normally these are defined to have a quiet build.
+#HIDELIBTOOL=
+#HIDECOMPILE=

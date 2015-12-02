@@ -1,0 +1,55 @@
+Update May 2004, Ben Allan, SNL/CA
+babel-0.9.2 release note:
+If XML is not configured in, babel dynamic loading is unlikely to work.
+This is due to babel, not to Ccaffeine.
+
+October 7, 2003, Ben Allan, SNL/CA
+
+WHAT:
+We (in the drive to raise N to infinity where N is the 
+number of other libraries the user must have before using
+ccaffeine) now support xml formatted .cca files 
+class description for locating components, in
+addition to the old ccaffeine style. 
+
+
+BUILDING:
+This support is optional. If libxml2 cannot be located
+by configure (through xml2-config), then we do
+not support xml formatted .cca files.
+./configure has 3 new switches, of which one is likely needed
+if the program xml2-config is not in your path:
+
+a) --with-xml2-config=/where/you/hid/xml2/bin/xml2-config
+b) --with-xml2-includes='flags for compiling with xml headers'
+c) --with-xml2-libs='libs you need in -l form'
+
+If (a) fails, try giving b & c, but don't expect miracles.
+
+
+USING:
+Copious examples of supported formats are provided in subdirectory
+cxx/dc/services/dotcca/examples/*.depl.cca
+cxx/dc/services/dotcca/examples/oldDotCCA/*cca
+
+The script for generating XML .cca files is provided in
+cxx/util/genDLIndexXML
+Invoke cxx/util/genDLIndexXML without arguments
+to get the argument syntax.
+
+
+FUTURE WORK:
+The BABEL xml file for a given class has almost enough in it
+to be used as a .cca file. It lacks a tag for the .so
+deployment path. If the .sidl and the .so file happened
+to both live in the same directory, we could make something
+of this. As it is, the current dotcca parser accepts
+BABEL xml files as input and detects whether the class
+described is a CCA component.
+
+
+BUG NOTES:
+The 'make install' target still doesn't
+handle the case where xml is missing or configured out. 
+For linux, libxml2 is always there (nearly) and this
+isn't a panic to fix yet. Not too hard.

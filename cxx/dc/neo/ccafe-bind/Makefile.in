@@ -1,0 +1,104 @@
+CCAFE_HOME=../../..
+buildroot=../../../..
+
+include $(CCAFE_HOME)/Makefile.Rules
+VPATH := $(srcdir)/cxx/dc/neo/ccafe-bind
+
+LOCALINC=$(NEOCCA_INC) 
+
+INACTIVE= \
+NeoFactory.cc \
+NeoOpqFactorySvc.cc
+
+LIB = libNeoCcafe.a
+SRC = \
+NeoGoPortPC.cc \
+NeoGoPortWrap.cc \
+NeoLoaderPC.cc \
+NeoLoaderWrap.cc \
+NeoOpaqueServiceProvider.cc \
+NeoServiceRegistryPC.cc \
+NeoServiceRegistryWrap.cc \
+ccafeTypeMap.cc \
+NeoAbstractFramework.cc \
+NeoBasicParameterPortPC.cc \
+NeoBasicParameterPortWrap.cc \
+NeoBuilderServicePC.cc \
+NeoBuilderServiceWrap.cc \
+NeoComponentClassDescription.cc \
+NeoComponentID.cc \
+NeoComponentWrapper.cc \
+NeoConnectionID.cc \
+NeoHelper.cc \
+NeoOpaqueComponentFactory.cc \
+NeoOpaqueGoPort.cc \
+NeoOpaqueParameterGetListener.cc \
+NeoOpaqueParameterSetListener.cc \
+NeoOpaquePort.cc \
+NeoOpaqueTypeMap.cc \
+NeoParameterPortPC.cc \
+NeoParameterPortWrap.cc \
+NeoParameterPortFactoryPC.cc \
+NeoParameterPortFactoryWrap.cc \
+NeoServices.cc \
+NeoServicesHelper.cc
+
+OBJ = ${SRC:.cc=.o}
+
+all: $(LIB)
+
+%.o : %.cc
+	$(CXX) -c $(CXXFLAGS) $(LOCALINC) $<
+
+%.i : %.cc
+	$(CXX) -E $(CXXFLAGS) $(LOCALINC) $< > $@
+
+%.c.ps : %.cc
+	-enscript -2r -fCourier8 -Ecpp --color -W PostScript -p $@ $<
+
+test: testNS
+
+gen:
+	@echo ""
+
+NeoServicesHelper.o:
+	$(MPICXX) -c $(CXXFLAGS) $(LOCALINC) $(CCA_PLLFLAGS) NeoServicesHelper.cc
+
+TESTLIBS= \
+$(CCAFE_HOME)/dc/framework/libdc_fwk.a \
+$(CCAFE_HOME)/dc/port/libports.a \
+$(CCAFE_HOME)/jc++/libjcpp.a \
+$(CCAFE_HOME)/util/libcafeutil.a
+
+testNS:
+	$(CXX) $(CXXFLAGS) $(LOCALINC) -DNeoServices_cc_MAIN \
+		NeoServices.cc -o testNeoServices.x \
+		$(LIB) $(TESTLIBS)
+
+check: testLink
+	$(CXX) $(CXXFLAGS) $(LOCALINC) completenessTest.cc \
+		-o completenessTest.x \
+		$(LIB) $(TESTLIBS)
+
+src-list:
+	@echo "DC_LIST_CXX += \\" >> ../../src-list
+	@for i in $(SRC) ; do \
+                echo "$(srcdir)/cxx/dc/neo/ccafe-bind/$$i \\" >> ../../src-list ; \
+        done
+	@echo "" >> ../../src-list
+	@echo "updated src-list from dc/neo/ccafe-bind"
+
+testLink:
+
+$(LIB) : $(OBJ)
+	$(AR) r $(LIB) $(OBJ)
+	$(RANLIB) $(LIB)
+
+clean: 
+	$(RM) $(OBJ)  $(LIB) .depend *.i *.x
+
+.depend depend: 
+	$(DEPEND) $(CXXFLAGS) $(LOCALINC) $(SRC)
+	touch .depend
+
+

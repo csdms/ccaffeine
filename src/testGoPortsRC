@@ -1,0 +1,98 @@
+#!ccaffeine
+# this file isn't supposed to work generally yet.
+# needs to be generated from configure and have checks
+# for which bindings are present.
+# test for go ports neo-classic classic-neo
+path set /home/baallan/work/posthack/local-neo/share/neotest-go-0.1.0/components
+path append /home/baallan/work/posthack/local-neo/share/eg-neo-0.9.0/components
+path append /tmp/crapola9/lib
+path append /tmp/crapola9/share/ccafe-0.5.1/components
+repository get-global GoTest 
+repository get-global neo::test::Go
+repository get-global eg::neo::SimpleStamper
+repository get-global StarterComponent
+repository get-global PrinterComponent
+repository get-global ccafe0.PrinterComponent
+repository get-global ccafe1.StarterComponent
+repository get-global ccafe5.GoComponent
+noisy
+
+# neo base call from framework and neo
+create neo::test::Go ngo1
+create neo::test::Go ngo2
+connect ngo1 call_go ngo2 go
+go ngo1 go
+disconnect ngo1 call_go  ngo2 go
+
+# neo calling neo stamper base case
+create eg::neo::SimpleStamper nss
+create eg::neo::SimpleStamper nss2
+connect nss out_port nss2 in_port
+# fwk calling neo stamper
+go nss go
+# neo calling neo stamper
+connect ngo1 call_go nss go
+go ngo1 go
+disconnect ngo1 call_go nss go
+shell echo CALLING_NEO_BASICS_DONE
+
+# classic call from framework
+create StarterComponent StarterComponent0
+create PrinterComponent PrinterComponent0
+connect StarterComponent0 out0 PrinterComponent0 printer_port
+go StarterComponent0 go_port
+# classic call classic test
+create GoTest cgo1
+connect cgo1 call_go StarterComponent0 go_port
+go cgo1 go
+disconnect cgo1 call_go StarterComponent0 go_port
+shell echo CALLING_CLASSIC_BASICS_DONE
+
+# babel call from framework
+create ccafe0.PrinterComponent PrinterComponent1
+create ccafe1.StarterComponent StarterComponent1
+create ccafe1.GoComponent bgo
+connect StarterComponent1 output PrinterComponent1 string
+go StarterComponent1 go
+# babel call from babel
+connect bgo call_go StarterComponent1 go
+go bgo go
+disconnect bgo call_go StarterComponent1 go
+shell echo CALLING_BABEL_BASICS_DONE
+
+
+# neo call classic test
+connect ngo1 call_go StarterComponent0 go_port
+go ngo1 go
+disconnect ngo1 call_go StarterComponent0 go_port
+shell echo NEO_TO_CLASSIC_GO_DONE
+# classic call neo test
+connect cgo1 call_go nss go
+go cgo1 go
+disconnect cgo1 call_go nss go
+shell echo CLASSIC_TO_NEO_GO_DONE
+
+# babel called from neo
+connect ngo1 call_go StarterComponent1 go
+go ngo1 go
+disconnect ngo1 call_go StarterComponent1 go
+shell echo NEO_TO_BABEL_GO_DONE
+
+# babel call neo test
+connect bgo call_go nss go
+go bgo go
+disconnect bgo call_go nss go
+shell echo BABEL_TO_NEO_GO_DONE
+
+# babel called from classic
+connect cgo1 call_go StarterComponent1 go
+go cgo1 go
+disconnect cgo1 call_go StarterComponent1 go
+shell echo CLASSIC_TO_BABEL_GO_DONE
+
+connect bgo call_go StarterComponent0 go_port
+go bgo go
+disconnect bgo call_go StarterComponent0 go_port
+shell echo BABEL_TO_CLASSIC_GO_DONE
+# quit
+#!eof

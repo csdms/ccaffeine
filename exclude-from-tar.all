@@ -1,0 +1,10 @@
+*/CVS/*
+CVS
+*.o
+*.a
+*.so
+*.exe
+.cvsignore
+*/.#*
+*~
+exclude-from-tar.ccafe

@@ -1,0 +1,19 @@
+<xml>
+<!-- # generated CCAFFEINE dynamic library index. -->
+<!-- date=Mon Oct  6 22:45:59 PDT 2003 -->
+<!-- builder=baallan@ccafe.ca.sandia.gov -->
+<!-- /home/baallan/work/posthack/dccafe86/cxx/util/genDLIndexXML libclassicBSTest_0_4_3.so create_BSTest BSTest /tmp/crapola/lib/ BSTest classic -->
+<componentDeployment 
+  name="BSTest" 
+  paletteClassAlias="BSTest"
+>
+    <environment> 
+        <ccaSpec binding="classic" /> 
+        <library loading="dynamic" 
+                 name="libclassicBSTest_0_4_3.so"
+		 constructor="create_BSTest"
+                 location="/tmp/crapola/lib/"
+        />
+    </environment>
+</componentDeployment>
+</xml>

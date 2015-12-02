@@ -1,0 +1,59 @@
+#
+# This file is for other components/frameworks to include
+# in their makes to pick up proper definitions of our
+# header/library locations. They must define ahead
+# (or in their environment) COLHLDR_ROOT pointing to the
+# directory containing this file. We prefer this
+# approach to writing brittle hwcc, hwf77, hwf90, and
+# hwCC wrappers.
+#
+# Because COLHLDR_ROOT is defined externally, this entire
+# directory can be moved around in the file system
+# without this file breaking. 
+# If you want a file that presents absolute definitions as specified
+# at install time, see hwConfig.sh.
+# If you want a similar file pointing to a built
+# but not yet installed component, see hwConfigTemporary.sh.
+#
+
+#--------------------------------------------------------------
+# absolute path to where MPI lives
+#--------------------------------------------------------------
+COLHLDR_MPI_ROOT = @MPI_ROOT@
+COLHLDR_MPI_LIB = $(COLHLDR_MPI_ROOT)/build/LINUX/ch_p4/lib/libmpich.a
+COLHLDR_MPI_INC = -I$(COLHLDR_MPI_ROOT)/include -I$(COLHLDR_MPI_ROOT)/build/LINUX/ch_p4/include
+
+#--------------------------------------------------------------
+# absolute path to where CCAFFEINE lives
+#--------------------------------------------------------------
+COLHLDR_CCAFFEINE_ROOT = @CCAFFEINE_ROOT@
+
+
+#---------------------------------------------------------------
+# absolute path to where our c++ sources are.
+# In this simple example it's the same as the externally defined root.
+#---------------------------------------------------------------
+COLHLDR_CXX_HOME= $(COLHLDR_ROOT)
+
+#---------------------------------------------------------------
+# Flags needed to build against our component.
+#---------------------------------------------------------------
+COLHLDR_INC= -I$(COLHLDR_CXX_HOME) $(COLHLDR_MPI_INC)
+
+#---------------------------------------------------------------
+# COLHLDR c++ lib with namespaces for static linking
+#---------------------------------------------------------------
+COLHLDR_LIB= $(COLHLDR_CXX_HOME)/libDataHolder.a
+
+#---------------------------------------------------------------
+# The compiler tools or distributions used to build COLHLDR.
+#---------------------------------------------------------------
+COLHLDR_CXX= @CXX@
+
+#---------------------------------------------------------------
+# The compiler flags used to build COLHLDR.
+#---------------------------------------------------------------
+COLHLDR_CXX_FLAGS= @CXXFLAGS@ -D_CCAMPI
+
+# end
+# $Header: /cvs/ccaffeine/repository/dccafe/chez-rob/ColorHolder/MakeIncl.COLHLDR_Component.in,v 1.1 2000/12/11 15:24:45 rob Exp $

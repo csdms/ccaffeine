@@ -1,0 +1,3 @@
+#!/usr/bin/perl -pi.bak
+# converts underbar equivalent to cca namespace
+s/gov::cca::/gov__cca__/g

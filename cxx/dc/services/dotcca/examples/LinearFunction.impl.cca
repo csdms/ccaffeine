@@ -1,0 +1,21 @@
+<componentImplementation name="LinearFunction" uniqueID="tutorialLF">
+  <language name="F90" source="LinearFunction.f90">
+          <!-- source - what if there are multiple sources? -->
+     <author>Somebody Who WroteThis</author>
+     <author>Grad Student</author>
+
+     <property name="xml" value="LinearFunction.xml"/>
+     <property name="sidl" value="LinearFunction.sidl"/>
+     <methodBinding abstract="/Ports/FunctionPort/evaluate" impl="Library/Scope/Module/LF_EVALUATE">
+        <property name="propertyName" value="propertyValue"/>
+     </methodBinding>
+  </language> 
+
+  <language name="C++">
+  </language>
+
+  <guiDescription>
+     <!-- same as in old spec + java classes -->
+  </guiDescription>
+   
+</componentImplementation>

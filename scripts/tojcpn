@@ -1,0 +1,65 @@
+#!/usr/bin/perl -pi.bak
+# converts references to jc++ classes to JCPN(classname)
+# usage: tojcpn <input filenames>
+# Note the result is approximate and the original file
+# is moved to filename.bak.
+# JC++ classname conflicting with others may need repairs
+# in the converted code.
+s/BufferedReader/JCPN(BufferedReader)/g;
+s/NonblockingReader/JCPN(NonblockingReader)/g;
+s/StdReader/JCPN(StdReader)/g;
+s/Reader/JCPN(Reader)/g;
+s/StdJCPN.Reader./StdReader/g;
+s/BufferedJCPN.Reader./BufferedReader/g;
+s/NonblockingJCPN.Reader./NonblockingReader/g;
+;
+s/StdWriter/JCPN(StdWriter)/g;
+s/Writer/JCPN(Writer)/g;
+s/StdJCPN.Writer./StdWriter/g;
+;
+s/StringJC/JCPN(StringJC)/g;
+s/BooleanJC/JCPN(BooleanJC)/g;
+s/DoubleJC/JCPN(DoubleJC)/g;
+s/FloatJC/JCPN(FloatJC)/g;
+s/HashKey/JCPN(HashKey)/g;
+s/IntegerJC/JCPN(IntegerJC)/g;
+s/LongJC/JCPN(LongJC)/g;
+s/ Object/ JCPN(Object)/g;
+;
+s/GenericHashBucket/JCPN(GenericHashBucket)/g;
+s/StringHashBucket/JCPN(StringHashBucket)/g;
+s/HashBucket/JCPN(HashBucket)/g;
+s/StringJCPN.HashBucket./StringHashBucket/g;
+s/JCPN.GenericJCPN.HashBucket../JCPN(GenericHashBucket)/g;
+;
+s/GenericHashEnum/JCPN(GenericHashEnum)/g;
+s/StringHashEnum/JCPN(StringHashEnum)/g;
+s/HashEnum/JCPN(HashEnum)/g;
+s/StringJCPN.HashEnum../StringHashEnum/g;
+s/JCPN.GenericJCPN.HashEnum../JCPN(GenericHashEnum)/g;
+;
+s/GenericHashTable/JCPN(GenericHashTable)/g;
+s/Hashtable/JCPN(Hashtable)/g;
+s/JCPN.GenericJCPN.Hashtable../JCPN(GenericHashtable)/g;
+;
+s/StringEnumeration/JCPN(StringEnumeration)/g;
+s/Enumeration/JCPN(Enumeration)/g;
+s/StringJCPN.Enumeration./StringEnumeration/g;
+;
+s/ResourceBucket/JCPN(ResourceBucket)/g;
+s/ResourceHash/JCPN(ResourceHash)/g;
+s/StringBuffer/JCPN(StringBuffer)/g;
+s/StringTokenizer/JCPN(StringTokenizer)/g;
+;
+s/StringHash/JCPN(StringHash)/g;
+s/JCPN.StringHash.Bucket/StringHashBucket/g;
+s/JCPN.StringHash.Enum/StringHashEnum/g;
+;
+;
+s/StringVectEnum/JCPN(StringVectEnum)/g;
+s/VectEnum/JCPN(VectEnum)/g;
+s/JCPN.StringJCPN.VectEnum../JCPN(StringVectEnum)/g;
+;
+s/StringVector/JCPN(StringVector)/g;
+s/Vector/JCPN(Vector)/g;
+s/JCPN.StringJCPN.Vector../JCPN(StringVector)/g;

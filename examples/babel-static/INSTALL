@@ -1,0 +1,6 @@
+See the configureHints in the directory above this to get
+the switch suggestions, and then:
+
+./configure --with-ccafe-config=$something
+make
+

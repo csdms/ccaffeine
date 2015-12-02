@@ -1,0 +1,413 @@
+# $Revision: 1.2 $
+# $Author: baallan $
+
+
+buildroot=../../..
+CCAFE_HOME=../..
+zeroth: first
+
+include $(CCAFE_HOME)/Makefile.Rules
+VPATH := $(srcdir)/cxx/dc/user_iface
+
+# possible OTHERFLAGS are -DMAINCmdLineBuilderController2 and -v
+# -Xlinker --whole-archive ccalibs -Xlinker --no-whole-archive $(TXT_COMPONENT) $(STV_COMPONENT)
+
+
+ifeq "$(CCA_USEPS)" "1"
+# we need to diddle the flags so insure will work
+SOMELOCALFLAGS= $(OTHERFLAGS) -Zsl
+endif
+
+GNULIBS= $(CCAFE_HOME)/gnu/getopt/libgetCCAFEopt.a
+
+# So far as we know, these are never used static
+# any more. We dlopen all the isis stuff.
+ifeq "$(ISIS_STATIC)" "yes"
+ISIS_STATIC_LIBS=\
+$(ISIS_LIB) \
+$(ESICCA_COMPONENT) \
+$(ESI_LIB) \
+$(SNLCPP_LIB)
+endif
+
+BABEL_LIB1=$(CCAFE_HOME)/lib/libccaffeine$(VER_SUFFIX)$(PROGRAM_SUFFIX)$(CCAFE_SHLIB_SUFFIX)
+ifeq "$(OS_ARCH)" "OS_AIX"
+LINK_BABEL_LIB1= \
+-L$(CCAFE_HOME)/lib \
+-L$(libdir) \
+-L$(CCAFE_RPM_libdir) \
+-lccaffeine$(VER_SUFFIX)$(PROGRAM_SUFFIX)
+else
+LINK_BABEL_LIB1= \
+-L$(CCAFE_HOME)/lib \
+-Wl,-rpath,$(CCAFE_HOME)/lib \
+-Wl,-rpath,$(libdir) \
+-Wl,-rpath,$(CCASPEC_libdir) \
+-Wl,-rpath,$(CCAFE_RPM_libdir) \
+-lccaffeine$(VER_SUFFIX)$(PROGRAM_SUFFIX)
+endif
+
+BABEL_LIB2=$(CCAFE_HOME)/dc/$(BABEL_BINDING_DIR)/ccafe-bind/libBblCcafe.a
+BABEL_LIB3= $(BABEL_CCA_LIBS) $(BABEL_ROOT)/lib/libsidl.so
+BABELSTUFF_INC= $(BABEL_INC) $(BABEL_CCA_INC) 
+
+
+ifeq "$(HAVE_BABEL)" "0"
+BABEL_LIB1=
+LINK_BABEL_LIB1=
+BABEL_LIB2=
+BABEL_LIB3=
+BABELSTUFF_INC=
+endif
+
+ifeq "$(NEO_CCA_INSTALLED)" "1"
+NEO_INCLUDE=$(NEOCCA_INC)
+else
+NEO_INCLUDE=
+endif
+
+
+JOE_INCLS = -I/usr/local/lampi/include -D_ULM_MPI_H_
+JOE_LIBS= /usr/local/lampi/lib/libmpi.so
+# reverse the next two if using lampi w/joe kenny
+# there is a better way to get the same effect using configure switches.
+LOCALFLAGS = $(SOMELOCALFLAGS) $(BABELSTUFF_INC) $(JOE_INCLS)
+LOCALFLAGS = $(SOMELOCALFLAGS) $(BABELSTUFF_INC)
+# comment out this next if joe.
+JOE_LIBS= -pg
+JOE_LIBS=
+
+CPPFLAGS= $(CXXFLAGS) $(LOCAL_FLAGS) -E
+
+# was afer BABEL_LIB2 $(CCAFE_HOME)/dc/classic/ccafe-bind/libClsCcafe.a \
+
+CCALIBS = \
+$(CCAFE_HOME)/cmd/libcmd.a \
+$(CCAFE_HOME)/dc/user_iface/ccacmd/libccacmd.a \
+$(CLASSIC_LIBRARY) \
+$(NEO_LIBRARY) \
+$(BABEL_LIB1) \
+$(CCAFE_HOME)/dc/framework/libdc_fwk.a \
+$(CCAFE_HOME)/dc/distributed/libdistributed.a \
+$(CLASSIC_LIBRARY_COMPONENTS) \
+$(CCAFE_HOME)/dc/port/libports.a \
+$(CCAFE_HOME)/parameters/libparameters.a \
+$(ISIS_STATIC_LIBS) \
+$(CCA_LIB) \
+$(GNULIBS) \
+$(BABEL_LIB2) \
+$(CLASSIC_LIBRARY) \
+$(NEO_LIBRARY) \
+$(CCAFE_HOME)/jc++/libjcpp.a \
+$(CCAFE_HOME)/util/libcafeutil.a \
+$(CCAFE_HOME)/stovepipe/libstovepipe.a \
+$(BABEL_LIB3)
+
+
+# the next definition must be kept in sync with the definition of
+# CCALIBS. CCALIBS is used only for dependency checks while this
+# this must include some linker flags to handle .so files.
+#
+LINK_CCALIBS= \
+$(CCAFE_HOME)/cmd/libcmd.a \
+$(CCAFE_HOME)/dc/user_iface/ccacmd/libccacmd.a \
+$(CLASSIC_LIBRARY) \
+$(NEO_LIBRARY) \
+$(LINK_BABEL_LIB1) \
+$(CCAFE_HOME)/dc/framework/libdc_fwk.a \
+$(CCAFE_HOME)/dc/distributed/libdistributed.a \
+$(CLASSIC_LIBRARY_COMPONENTS) \
+$(CCAFE_HOME)/dc/port/libports.a \
+$(CCAFE_HOME)/parameters/libparameters.a \
+$(ISIS_STATIC_LIBS) \
+$(CCA_LIB) \
+$(GNULIBS) \
+$(BABEL_LIB2) \
+$(CLASSIC_LIBRARY) \
+$(NEO_LIBRARY) \
+$(CCAFE_HOME)/jc++/libjcpp.a \
+$(CCAFE_HOME)/util/libcafeutil.a \
+$(CCAFE_HOME)/stovepipe/libstovepipe.a \
+-Wl,-rpath,$(BABEL_ROOT)/lib \
+$(BABEL_LIB3)
+
+%.o : %.cxx
+	$(CXX) -c $(CXXFLAGS) $(LOCALFLAGS) $<
+
+%.i : %.cxx
+	-$(RM) $@
+	$(CXX) $(CPPFLAGS) $(LOCALFLAGS) $< | grep '[a-z]' |egrep -v '^# ' > $@
+
+%.cxx.ps : %.cxx
+	-enscript -2rg --pretty-print=cpp --color $< -o $@
+
+%.h.ps : %.h
+	-enscript -2rg --pretty-print=cpp --color $< -o $@
+
+RETIRED= Link.cxx 
+
+CXXLIBSRC= \
+DefaultBuilderModel.cxx \
+CmdLineBuilderViewMux.cxx \
+
+CXXSERSRC= \
+CmdLineBuilderViewForHuman.cxx \
+CmdLineBuilderViewForGUI.cxx \
+
+CXX_DRIVER_SRC= \
+forceIsisBlasLapackLink.cxx \
+CmdLineBuilderController2.cxx \
+CmdLineClient.cxx \
+
+CXXSRC= \
+$(CXXLIBSRC) \
+$(CXXSERSRC) \
+$(CXX_DRIVER_SRC)
+
+
+HDRS= \
+BuilderView.h \
+BuilderModel.h \
+BuilderController.h
+
+CXXOBJ= $(CXXSRC:%.cxx=%.o)
+
+LIBOBJ=$(CXXLIBSRC:%.cxx=%.o)
+
+LIB=libccafeBM.a
+
+LIB_ALL = libccafeUserIface.a
+LIB_ALL_SRC = $(CXXSRC) 
+LIB_ALL_OBJ = $(LIB_ALL_SRC:%.cxx=%.o)
+
+LIB_MAIN = libccafeMain.a
+LIB_MAIN_SRC = $(CXXSRC) CmdLineClientMain.cxx
+LIB_MAIN_OBJ = $(LIB_MAIN_SRC:%.cxx=%.o)
+
+
+bins first all: ccacmd iface 
+	@echo "make no longer by default builds binaries in this directory."
+	@echo "You must do 'make bins' *** at the cxx/ level. "
+	@echo "Libtool has taken over."
+
+old-bins: batchban ccafe-batch clientban ccafe-client singleban ccafe-single
+
+
+batchban:
+	@echo "============================================================="	
+	@echo "= building ccafe-batch"
+	@echo "============================================================="	
+
+clientban:
+	@echo "============================================================="	
+	@echo "= building ccafe-client"
+	@echo "============================================================="	
+
+singleban:
+	@echo "============================================================="	
+	@echo "= building ccafe-single"
+	@echo "============================================================="	
+#Libraries
+lib: $(LIB) $(LIB_MAIN) $(LIB_ALL)
+$(LIB): $(LIBOBJ)
+	-$(RM) $(LIB)
+	ar ruv $(LIB) $(LIBOBJ)
+	$(RANLIB) $(LIB)
+
+$(LIB_MAIN) : $(LIB_MAIN_OBJ)
+	-$(RM) $(LIB_MAIN)
+	ar ruv $(LIB_MAIN) $(LIB_MAIN_OBJ)
+	$(RANLIB) $(LIB_MAIN)
+
+$(LIB_ALL) : $(LIB_ALL_OBJ)
+	-$(RM) $(LIB_ALL)
+	ar ruv $(LIB_ALL) $(LIB_ALL_OBJ)
+	$(RANLIB) $(LIB_ALL)
+
+
+forceIsisBlasLapackLink.o: forceIsisBlasLapackLink.cxx forceIsisBlasLapackLink.h \
+		$(CCAFE_HOME)/Makefile.Rules CmdLineBuilderController2.h
+	$(MPICXX) -c $(CXXFLAGS) \
+	        $(LOCALFLAGS) $(CCA_PLLFLAGS) $(CCA_VIS) $(CCAFE_FORCE) \
+		forceIsisBlasLapackLink.cxx
+
+CmdLineClientMain.o : CmdLineClientMain.cxx CmdLineClient.h \
+		$(CCAFE_HOME)/Makefile.Rules
+	$(MPICXX) -c $(CXXFLAGS) -D_INTERACTIVE \
+	        $(LOCALFLAGS) $(CCA_PLLFLAGS) $(CCA_VIS) \
+		CmdLineBuilderController2.cxx
+	$(MPICXX) -c $(CXXFLAGS) $(LOCALFLAGS) \
+	$(CCA_PLLFLAGS) $(CCA_VIS) \
+	CmdLineClientMain.cxx
+
+
+# executables
+
+ifeq "$(USER)" "baallan"
+
+CmdLineBuilderController2_SerialMain.o : CmdLineBuilderController2.cxx \
+		$(CCAFE_HOME)/Makefile.Rules CmdLineBuilderController2.h
+	$(CXX) -c $(CXXFLAGS) \
+	        $(LOCALFLAGS) $(CCA_VIS) \
+		CmdLineBuilderController2_SerialMain.cxx
+	$(CXX) -c $(CXXFLAGS) \
+	        $(LOCALFLAGS) $(CCA_VIS) \
+		CmdLineBuilderController2.cxx
+
+ccafe-single: CmdLineBuilderController2_SerialMain.o \
+	 	$(CCAFE_HOME)/Makefile.Rules $(CXXOBJ) $(CCALIBS)
+	-@$(RM) $@
+	(BFLFLAGS=`echo $(CXXFLAGS) |sed -e 's; -G ; ;'` ; \
+	$(PURIFY) $(MPI_LD) $$BFLFLAGS \
+	        $(LOCALFLAGS) $(STV_LDFLAGS)  \
+		CmdLineBuilderController2_SerialMain.o $(CXXOBJ) \
+		$(LINK_CCALIBS) \
+		$(LINK_CCALIBS) \
+		$(TXT_COMPONENT) $(STV_COMPONENT) $(LIBREADLINE_LIBS) \
+		$(CXXLDFLAGS) $(STV_ULIB) $(PVM_LIBS) 	\
+		$(MATHLIBS) $(CCAFE_LD_SEARCH_FLAGS) $(CCAFE_LD_FLAGS) $(CCAFE_DL_LIBS) \
+		$(FLIBS) $(SOCKETLIBS) $(CCAFE_THREAD_LIBS) $(XMLLIB) \
+		-o ccafe-single )
+endif
+
+ifneq "$(USER)" "baallan"
+# this version of ccafe-single will not run without startup cruft in a debugger.
+# on some linux+gdb releases.
+ccafe-single: ccafe-client
+	$(RM) ccafe-single
+	ln -s ccafe-client ccafe-single
+endif
+
+ctest:
+	@echo 'mpi compilers: $(MPICXX) $(MPICC) $(MPI_LD)'
+	@echo 'CCA_PLLFLAGS=$(CCA_PLLFLAGS)'
+	@echo 'CXXFLAGS=$(CXXFLAGS)'
+	@echo 'CCALIBS=$(CCALIBS)'
+	@echo 'LINK_CCALIBS=$(LINK_CCALIBS)'
+	@echo 'CCA_ROOT=$(CCA_ROOT)'
+	@echo 'CCA_LIB=$(CCA_LIB)'
+	@echo 'CCA_CXX_HOME=$(CCA_CXX_HOME)'
+	@echo 'LOCALFLAGS=$(LOCALFLAGS)'
+
+ccafe-client-old CmdLineClient : CmdLineClientMain.o \
+				$(CCAFE_HOME)/Makefile.Rules \
+				$(CXXOBJ) \
+				$(CCALIBS)
+	$(RM) -f $@
+	$(RM) -f CmdLineClient.exe ccafe-client demo-client
+	(BFLFLAGS=`echo $(CXXFLAGS) |sed -e 's; -G ; ;'` ; \
+	$(PURIFY) $(MPI_LD) $$BFLFLAGS $(LOCALFLAGS) $(STV_LDFLAGS) \
+		CmdLineClientMain.o $(CXXOBJ)   $(LINK_CCALIBS) $(LINK_CCALIBS) \
+		$(TXT_COMPONENT) $(STV_COMPONENT) \
+		$(CXXLDFLAGS) $(STV_ULIB) $(PVM_LIBS)  \
+		$(MATHLIBS) $(CCAFE_LD_SEARCH_FLAGS) \
+		$(CCAFE_LD_FLAGS) $(CCAFE_DL_LIBS)  $(LIBREADLINE_LIBS) \
+		$(FLIBS) $(SOCKETLIBS) $(CCAFE_THREAD_LIBS) $(XMLLIB) \
+                $(JOE_LIBS) \
+		-o ccafe-client )
+	$(LN_S) ccafe-client CmdLineClient.exe
+	$(LN_S) ccafe-client demo-client
+
+ccafe-batch-old: ccafe-client
+	$(RM) ccafe-batch
+	ln -s ccafe-client ccafe-batch
+
+
+efccafe-client efCmdLineClient : CmdLineClientMain.o \
+				$(CCAFE_HOME)/Makefile.Rules \
+				$(CXXOBJ) \
+				$(CCALIBS)
+	$(RM) -f $@
+	$(RM) -f efCmdLineClient.exe efccafe-client efdemo-client
+	$(PURIFY) $(MPI_LD) $(CXXFLAGS) $(LOCALFLAGS) $(STV_LDFLAGS) \
+		CmdLineClientMain.o $(CXXOBJ)   $(LINK_CCALIBS) \
+		$(TXT_COMPONENT) $(STV_COMPONENT) \
+		$(CXXLDFLAGS) $(EFENCE_LIB) $(STV_ULIB) $(PVM_LIBS) \
+		 $(LIBREADLINE_LIBS) \
+		$(MATHLIBS) $(CCAFE_LD_SEARCH_FLAGS) $(CCAFE_LD_FLAGS) $(CCAFE_DL_LIBS) \
+		$(FLIBS) $(SOCKETLIBS) $(XMLLIB) \
+		-o efccafe-client
+	$(LN_S) efccafe-client efCmdLineClient.exe
+	$(LN_S) efccafe-client efdemo-client
+
+gen:	
+	@echo "gen dc/user_iface done"
+
+# testing
+
+etest:
+	@echo ccafe-flags= $(CXXFLAGS) \
+		$(LOCALFLAGS) \
+		EXECUTABLE_NAME  \
+		$(CXXLDFLAGS) $(EFENCE_LIB)
+
+run-oneproc:
+	@echo Running the command line view in one proc for humans ...
+	./ccafe-client --type oneProcInteractive
+
+run-interactive:
+	@echo Running the command line view for humans ...
+	mpirun -np 3 ./ccafe-client --type interactive
+
+run-gui-interactive:
+	@echo Running the client with GUI view interactively ...
+	./ccafe-client --type gui
+
+run-client:
+	@echo This will most likely bomb unless it can connect to somebody:
+	./ccafe-client --name 127.0.0.3
+
+run-mpi:
+	$(MPI)/bin/mpirun -np 3 ./ccafe
+
+iface:  $(CXXOBJ) $(HDRS) $(LIB) $(LIB_ALL)
+
+ccacmd:	ccacmd.touch
+
+ccacmd.touch:
+	(cd ccacmd; $(MAKE))
+
+clean:	lclean
+	(cd ccacmd; $(MAKE) clean)
+
+lclean: nopi
+	-$(RM) -f *.o *.a *.so *.exe *.u \
+		ccafe ccafe-client ccafe-single \
+		efccafe efccafe-client \
+		demo demo-client efdemo efdemo-client \
+		libccafeBM.a ccafe-batch efccafe-batch *~
+
+nopi:
+	-$(RM) PId*
+
+src-list:
+	@echo "DC_LIST_CXX += \\" >> ../src-list
+	@for i in $(CXXLIBSRC) $(CXXSERSRC) ; do \
+                echo "$(srcdir)/cxx/dc/user_iface/$$i \\" >> ../src-list ; \
+        done
+	@echo "" >> ../src-list
+	@echo "DRIVER_SRC_CXX += \\" >> ../src-list
+	@for i in $(CXX_DRIVER_SRC) ; do \
+                echo "$(srcdir)/cxx/dc/user_iface/$$i \\" >> ../src-list ; \
+        done
+	@echo "" >> ../src-list
+	@echo "updated src-list from dc/user_iface"
+	@(cd ccacmd; $(MAKE) src-list)
+
+depend:	subdepend
+	$(DEPEND) $(CXXFLAGS) $(LOCALFLAGS) $(CXXSRC)
+
+depend-sys: subdepend-sys
+	$(DEPENDSYS) $(CXXFLAGS) $(LOCALFLAGS) $(CXXSRC)
+
+subdepend:
+	(cd ccacmd; $(MAKE) depend)
+
+subdepend-sys:
+	(cd ccacmd; $(MAKE) depend-sys)
+
+ifneq "x$(TARGET)" "xclean"
+ifneq "x$(TARGET)" "xdistclean"
+include Makefile.depends
+endif
+endif

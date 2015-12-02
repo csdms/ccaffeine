@@ -1,0 +1,87 @@
+
+#*
+#*  Version: $Revision: 1.1 $
+#*  Version control file: $RCSfile: Makefile.in,v $
+#*  Date last modified: $Date: 2006/08/04 18:39:16 $
+#*  Last modified by: $Author: baallan $
+
+# ben allan, 7/99, because we distrust templates.
+
+buildroot=../../..
+CCAFE_HOME=../..
+zeroth: first
+
+include $(CCAFE_HOME)/Makefile.Rules
+VPATH := $(srcdir)/cxx/jc++/util
+
+CXXSRC = \
+Vector.cc \
+StringVector.cc \
+VectEnum.cc \
+HashEnum.cc \
+StringVectEnum.cc \
+StringHashEnum.cc \
+HashBucket.cc \
+ResourceBucket.cc \
+StringHashBucket.cc \
+Hashtable.cc \
+StringHash.cc \
+ResourceHash.cc \
+GenericHashEnum.cc \
+GenericHashBucket.cc \
+GenericHashTable.cc \
+StringBuffer.cc \
+StringTokenizer.cc \
+JString.cc
+
+CXXTHREADSRC=Thread.cc
+
+CXXOBJ=$(CXXSRC:%.cc=%.o)
+CXXTHREADOBJ=$(CXXTHREADSRC:%.cc=%.o)
+EXTRA_THREAD_SRC=$(EXTRA_THREAD_OBJS:%.o=%.c)
+
+
+first all: lib
+
+lib : compile
+	ar $(ARFLAGS) libjc++util.a $(CXXOBJ) $(CXXTHREADOBJ) $(EXTRA_THREAD_OBJS)
+	$(RANLIB) libjc++util.a
+
+compile : $(CXXOBJ) $(CXXTHREADOBJ) $(EXTRA_THREAD_OBJS)
+
+Thread.o:
+	$(CXX) -c $(CXXFLAGS) $(CCAFE_PTHREADS_FLAGS) Thread.cc
+
+src-list:
+	@for i in $(CXXSRC) $(CXXTHREADSRC) $(EXTRA_THREAD_SRC); do \
+		echo "$(srcdir)/cxx/jc++/util/$$i \\" >> ../src-list ; \
+	done
+x:
+	@echo $(EXTRA_THREAD_SRC)
+
+.SUFFIXES:
+.SUFFIXES: .o .cc .c
+
+.cc.o:
+	$(CXX) -c $(CXXFLAGS) $(CCAFE_PTHREADS_FLAGS) $<
+
+.c.o:
+	$(CXX) -c $(CXXFLAGS) $(CCAFE_PTHREADS_FLAGS) $<
+
+
+clean:
+	-$(RM) -r *.o *.a *.so *.u
+
+depend:
+	$(DEPEND)  $(CXXFLAGS) $(CXXSRC)
+
+depend-sys:
+	$(DEPENDSYS)  $(CXXFLAGS) $(CXXSRC)
+
+.PHONY: src-list
+
+ifneq "x$(TARGET)" "xclean"
+ifneq "x$(TARGET)" "xdistclean"
+include Makefile.depends
+endif
+endif

@@ -1,0 +1,29 @@
+CMPT_NAME = PortTranslatorStarter
+NAME_SPACE = ccafe_eg
+FQ_CMPT_NAME = $(NAME_SPACE).$(CMPT_NAME)
+LIBSUFFIX=$(VER_SUFFIX)$(PROGRAM_SUFFIX)$(CCAFE_SHLIB_SUFFIX)
+BABEL_OPTS=--repository-path=../StringConsumerPort/server -E
+CMPT_EXTRA_CXXFLAGS=-I../../StringConsumerPort/server
+
+ifeq "$(OS_ARCH)" "OS_AIX"
+
+OTHER_LINK_OBJ = \
+-L$(CCAFE_ROOT)/cxx/dc/babel/component/PrinterComponent/server \
+-lPrinterComponent$(VER_SUFFIX)$(PROGRAM_SUFFIX)
+
+OTHER_LINK_OBJ = 
+
+else
+
+OTHER_LINK_OBJ = \
+-L$(CCAFE_ROOT)/cxx/dc/babel/component/PrinterComponent/server \
+-L$(CCASPEC_LIB_L_DIR_SHORT) \
+-L$(BABEL_ROOT)/lib  \
+-Wl,-rpath,$(CCASPEC_LIB_L_DIR_SHORT) \
+-Wl,-rpath,$(CCAFE_RPM_ROOT)/lib  \
+-Wl,-rpath,$(CCAFE_RPM_ROOT)/cca/lib  \
+-Wl,-rpath,$(BABEL_ROOT)/lib -lPrinterComponent$(VER_SUFFIX)$(PROGRAM_SUFFIX) \
+$(CCASPEC_LIB_L_SHORT) \
+-lsidl
+endif
+

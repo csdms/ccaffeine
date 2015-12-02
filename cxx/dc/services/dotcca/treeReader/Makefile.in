@@ -1,0 +1,97 @@
+CCAFE_HOME=../../../..
+buildroot=../../../../..
+
+zeroth: first
+
+include $(CCAFE_HOME)/Makefile.Rules
+VPATH := $(srcdir)/cxx/dc/services/dotcca/treeReader
+include $(CCAFE_HOME)/MakeIncl.CCAFE_Component
+
+LIBXML2_INC=$(XMLINC)
+
+LOCALFLAGS= $(OTHERFLAGS) $(XMLFLAGS) $(LIBXML2_INC)
+
+# just here as a reminder. shouldn't be used here.
+#INCLUDES = -I/usr/include/libxml2 -I/home/baallan/work/boost-1.30.2  -I../
+#LIBS = -lxml2 -lz -lm
+
+INPUT= \
+../examples/ccafe_examples.depl.cca \
+../examples/ccafe_examples_minimal.depl.cca \
+../examples/LinearFunction.depl.cca 
+
+
+SRC= \
+ComponentData.cpp \
+PortData.cpp
+
+XMLSRC =\
+MetaDataParser.cpp \
+Node.cpp \
+Parser.cpp 
+
+OBJ = $(SRC:%.cpp=%.o)
+XMLOBJ= $(XMLSRC:%.cpp=%.o)
+
+first all: $(OBJ) $(XMLBUILD)
+
+xmlbuild: $(XMLOBJ)
+
+
+src-list: src-list-$(XMLBUILD)
+	@echo "DC_LIST_CXX += \\" >> ../../../src-list
+	@for i in $(SRC)  ; do \
+                echo "$(srcdir)/cxx/dc/services/dotcca/treeReader/$$i \\" >> ../../../src-list ; \
+        done
+	@echo "" >> ../../../src-list
+	@echo "updated src-list from dc/services/dotcca/treeReader"
+
+
+
+src-list-:
+
+src-list-xmlbuild:
+	@echo "DC_LIST_CXX += \\" >> ../../../src-list
+	@for i in $(XMLSRC)  ; do \
+                echo "$(srcdir)/cxx/dc/services/dotcca/treeReader/$$i \\" >> ../../../src-list ; \
+        done
+	@echo "" >> ../../../src-list
+
+
+test tcd tcd.x:	ComponentData.cpp
+	$(CXX) -o tcd.x -DComponentData_MAIN $(CXXFLAGS) $(LOCALFLAGS) ComponentData.cpp
+	./tcd.x
+
+clean: 
+	$(RM) -f *.o *.exe core.* a.out *.x
+
+%.i: %.cpp
+	$(CXX) $(CPPFLAGS) $(CXXFLAGS) $(LOCALFLAGS) $< | grep '[a-z]' |egrep -v '^# ' > $@
+
+%.o: %.cpp
+	$(CXX) -c $(CXXFLAGS) $(LOCALFLAGS) $<
+
+%.cpp.ps : %.cpp
+	-enscript -2rg --pretty-print=cpp --color $< -o $@
+
+%.hpp.ps : %.hpp
+	-enscript -2rg --pretty-print=cpp --color $< -o $@
+
+depend: depend-$(XMLBUILD)
+
+depend-:
+	$(DEPEND) $(CXXFLAGS) $(LOCALFLAGS) $(SRC)
+
+depend-xmlbuild:
+	$(DEPEND) $(CXXFLAGS) $(LOCALFLAGS) $(SRC) $(XMLSRC)
+
+depend-sys: depend-sys-$(XMLBUILD)
+
+depend-sys-xmlbuild:
+	$(DEPENDSYS) $(CXXFLAGS) $(LOCALFLAGS) $(SRC) $(XMLSRC)
+
+depend-sys-:
+	$(DEPENDSYS) $(CXXFLAGS) $(LOCALFLAGS) $(SRC)
+
+
+

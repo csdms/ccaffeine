@@ -1,0 +1,195 @@
+CCAFE_HOME=../..
+
+buildroot=../../..
+zeroth: first
+
+include $(CCAFE_HOME)/Makefile.Rules
+VPATH := $(srcdir)/cxx/dc/component
+include $(CCAFE_HOME)/MakeIncl.CCAFE_Component
+
+
+ifeq "$(NEO_CCA_INSTALLED)" "1"
+NEO_INCLUDE=$(NEOCCA_INC)
+else
+NEO_INCLUDE=
+endif
+
+LOCALFLAGS= $(OTHERFLAGS) $(NEO_INCLUDE)
+WRAPPERFLAGS= -w
+WRAPPERFLAGS=
+
+%.o : %.C
+	$(CXX) -c $(CXXFLAGS)  $<
+
+%.o : %.cxx
+	$(CXX) -c $(CXXFLAGS) $(LOCALFLAGS) $<
+
+%.wo : %.cxx
+	$(CXX) -c $(CXXFLAGS) $(LOCALFLAGS) $(CCAFE_SHLIB_CFLAGS) \
+		$(WRAPPERFLAGS) $*.cxx
+	mv $*.o $*.wo
+
+%.i : %.cxx
+	-$(RM) $@
+	$(CXX) $(CPPFLAGS) $(LOCALFLAGS) $< | egrep -v ^$$ |egrep -v '^# ' > $@
+
+
+# dl stuff that is not ccaffeine dependent
+CXXDLSTRICTSRC= \
+GoTest.cxx \
+BSTest.cxx \
+Timer.cxx \
+StarterComponent.cxx \
+PrinterComponent.cxx  \
+ComplicatedStarterComponent.cxx \
+ComplicatedPrinterComponent.cxx \
+GoThreadComponent.cxx
+
+ifeq "$(USER)" "baallan"
+NEWSRC=OPPFTest.cxx
+endif
+# dl stuff that is ccaffeine dependent
+CXXDLLOOSESRC= \
+$(NEWSRC) \
+TimeStamper.cxx  \
+RevalidateTest.cxx
+
+
+# static link stuff
+CXXDLNONESRC=
+
+# stuff built with or without a parallel environment.
+CXXSRC = $(CXXDLLOOSESRC) $(CXXDLSTRICTSRC) $(CXXDLNONESRC)
+
+ifneq "$(OS_ARCH)" "OS_MACOSX"
+LSUFFIX=$(VER_SUFFIX)$(PROGRAM_SUFFIX)$(CCAFE_SHLIB_SUFFIX)
+else
+# on osx, -module to libtool gives .so files. if go to ltdl
+# may be able to drop this exception. This is different from 
+# babel which uses ltdl.
+LSUFFIX=$(VER_SUFFIX)$(PROGRAM_SUFFIX).so
+endif
+
+CXXOBJ = $(CXXSRC:%.cxx=%.o)
+CCLC = $(CXXSRC:%.cxx=%)
+CXXDSSOBJ = $(CXXDLSTRICTSRC:%.cxx=libclassic%$(LSUFFIX))
+CXXDLSOBJ = $(CXXDLLOOSESRC:%.cxx=libclassic%$(LSUFFIX))
+
+STRICTWRAPPERS=$(CXXDLSTRICTSRC:%.cxx=%)
+LOOSEWRAPPERS=$(CXXDLLOOSESRC:%.cxx=%)
+STRICTWRAPPERS_OBJ=$(CXXDLSTRICTSRC:%.cxx=%_wrapper.wo)
+LOOSEWRAPPERS_OBJ=$(CXXDLLOOSESRC:%.cxx=%_wrapper.wo)
+
+#
+# These extra libraries are needed by SILOON on Debian, otherwise they
+# are not needed (but won't hurt, other than adding a little to .so size)
+#
+ifeq "$(PYTHON_SCRIPTING)" "1"
+EXTRA_LIBS = \
+$(CCAFE_PLIBS) \
+$(CCAFE_CXX_ROOT)/dc/component/libcomponent$(VER_SUFFIX)$(PROGRAM_SUFFIX).a \
+$(CCAFE_CXX_ROOT)/dc/framework/libdc_fwk.a \
+$(CCAFE_CXX_ROOT)/dc/distributed/libdistributed.a \
+$(CCAFE_CXX_ROOT)/jc++/libjcpp.a
+endif
+
+gen: wrappers-src metafiles
+
+src-list:
+	@echo "CLASSIC_COMPONENT_LIST_CXX = $(CCLC) " >> ../src-list
+	@echo "DC_LIST_CXX += \\" >> ../src-list
+	@for i in *_wrapper.cxx ; do \
+                echo "$(CCAFE_ROOT)/cxx/dc/component/$$i \\" >> ../src-list ; \
+        done
+	@for i in $(CXXSRC) ; do \
+                echo "$(srcdir)/cxx/dc/component/$$i \\" >> ../src-list ; \
+        done
+	@echo "" >> ../src-list
+	@echo "updated src-list from dc/component"
+
+metafiles:
+	@for i in $(STRICTWRAPPERS) $(LOOSEWRAPPERS); do \
+		echo $$i ; \
+		$(GENDLINDEX) libclassic$${i}$(LSUFFIX) create_$$i $$i $(CCAFE_RPM_libdir)/ $$i classic > $$i.cca ; \
+		$(GENDLINDEXXML) libclassic$${i}$(LSUFFIX) create_$$i $$i $(CCAFE_RPM_libdir)/ $$i classic > $$i.depl.cca ; \
+	done
+
+wrappers: wrappers-src
+	$(MAKE) wrappers-obj
+
+wrappers-obj: $(LOOSEWRAPPERS_OBJ) $(STRICTWRAPPERS_OBJ)
+
+wrappers-src:
+	@echo "generating wrapper functions."
+	@for i in $(STRICTWRAPPERS) ; do \
+		if ! test -f  $${i}_wrapper.cxx; then \
+			$(GENDLWRAPPERSTRICT) $$i > $${i}_wrapper.cxx ; \
+		fi ; \
+	done
+	@for i in $(LOOSEWRAPPERS) ; do \
+		if ! test -f  $${i}_wrapper.cxx; then \
+			$(GENDLWRAPPERSLOPPY) $$i > $${i}_wrapper.cxx ; \
+		fi ; \
+	done
+
+$(CXXDLSOBJ) : libclassic%$(LSUFFIX) : %.cxx %_wrapper.wo
+	-$(RM) $@ $*.o
+	$(GENDLINDEX) $@ create_$* $* $(CCAFE_RPM_libdir)/ $* classic > $*.cca
+	$(GENDLINDEXXML) $@ create_$* $* $(CCAFE_RPM_libdir)/ $* classic > $*.depl.cca
+	$(CXX) -c $(CXXFLAGS) $(LOCALFLAGS) $(CCAFE_SHLIB_CFLAGS) $< 
+	$(CCAFE_SHLIB_LD) $(CCAFE_SHLIB_LDFLAGS) -o $@ $*.o $*_wrapper.wo \
+		$(EXTRA_LIBS)
+	-$(RM) $*.o $*_wrapper.wo
+
+# needed? : $(GENDLWRAPPERSTRICT) $* > $*_wrapper.cxx
+$(CXXDSSOBJ) : libclassic%$(LSUFFIX) : %.cxx
+	-$(RM) $@ $*.o
+	$(GENDLINDEX) $@ create_$* $* $(CCAFE_RPM_libdir)/ $* classic > $*.cca
+	$(GENDLINDEXXML) $@ create_$* $* $(CCAFE_RPM_libdir)/ $* classic > $*.depl.cca
+	$(CXX) -c $(CXXFLAGS) $(LOCALFLAGS) $(CCAFE_SHLIB_CFLAGS) $< 
+	$(CCAFE_SHLIB_LD) $(CCAFE_SHLIB_LDFLAGS) -o $@ $*.o $*_wrapper.wo \
+		$(EXTRA_LIBS)
+	-$(RM) $*.o $*_wrapper.wo
+
+LIB= libcomponent$(VER_SUFFIX)$(PROGRAM_SUFFIX).a
+
+first all: wrappers lib dllib relocate
+	@echo done $(CXXOBJ)
+
+relocate:
+	$(INSTALL) lib*$(VER_SUFFIX)$(PROGRAM_SUFFIX)$(CCAFE_SHLIB_SUFFIX) \
+		$(CCAFE_HOME)/lib
+	$(INSTALL_DATA) lib*.a $(CCAFE_HOME)/lib
+
+lib : allobj
+	$(AR) $(ARFLAGS) $(LIB) $(CXXOBJ) $(NEWOBJ) $(STRICTWRAPPERS_OBJ) $(LOOSEWRAPPERS_OBJ)
+	$(RANLIB) $(LIB)
+
+dllib: $(CXXDSSOBJ) $(CXXDLSOBJ)
+
+allobj : $(CXXOBJ) $(NEWOBJ) $(STRICTWRAPPERS_OBJ) $(LOOSEWRAPPERS_OBJ)
+
+
+$(CXXOBJ) : $(CXXSRC)
+
+
+soclean:
+	if test "x$(CCAFE_SHLIB_SUFFIX)" != "x" ; then \
+		$(RM) *$(CCAFE_SHLIB_SUFFIX) ; \
+	fi
+
+clean: soclean
+	$(RM) -f $(CXXOBJ) $(LIB) $(NEWOBJ) \
+		*_wrapper.cxx *.so *.cca *_wrapper.o *.i *.a shr.o *.u *.wo
+
+depend:
+	$(DEPEND) $(CXXFLAGS) $(LOCALFLAGS) $(CXXSRC) $(NEWSRC)
+
+depend-sys:
+	$(DEPENDSYS) $(CXXFLAGS) $(LOCALFLAGS) $(CXXSRC) $(NEWSRC)
+
+ifneq "x$(TARGET)" "xclean"
+ifneq "x$(TARGET)" "xdistclean"
+include Makefile.depends
+endif
+endif

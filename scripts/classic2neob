@@ -1,0 +1,4 @@
+#!/usr/bin/perl -pi.bak
+# fixes bug in namespace conversions.
+s/neo::cca/neo::cca::/g;
+s/::::/::/g;

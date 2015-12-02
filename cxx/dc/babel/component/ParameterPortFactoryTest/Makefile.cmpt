@@ -1,0 +1,17 @@
+CMPT_NAME = ParameterPortFactoryTest
+NAME_SPACE = ccafe4
+FQ_CMPT_NAME = $(NAME_SPACE).$(CMPT_NAME)
+LIBSUFFIX=$(VER_SUFFIX)$(PROGRAM_SUFFIX)$(CCAFE_SHLIB_SUFFIX)
+OTHER_LINK_OBJ = \
+-L$(CCASPEC_LIB_L_DIR_SHORT) \
+-L$(BABEL_ROOT)/lib  \
+-Wl,-rpath,$(CCASPEC_LIB_L_DIR_SHORT) \
+-Wl,-rpath,$(CCAFE_RPM_ROOT)/lib  \
+-Wl,-rpath,$(CCAFE_RPM_ROOT)/cca/lib  \
+-Wl,-rpath,$(BABEL_ROOT)/lib  \
+$(CCASPEC_LIB_L_SHORT) \
+-lsidl
+
+ifeq "$(OS_ARCH)" "OS_AIX"
+OTHER_LINK_OBJ =
+endif

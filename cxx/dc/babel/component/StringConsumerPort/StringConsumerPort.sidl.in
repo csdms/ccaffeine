@@ -1,0 +1,13 @@
+// StringConsumerPort.sidl is a configure-generated file.
+
+@CCAFE3_SIDL_START_0@
+@CCAFE3_SIDL_START_1@
+    
+  /** There is no such interface in the cca standard but probably
+   * should be.  */
+  interface StringConsumerPort extends gov.cca.Port {
+    /** Receive a string from another component.   */
+    void setString(in string s);
+  }
+
+}

@@ -1,0 +1,24 @@
+// SimpleProxyTest.sidl is a configure generated file.
+
+@CCAFE2_SIDL_START_0@
+@CCAFE2_SIDL_START_1@
+
+  /** When the GoPort is first hit, 
+	use the BuilderService to 
+	- create starter, printer, connect, go starter.
+	On second go hit,
+	- disconnect starter, printer.
+	- create proxy.
+	- connect proxies.
+	- go starter.
+	On subsequent hits, ignore the user.
+  */
+  class SimpleProxyTest implements-all 
+	gov.cca.Component, 
+	gov.cca.ports.GoPort,
+	gov.cca.ComponentRelease
+  {
+  }
+
+}
+

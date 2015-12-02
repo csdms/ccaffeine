@@ -1,0 +1,78 @@
+#!/bin/sh
+
+progname=`echo $0 | sed -e 's%.*/%%g'`
+curdir=`pwd`
+bindir=@bindir@
+libdir=@libdir@
+pkglibdir=@pkglibdir@
+pkgdatadir=@pkgdatadir@
+binsuffix=@PROGRAM_SUFFIX@
+tmpfile=""
+if test ! -w $curdir ; then
+  tmpfile=`mktemp -q /tmp/$progname.out.XXXXXXXXX`
+  if [ $? -ne 0 ]; then
+     echo "$progname: Can't create temp file /tmp/$progname.out. Exiting..."
+     exit 1
+  fi
+else
+  tmpfile=`mktemp -q $curdir/$progname.out.XXXXXXXXX`
+  if [ $? -ne 0 ]; then
+     echo "$progname: Can't create temp file $curdir/$progname.out. Exiting..."
+     exit 1
+  fi
+fi
+#LD_LIBRARY_PATH=@BABEL_ROOT@/lib:"$LD_LIBRARY_PATH"; export LD_LIBRARY_PATH
+#SIDL_DLL_PATH=$libdir;export SIDL_DLL_PATH
+answer1="Instance Name: PP_1 Class Name: ::ccafeopq::ParameterPort"
+answer2="Hello World"
+answer3="WITHOUT babel"
+answer4="BSTest components that provide StringConsumerPort: bs.PrinterComponent.0 PrinterComponent0"
+echo "====================================================================="
+echo "                  Testing the opaque dialog svc ...                    "
+
+echo "proceeding with env vars:"
+echo "# LD_LIBRARY_PATH=$LD_LIBRARY_PATH"
+echo "# SIDL_DLL_PATH=$SIDL_DLL_PATH"
+
+frame_opts="--ccafe-rc $pkgdatadir/EmptyRC"
+
+if $bindir/ccafe-single$binsuffix $frame_opts << EOF >$tmpfile 2>&1
+
+path set $libdir
+path append $pkgdatadir/components
+repository get-global PDSTest
+
+instantiate PDSTest
+display component PDSTest0
+go PDSTest0 go
+display component PDSTest0
+# Do Babel stuff now ...
+repository get-global ccafe1.ParameterDialogServiceTest
+instantiate ccafe1.ParameterDialogServiceTest
+display component ParameterDialogServiceTest0
+go ParameterDialogServiceTest0 go
+display component ParameterDialogServiceTest0
+
+bye
+EOF
+then
+	echo -n "didn't crash or hang up early ...  "
+else
+	echo -n "didn't make it all the way through ...  "
+fi
+if (grep "$answer1" $tmpfile >/dev/null 2>&1) && 
+   (grep "$answer2" $tmpfile >/dev/null 2>&1) &&
+   (grep "$answer4" $tmpfile >/dev/null 2>&1) 
+then
+	echo looks like it is working.
+	dumptrash=yes
+else
+	echo "The output indicates parameterservice stuff is inoperative."
+	echo "But this is expected for now... This is just a linking test."
+fi
+echo      done with testBabelParameterDialogServiceTest
+echo "====================================================================="
+if test "X$dumptrash" = "XYes" ; then
+	rm -f $tmpfile
+fi
+

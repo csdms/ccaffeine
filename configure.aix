@@ -1,0 +1,53 @@
+#!/usr/local/bin/bash
+# So this is an example of configuring on aix for mp,classic operation.
+# Notes:
+# - AIX sh is a crippled ksh by default, so
+# we run configure in bash or it doesn't work correctly.
+# - The first make in the path must be a gnu make.
+# 
+# in cxx/makefile.vars add:
+# BABEL_FLAGS=--suppress-timestamp --override-installpath 
+# --exclude="gov.*" --exclude="SIDL.*"
+usebabel=1
+usemp=0
+usepy=0
+if test $usepy = 1 ; then
+PYFLAG="--with-python-includes=/cca/shared/python/python2.2/include/python2.2  --with-python-lib=/cca/shared/python/python2.2/lib/python2.2"
+else
+PYFLAG=""
+fi
+
+# RUBY=/cca/shared/bin/ruby
+if test $usebabel = 1 ; then
+  CSBCONFIG=/cca/baallan/src/cca-spec-babel-0.6.2-87/bin/cca-spec-babel-config
+  RUBY=:
+else
+  CSBCONFIG=no
+  RUBY=:
+fi
+
+if test $usemp = 1 ; then
+  MPFLAG="--with-mpi=/libapps/mpich --with-mpi-inc= --with-mpi-lib-static= --with-mpi-cxx=mpCC_r --with-mpi-cc=mpcc_r --with-cPP=mpCC_r"
+else
+  MPFLAG="--with-mpi=no --with-cPP=xlC"
+fi
+# per ben
+WPFLAGS="-DPIC -G -qstaticinline -qrtti=all -qfullpath -DHAVE_BOOLEAN -bI:/cca/baallan/src/genimports"
+# per sameer
+WPFLAGS="-G -qfullpath -DHAVE_BOOLEAN"
+
+bash ./configure \
+$MPFLAG \
+$PYFLAG \
+--with-cxxflags='-G -qfullpath -qrtti=all -qstaticinline  -DHAVE_BOOLEAN' \
+--with-blas=no \
+--with-lapack=no \
+--with-ruby=$RUBY \
+--enable-spew \
+--with-jdk12=/usr/java14 \
+--with-bash=/usr/local/bin/bash \
+--with-gnu-cp=/usr/local/bin/cp \
+--with-boost=/cca/shared/include \
+--with-csb-config=$CSBCONFIG \
+--with-classic-config=/cca/baallan/local/bin/cca-spec-classic-config \
+--with-CONFSCRIPT=configure.aix.b_$usebabel.mp_$usemp.py_$usepy

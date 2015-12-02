@@ -1,0 +1,401 @@
+dnl Process this file with autoconf 2.13 to produce a configure script
+dnl for the CCAFFEINE software installation.
+dnl    autconf configure.in > configure
+
+#--------------------------------------------------------------------
+#       Disable caching since it seems to get in the way
+#       more times than it helps us.
+#--------------------------------------------------------------------
+define([AC_CACHE_LOAD], )dnl
+define([AC_CACHE_SAVE], )dnl
+
+# Make sure we're us.
+AC_INIT(DataHolder.h)
+
+# $Header: /cvs/ccaffeine/repository/dccafe/chez-rob/dataholder/configure.in,v 1.2 2000/10/17 23:09:08 rob Exp $
+# created: Ben Allan 5/2000, Sandia national laboratories/California.
+#
+# We have a lot to configure for if we were doing a purely static build, namely:
+# - where we are.
+# - LN, MAKE, RANLIB (required)
+# - CXX, CXXCPP (required)
+# - CCA (required)
+# - GMAKE (still required for older OS not having 'include' statements)
+# - TCLSH (optional)
+# - Dynamic Loading (optional)
+
+#------------------------------------------------------------------------------
+# Directory where we keep the autoconf stuff and some HPC environment folklore.
+#
+# Some folklore is keyed to hostname, which is probably a very bad
+# idea in the long run, but provides examples for frustrated alpha users.
+# Most of it is keyed to the answers supplied by AC_CANONICAL_SYSTEM.
+#
+# We wish MPICH was adapted to use autoconf 2.x so we could steal
+# conveniently everything they deduce about fortran, mpi, threads,
+# etc in their configure scripts and extend it to our compilers.
+#------------------------------------------------------------------------------
+AC_CONFIG_AUX_DIR(config)
+
+DHLDR_VERSION=0.3.0
+DHLDR_MAJOR_VERSION=0
+DHLDR_MINOR_VERSION=3
+DHLDR_PATCH_LEVEL=0
+VERSION=${DHLDR_VERSION}
+
+if test "${prefix}" = "NONE"; then
+    prefix=/usr/local
+fi
+if test "${exec_prefix}" = "NONE"; then
+    exec_prefix=$prefix
+fi
+
+# source tree vars
+DHLDR_ROOT=`pwd`
+# The next two lines entirely quoted to keep autoconf/m4 
+# from messing with the [] in the regex.
+[DHLDR_PARENT=`echo $DHLDR_ROOT | sed 's%[^/][^/]*$%%' | sed 's%\/$%%'`]
+[DHLDR_GRANDPARENT=`echo $DHLDR_PARENT | sed 's%[^/][^/]*$%%' | sed 's%\/$%%'`]
+[DHLDR_ANCESTOR=`echo $DHLDR_GRANDPARENT | sed 's%[^/][^/]*$%%' | sed 's%\/$%%'`]
+# install tree vars
+DHLDR_INSTALL_ROOT=$prefix/dataholder
+
+
+dnl Checks for unix programs.
+AC_PROG_LN_S
+AC_PROG_MAKE_SET
+AC_PROG_RANLIB
+
+# FIND c++ compiler
+AC_PROG_CXX
+
+# FIND c++ preprocessor
+AC_PROG_CXXCPP
+
+# set the warning flags depending on whether or not we are using gcc
+if test "${GCC}" = "yes" ; then
+    CFLAGS_WARNING="-Wall -Wconversion"
+else
+    CFLAGS_WARNING=""
+fi
+#------------------------------------------------------------------------------
+# If we're using GCC, see if the compiler understands -pipe.  If so, use it.
+# It makes compiling go faster.  (This is only a performance feature.)
+#------------------------------------------------------------------------------
+
+if test -z "$no_pipe"; then
+if test -n "$GCC"; then
+  AC_MSG_CHECKING([if c++ compiler understands -pipe])
+  OLDCXX="$CXX"
+  CXX="$CXX -pipe"
+  AC_TRY_COMPILE(,,
+    AC_MSG_RESULT(yes),
+    CXX="$OLDCXX"
+    AC_MSG_RESULT(no))
+fi
+fi
+
+#
+# We define next a bunch of lists for searching out various things.
+# They all start with hwmfc_, and include where appropriate the
+# 'standard' environment variables first in the search path.
+# After these lists, we do the long, arduous searches in the
+# event the user doesn't tell us where things are explicitly.
+#
+
+# cca spec (must contain java and cxx binding subdirs)
+hwmfc_cca_spec_dirs="
+    $DHLDR_ANCESTOR/cca-spec
+    $prefix/cca
+    $prefix/cca-spec
+    $HOME/cca
+    /usr/local/cca
+    /usr/local/cca-spec
+"
+
+## end of paths to search collection
+
+#------------------------------------------------------------------------------
+# CCA_ROOT: See if the user gave us the location of cca-spec
+# then search $hwmfc_cca_spec_dirs.
+# One of these directories must be
+# present and contain the correct files, or else the user
+# must give the directory that contains the correct files.
+#------------------------------------------------------------------------------
+AC_ARG_WITH(cca, 
+    [Location of cca:
+  --with-cca=SPEC_TREE
+                          The location of CCA java and cxx specifications. 
+                          Give the full path:
+                              --with-cca='/usr/local/cca-spec'
+                          or check out the spec from Sandia in a directory
+                          next to CCAFFEINE. ] ,
+    , [with_cca=no])
+
+case "$with_cca" in
+    no)
+        # lUser input error
+        with_cca=_searching
+        ;;
+    yes)
+        #  User didn't give the option or didn't give useful
+        #  information, search for it ourselves
+        with_cca=_searching
+        ;;
+    *)
+        CCA_ROOT="$with_cca"
+        ;;
+esac
+
+if test "$with_cca" = _searching ; then
+    AC_MSG_CHECKING([for REQUIRED cca-spec])
+    for chome in $hwmfc_cca_spec_dirs ; do
+        if test -d $chome ; then
+            with_cca=$chome
+            AC_MSG_RESULT([found $chome.])
+            break
+        fi
+    done
+fi
+if test "$with_cca" = _searching ; then
+    AC_MSG_RESULT([Cannot find CCA specification root directory.])
+    AC_MSG_ERROR([Please install it and/or use --with-cca=CCA_ROOT.])
+fi
+if test ! -f "$with_cca/cxx/include/cca.h"  ; then
+    AC_MSG_RESULT([No cxx/include/cca.h in $with_cca.])
+    AC_MSG_ERROR([Please install a correct CCA specification directory.])
+fi
+CCA_ROOT="$with_cca"
+EG_ROOT="$with_cca/cxx/eg"
+
+# Test for MPICH
+# mpi spec (must contain java and cxx binding subdirs)
+hwmfc_mpich_dirs="
+    $DHLDR_ANCESTOR/mpich
+    $prefix/mpich
+    $HOME/mpich
+    /usr/local/mpich
+"
+
+## end of paths to search collection
+
+#------------------------------------------------------------------------------
+# MPI_ROOT: See if the user gave us the location of mpich
+# then search $hwmfc_mpich_dirs.
+# One of these directories must be
+# present and contain the correct files, or else the user
+# must give the directory that contains the correct files.
+#------------------------------------------------------------------------------
+AC_ARG_WITH(mpi, 
+    [Location of MPI:
+  --with-mpi=MPI_BUILD
+                          The location of MPICH. 
+                          Give the full path: e.g.
+                              --with-mpi='/usr/local/mpich' ] ,
+    , [with_mpi=no])
+
+case "$with_mpi" in
+    no)
+        # lUser input error
+        with_mpi=_searching
+        ;;
+    yes)
+        #  User didn't give the option or didn't give useful
+        #  information, search for it ourselves
+        with_mpi=_searching
+        ;;
+    *)
+        MPI_ROOT="$with_mpi"
+        ;;
+esac
+
+if test "$with_mpi" = _searching ; then
+    AC_MSG_CHECKING([for REQUIRED mpich])
+    for chome in $hwmfc_mpich_dirs ; do
+        if test -d $chome ; then
+            with_mpi=$chome
+            AC_MSG_RESULT([found $chome.])
+            break
+        fi
+    done
+fi
+if test "$with_mpi" = _searching ; then
+    AC_MSG_RESULT([Cannot find MPICH root directory.])
+    AC_MSG_ERROR([Please install it and/or use --with-mpi=MPI_ROOT.])
+fi
+if test ! -f "$with_mpi/include/mpi.h"  ; then
+    AC_MSG_RESULT([No include/mpi.h in $with_mpi.])
+    AC_MSG_ERROR([Please install a correct CCA specification directory.])
+fi
+MPI_ROOT="$with_mpi"
+
+# Test for CCAFFEINE
+# 
+hwmfc_ccafe_dirs="
+    $DHLDR_ANCESTOR/dccafe
+    $prefix/dccafe
+    $HOME/dccafe
+    /usr/local/dccafe
+"
+
+## end of paths to search collection
+
+#------------------------------------------------------------------------------
+# CCAFFEINE_ROOT: See if the user gave us the location of mpich
+# then search $hwmfc_ccafe_dirs.
+# One of these directories must be
+# present and contain the correct files, or else the user
+# must give the directory that contains the correct files.
+#------------------------------------------------------------------------------
+AC_ARG_WITH(ccafe, 
+    [Location of ccaffeine:
+  --with-ccafe=MPI_BUILD
+                          The location of MPICH. 
+                          Give the full path: e.g.
+                              --with-ccafe='/usr/local/ccafe' ] ,
+    , [with_ccafe=no])
+
+case "$with_ccafe" in
+    no)
+        # lUser input error
+        with_ccafe=_searching
+        ;;
+    yes)
+        #  User didn't give the option or didn't give useful
+        #  information, search for it ourselves
+        with_ccafe=_searching
+        ;;
+    *)
+        CCAFFEINE_ROOT="$with_ccafe"
+        ;;
+esac
+
+if test "$with_ccafe" = _searching ; then
+    AC_MSG_CHECKING([for REQUIRED mpich])
+    for chome in $hwmfc_ccafe_dirs ; do
+        if test -d $chome ; then
+            with_ccafe=$chome
+            AC_MSG_RESULT([found $chome.])
+            break
+        fi
+    done
+fi
+if test "$with_ccafe" = _searching ; then
+    AC_MSG_RESULT([Cannot find CCAFFEINE root directory.])
+    AC_MSG_ERROR([Please install it and/or use --with-ccafe=CCAFFEINE_ROOT.])
+fi
+
+if test ! -f "$with_ccafe/cxx/dc/Makefile"  ; then
+    AC_MSG_RESULT([No cxx/dc/Makefile in $with_ccafe.])
+    AC_MSG_ERROR([Please install a correct CCAFFEINE specification directory.])
+fi
+CCAFFEINE_ROOT="$with_ccafe/cxx"
+
+
+
+#------------------------------------------------------------------------------
+#  see if the user gave us the location of clueful make
+#------------------------------------------------------------------------------
+AC_ARG_WITH(gmake, 
+    [Location of gmake:
+  --with-gmake=EXECUTABLE
+                          The location of gmake.  Give the full path:
+                              --with-gmake='/share/bizarre/bin/gmake' ] ,
+    , [with_gmake=yes])
+
+case "$with_gmake" in
+    no)
+        hwmfc_have_gmake=no
+        ;;
+    yes)
+        #  User didn't give the option or didn't give useful
+        #  information, search for it ourselves
+        with_gmake=_searching
+        ;;
+    *)
+        #  Only the library was specified
+        GMAKE="$with_gmake"
+        ;;
+esac
+
+if test "$with_gmake" = _searching ; then
+    AC_CHECK_PROG(gmake_1, gmake, gmake, NONE)
+    if test ! "$gmake_1" = NONE ; then
+        GMAKE="$gmake_1"
+    fi
+fi
+
+
+#------------------------------------------------------------------------------
+#  see if the user gave us the location of the tclsh
+#------------------------------------------------------------------------------
+TCLSH=/usr/local/bin/tclsh
+AC_ARG_WITH(tclsh, 
+    [Location of tclsh:
+  --with-tclsh=EXECUTABLE
+                          The location of the Tcl8.x or later tclsh.
+                          Give the full path:
+                              --with-tclsh='/share/bizarre/bin/tclsh' ],
+    , [with_tclsh=yes])
+
+case "$with_tclsh" in
+    no)
+        #  User specified --without-tclsh; this makes no sense,
+        #  print a warning and search for it ourselves
+        AC_MSG_WARN([Option '--without-tclsh'
+        Causes some convenience scripts to be unusable.])
+        hwmfc_have_tclsh=no
+        ;;
+    yes)
+        #  User didn't give the option or didn't give useful
+        #  information, search for it ourselves
+        with_tclsh=_searching
+        ;;
+    *)
+        TCLSH="$with_tclsh"
+        hwmfc_have_tclsh=yes
+        ;;
+esac
+
+if test "$with_tclsh" = _searching ; then
+    AC_CHECK_PROG(tclsh_1, tclsh, tclsh, NONE)
+    if test ! "$tclsh_1" = NONE ; then
+        TCLSH=`which $tclsh_1`
+        hwmfc_have_tclsh=yes
+    fi
+fi
+
+
+dnl Checks for libraries.
+AC_CANONICAL_SYSTEM
+
+AC_HEADER_STDC
+AC_CHECK_HEADERS(fcntl.h strings.h sys/file.h sys/time.h unistd.h)
+
+AC_SUBST(CCA_ROOT)
+AC_SUBST(CCAFFEINE_ROOT)
+AC_SUBST(MPI_ROOT)
+AC_SUBST(EG_ROOT)
+AC_SUBST(DHLDR_ROOT)
+AC_SUBST(DHLDR_INSTALL_ROOT)
+
+AC_SUBST(DHLDR_MAJOR_VERSION)
+AC_SUBST(DHLDR_MINOR_VERSION)
+AC_SUBST(DHLDR_PATCH_LEVEL)
+AC_SUBST(DHLDR_VERSION)
+AC_SUBST(VERSION)
+
+AC_SUBST(CXX)
+AC_SUBST(CXXFLAGS)
+AC_SUBST(CXX_TEMPLATES)
+AC_SUBST(CXXCPP)
+AC_SUBST(LN_S)
+AC_SUBST(RANLIB)
+AC_SUBST(SET_MAKE)
+AC_SUBST(LIBS)
+AC_SUBST(GMAKE)
+AC_SUBST(TCLSH)
+
+AC_OUTPUT(Makefile DHLDRConfig.sh DHLDRConfigTemporary.sh MakeIncl.DHLDR_Component DataHolder.cca)
+
+# $Header: /cvs/ccaffeine/repository/dccafe/chez-rob/dataholder/configure.in,v 1.2 2000/10/17 23:09:08 rob Exp $

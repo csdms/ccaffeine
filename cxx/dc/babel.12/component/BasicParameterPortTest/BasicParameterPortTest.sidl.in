@@ -1,0 +1,9 @@
+
+package ccafe5 version 0.0 {
+
+  /** test bpp. */
+  class BasicParameterPortTest implements-all gov.cca.Component, 
+    gov.cca.ports.BasicParameterPort {
+  }
+}
+

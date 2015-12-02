@@ -1,0 +1,53 @@
+
+# $Revision: 1.1 $
+# $Author: baallan $
+
+CCAFE_HOME = ../..
+
+include $(CCAFE_HOME)/Makefile.Rules
+
+SUBDIRS = \
+	ccafe-bind
+
+ifeq "$(CCAFE_TESTS_NEO)" "1"
+SUBDIRS += \
+	mpitest \
+	test
+endif
+
+TESTDIRS= test mpitest
+
+
+all:
+	for i in $(SUBDIRS); do if ! (cd $$i;$(MAKE));then exit -1;fi done
+
+clean:
+	for i in $(SUBDIRS) $(TESTDIRS); do if ! (cd $$i;$(MAKE) clean);then exit -1;fi done
+
+depend: 
+	for i in $(SUBDIRS); do if ! (cd $$i;$(MAKE) depend);then exit -1;fi done
+
+gen: gen_$(NEO_CCA_INSTALLED)
+
+
+src-list:
+	@for i in $(SUBDIRS); do if ! (cd $$i;$(MAKE) src-list);then exit -1;fi done
+
+bins: bins_$(NEO_CCA_INSTALLED)
+
+check: check_$(NEO_CCA_INSTALLED)
+
+gen_ gen_0 bins_0 bins_ check_ check_0:
+	@echo "neo not configured in. building no neo binaries"
+
+bins_1:
+	for i in $(TESTDIRS); do if ! (cd $$i;$(MAKE) bins);then exit -1;fi done
+
+check_1:
+	for i in $(TESTDIRS); do if ! (cd $$i;$(MAKE) check);then exit -1;fi done
+
+gen_1:	
+	for i in $(SUBDIRS); do if ! (cd $$i;$(MAKE) gen);then exit -1;fi done
+
+
+# DO NOT DELETE

@@ -1,0 +1,74 @@
+#*
+#*  Version: $Revision: 1.1 $
+#*  Version control file: $RCSfile: Makefile.in,v $
+#*  Date last modified: $Date: 2006/08/04 18:39:15 $
+#*  Last modified by: $Author: baallan $
+
+buildroot=../../..
+
+CCAFE_HOME=../..
+zeroth: first
+
+
+include $(CCAFE_HOME)/Makefile.Rules
+VPATH := $(srcdir)/cxx/jc++/io
+
+
+CXXSRC = 		\
+StdReader.cc 		\
+BufferedReader.cc 	\
+NonblockingReader.cc
+
+CXXOBJ=$(CXXSRC:%.cc=%.o)
+
+first all: lib
+
+lib : compile
+	ar $(ARFLAGS) libjc++io.a $(CXXOBJ)
+	$(RANLIB) libjc++io.a
+
+compile : $(CXXOBJ)
+
+.SUFFIXES:
+.SUFFIXES: .o .cc
+
+# very hacky to get around insure today (8/14/2k)
+# .cc.o:
+# 	g++ -c $(CXXFLAGS) $(CCAFE_PTHREADS_FLAGS) $<
+
+.cc.o:
+	$(CXX) -c $(CXXFLAGS) $(CCAFE_PTHREADS_FLAGS) $<
+
+
+
+test: lib testReader.o testBufferedReader.o testNonblockingReader.o
+	$(CXX) -o testReader.x testReader.o $(CCAFE_HOME)/jc++/io/libjc++io.a
+	$(CXX) -o testBufferedReader.x testBufferedReader.o \
+                  $(CCAFE_HOME)/jc++/io/libjc++io.a           \
+	          $(CCAFE_HOME)/jc++/util/libjc++util.a       \
+                  $(CCAFE_HOME)/util/IO.o
+	$(CXX) -o testNonblockingReader.x testNonblockingReader.o \
+		  $(CCAFE_HOME)/jc++/io/libjc++io.a                 \
+                  $(CCAFE_HOME)/jc++/util/libjc++util.a             \
+                  $(CCAFE_HOME)/util/IO.o
+clean:
+	-$(RM) -rf *.o *.a *.so *.x *.u
+
+src-list:
+	@for i in $(CXXSRC) ; do \
+		echo "$(srcdir)/cxx/jc++/io/$$i \\" >> ../src-list ; \
+	done
+
+depend:
+	$(DEPEND)  $(CXXFLAGS) $(CXXSRC)
+
+depend-sys:
+	$(DEPENDSYS)  $(CXXFLAGS) $(CXXSRC)
+
+.PHONY: src-list
+
+ifneq "x$(TARGET)" "xclean"
+ifneq "x$(TARGET)" "xdistclean"
+include Makefile.depends
+endif
+endif

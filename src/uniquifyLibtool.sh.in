@@ -1,0 +1,86 @@
+#!/bin/sh
+# 
+# Script to rationalize duplicate libraries under alternate
+# path names. Assumes the caller knows what they are doing.
+# replaces libraries in shortDir with links to libraries in longDir.
+shortFile=$1
+shortDir=$2
+longFile=$3
+longDir=$4
+shortArchive=$shortDir/$shortFile
+shortName=`basename $shortFile .la`
+longArchive=$longDir/$longFile
+longName=`basename $longFile .la`
+dryrun=0
+
+if ! test "x$#" = "x4"; then
+	echo "$0: usage: $0 <libToolArchiveToLinkify> <dirOfLinkifyArchive> <libToolArchiveToLinkTo> <dirOfLinkToArchive>"
+	echo "archive ToLinkify will be converted to a symbolic link to archive ToLinkTo"
+	exit 1
+fi
+if test "x$dryrun" = "x1" ; then
+	echo "$0: dry run only"
+	echo "$1"
+	echo "$2"
+	echo "$3"
+	echo "$4"
+fi
+
+# verify inputs exist.
+if ! test -f $shortArchive; then
+	echo "input $shortArchive not found"
+	exit 1
+fi
+if ! test -f $longArchive; then
+	echo "input $longArchive not found"
+	exit 1
+fi
+# read the info from libtool shortname .la
+library_names=""
+libdir=""
+. $shortArchive
+shortLibdir=$libdir
+shortLibnames=$library_names
+# read the info from libtool longname .la
+library_names=""
+libdir=""
+. $longArchive
+longLibdir=$libdir
+longLibnames=$library_names
+# if both .la don't list shared libraries, punt.
+if test "x$shortLibnames" = "x" -o "x$longLibnames" = "x"; then
+	echo "no duplicate shared libraries to resolve for $shortName."
+	exit 0
+fi
+# Now we assume that libtool makes in each dir one real library
+# and one or more symbolic links or at least that
+# all real libs in longLibdir list are equivalent
+# and
+# all links in shortLibdir list are links to the non-link lib of that list.
+realLibraryLong=""
+for i in $longLibnames; do
+	if test -e $longLibdir/$i ; then
+		if test -h $longLibdir/$i; then
+			:
+		else
+			realLibraryLong=$longLibdir/$i
+		fi
+	fi
+done
+for i in $shortLibnames; do
+	if test -e $shortLibdir/$i ; then
+		if test -h $shortLibdir/$i; then
+			:
+		else
+			realLibraryShort=$shortLibdir/$i
+			if test "x$dryrun" = "x1" ; then
+				echo "rm $realLibraryShort"
+				echo "ln -s $realLibraryLong $realLibraryShort"
+			else
+				/bin/rm $realLibraryShort
+				ln -s $realLibraryLong $realLibraryShort
+			fi
+		fi
+	fi
+done
+exit 0

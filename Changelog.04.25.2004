@@ -1,0 +1,42 @@
+Major changes from lemur to final_babel_0_8_8:
+
+1) new binding of the spec (cca-spec-neo) supported.
+   configure --with-neo-config=$NEO_PREFIX/bin/cca-spec-neo-config
+   Added demonstration of user-defined main/static link from ccaffeine-script
+   for neo components in cxx/dc/neo/test; make check.
+2) test hack ParameterDialogServiceTest replaced with
+   spec conformant ParameterPortFactoryTest .
+3) added --enable-mono switch to configure to get black/white gui.
+   color scheme is switchable/adjustable by modifying
+   ccafe/java/gov/sandia/ccaffeine/dc/user_iface/gui/CustomColors.java and
+   ccafe/java/gov/sandia/ccaffeine/dc/user_iface/gui/ccafeGUI.properties
+4) brought lots of code into line with cca-spec-babel exception 
+   specifications.
+5) cleaned out ruby dependencies. no longer needed.
+6) added Babel ParameterPortFactoryTest to demonstrate 
+   porting to ParameterPort spec from classic to babel.
+7) fixed lots of memory leaks. Much by replacing char * with std::string.
+8) dropped KeyValuePort use.
+9) lots of fixes to socket code type conflicts in cxx/dc/distributed/.
+10) the 'opaque' class typedefs in cxx/dc/export have been regularized
+    and all deviant usages removed. If an error message containing some
+    'undefined class/struct {blah} *Opaque*' occurs when compiling
+    formerly working code, see cxx/dc/export/ccafeopq.hh for the
+    correct type.
+11) Added support for cca.sidl ComponentRelease interface. Components
+    wishing to be notified of being shutdown should implement
+    ComponentRelease.
+12) Added support for ServiceRegistry/ServiceProvider in namespace ccaffeine
+    prior to its approval by cca.
+13) Added the ability to globally dynamic-load port definitions 
+    for classic/neo without loading a component. script syntax:
+    cca>  repository get-ports libraryPathName
+14) Added events model definitions. not yet used in ConnectionFramework,
+    however, pending use of a more public standard.
+15) Full support for Babel bound AbstractFramework/BuilderService.
+16) Added add/removeExternalComponent interface to ConnectionFramework, needed
+    to handle getServices from AbstractFramework properly.
+17) Made sidl ParameterPorts opaque so that they can be accessed from all
+    bindings if desired.
+18) .depl.cca XML support.
+19) Component visibility properties support.

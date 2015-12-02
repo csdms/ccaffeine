@@ -1,0 +1,64 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE Symbol PUBLIC "-//CCA//SIDL Symbol DTD v1.1//EN" "SIDL.dtd">
+<Symbol>
+   <SymbolName name="ccafe1.StarterComponent" version="0.1"/>
+   <Metadata date="20010101 00:00:00 GMT">
+      <MetadataEntry key="source-url" value="file:/home/baallan/work/posthack/dccafe86/cxx/dc/babel/component/StarterComponent/StarterComponent.sidl"/>
+      <MetadataEntry key="source-line" value="8"/>
+      <MetadataEntry key="babel-version" value="0.8.6"/>
+   </Metadata>
+   <Comment>
+When the GoPort is hit, use the StringConsumerPort to send a
+string. 
+   </Comment>
+   <Class abstract="false">
+      <Extends>
+         <SymbolName name="SIDL.BaseClass" version="0.8.2"/>
+      </Extends>
+      <ImplementsBlock>
+         <SymbolName name="gov.cca.ports.GoPort" version="0.6.2"/>
+         <SymbolName name="gov.cca.Component" version="0.6.2"/>
+      </ImplementsBlock>
+      <AllParentClasses>
+         <SymbolName name="SIDL.BaseClass" version="0.8.2"/>
+      </AllParentClasses>
+      <AllParentInterfaces>
+         <SymbolName name="gov.cca.Port" version="0.6.2"/>
+         <SymbolName name="SIDL.BaseInterface" version="0.8.2"/>
+         <SymbolName name="gov.cca.ports.GoPort" version="0.6.2"/>
+         <SymbolName name="gov.cca.Component" version="0.6.2"/>
+      </AllParentInterfaces>
+      <MethodsBlock>
+         <Method communication="normal" copy="false" definition="normal" extension="" shortname="go">
+            <Comment>
+Execute some encapsulated functionality on the component. 
+Return 0 if ok, -1 if internal error but component may be 
+used further, and -2 if error so severe that component cannot
+be further used safely.
+            </Comment>
+            <Type type="integer"/>
+            <ArgumentList/>
+            <ThrowsList/>
+         </Method>
+         <Method communication="normal" copy="false" definition="normal" extension="" shortname="setServices">
+            <Comment>
+Obtain Services handle, through which the 
+component communicates with the framework. 
+This is the one method that every CCA Component
+must implement. The component will be called
+with a nil/null Services pointer when it is
+to shut itself down.
+            </Comment>
+            <Type type="void"/>
+            <ArgumentList>
+               <Argument copy="false" mode="in" name="services">
+                  <Type type="symbol">
+                     <SymbolName name="gov.cca.Services" version="0.6.2"/>
+                  </Type>
+               </Argument>
+            </ArgumentList>
+            <ThrowsList/>
+         </Method>
+      </MethodsBlock>
+   </Class>
+</Symbol>

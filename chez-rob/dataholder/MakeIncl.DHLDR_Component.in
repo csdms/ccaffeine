@@ -1,0 +1,59 @@
+#
+# This file is for other components/frameworks to include
+# in their makes to pick up proper definitions of our
+# header/library locations. They must define ahead
+# (or in their environment) DHLDR_ROOT pointing to the
+# directory containing this file. We prefer this
+# approach to writing brittle hwcc, hwf77, hwf90, and
+# hwCC wrappers.
+#
+# Because DHLDR_ROOT is defined externally, this entire
+# directory can be moved around in the file system
+# without this file breaking. 
+# If you want a file that presents absolute definitions as specified
+# at install time, see hwConfig.sh.
+# If you want a similar file pointing to a built
+# but not yet installed component, see hwConfigTemporary.sh.
+#
+
+#--------------------------------------------------------------
+# absolute path to where MPI lives
+#--------------------------------------------------------------
+DHLDR_MPI_ROOT = @MPI_ROOT@
+DHLDR_MPI_LIB = $(DHLDR_MPI_ROOT)/build/LINUX/ch_p4/lib/libmpich.a
+DHLDR_MPI_INC = -I$(DHLDR_MPI_ROOT)/include -I$(DHLDR_MPI_ROOT)/build/LINUX/ch_p4/include
+
+#--------------------------------------------------------------
+# absolute path to where CCAFFEINE lives
+#--------------------------------------------------------------
+DHLDR_CCAFFEINE_ROOT = @CCAFFEINE_ROOT@
+
+
+#---------------------------------------------------------------
+# absolute path to where our c++ sources are.
+# In this simple example it's the same as the externally defined root.
+#---------------------------------------------------------------
+DHLDR_CXX_HOME= $(DHLDR_ROOT)
+
+#---------------------------------------------------------------
+# Flags needed to build against our component.
+#---------------------------------------------------------------
+DHLDR_INC= -I$(DHLDR_CXX_HOME) $(DHLDR_MPI_INC)
+
+#---------------------------------------------------------------
+# DHLDR c++ lib with namespaces for static linking
+#---------------------------------------------------------------
+DHLDR_LIB= $(DHLDR_CXX_HOME)/libDataHolder.a
+
+#---------------------------------------------------------------
+# The compiler tools or distributions used to build DHLDR.
+#---------------------------------------------------------------
+DHLDR_CXX= @CXX@
+
+#---------------------------------------------------------------
+# The compiler flags used to build DHLDR.
+#---------------------------------------------------------------
+DHLDR_CXX_FLAGS= @CXXFLAGS@ -D_CCAMPI
+
+# end
+# $Header: /cvs/ccaffeine/repository/dccafe/chez-rob/dataholder/MakeIncl.DHLDR_Component.in,v 1.3 2000/10/20 00:16:24 rob Exp $

@@ -1,0 +1,14 @@
+setSize 892 675
+setMaximum true
+setDropLocation 379 50
+pulldown DataHolder DataHolder0
+parameters DataHolder0 CONFIG rows 10
+parameters DataHolder0 CONFIG cols 10
+go DataHolder0 freeze
+setDropLocation 94 181
+pulldown Diffusion Diffusion0
+setDropLocation 420 263
+pulldown CUMULVS CUMULVS0
+connect Diffusion0 DATA DataHolder0 DATA
+connect Diffusion0 VIZ CUMULVS0 VIZ
+eof

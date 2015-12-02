@@ -1,0 +1,6 @@
+*.lo
+.babel_src_list
+.counter
+.fnumbers
+.libs
+*.la

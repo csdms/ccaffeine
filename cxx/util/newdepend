@@ -1,0 +1,4 @@
+#!/bin/sh
+# echo $1.depends
+touch $1.depends
+exit 0

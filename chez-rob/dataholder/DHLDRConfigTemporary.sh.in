@@ -1,0 +1,43 @@
+#
+# This file is sh-compatible and is provided for other
+# components/frameworks to include in their makes or other scripts
+# to pick up proper ** INSTALLED ** definitions of our header/library
+# locations.  We prefer this approach to writing brittle hwcc, hwf77,
+# hwf90, and hwCC wrappers.
+
+# If you want a file that presents absolute definitions 
+# corresponding to the pre-installation build tree,
+# see hwConfigTemporary.sh.
+
+# If you want a file that presents relocatable definitions 
+# suitable for makefile inclusions, see MakeIncl.HWMFC_Component.
+
+#---------------------------------------------------------------
+# HWMFC entire tree.
+#---------------------------------------------------------------
+HWMFC_ROOT='@HWMFC_ROOT@'
+
+#---------------------------------------------------------------
+# HWMFC c++ tree and flags to digest headers while building 
+# HWMFC-dependent c++ components.
+#---------------------------------------------------------------
+HWMFC_CXX_HOME='@HWMFC_ROOT@'
+HWMFC_INC='-I@HWMFC_ROOT@'
+
+#---------------------------------------------------------------
+# HWMFC c++ lib with namespaces
+#---------------------------------------------------------------
+HWMFC_LIB='@HWMFC_ROOT@/libhw00.a'
+
+#---------------------------------------------------------------
+# The compiler tools used to build HWMFC.
+#---------------------------------------------------------------
+HWMFC_CXX='@CXX@'
+
+#---------------------------------------------------------------
+# The compiler flags used to build HWMFC.
+#---------------------------------------------------------------
+HWMFC_CXX_FLAGS='@CXXFLAGS@'
+
+# end
+# $Header: /cvs/ccaffeine/repository/dccafe/chez-rob/dataholder/DHLDRConfigTemporary.sh.in,v 1.1 2000/10/17 22:45:56 rob Exp $

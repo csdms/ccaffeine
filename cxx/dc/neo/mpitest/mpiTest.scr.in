@@ -1,0 +1,18 @@
+# test input for code generator
+!systemheader {#include <mpi.h>}
+!systemheader {#include <iostream>}
+!header {// test of a header comment}
+path append @EGNEO_CCA_DATA@
+path append @NEOTESTPARAMETER_CCA_DATA@
+repository get neo::test::Parameter
+repository get eg::neo::SimpleStamper
+!code {std::cerr << "####### Creating stamper s1 #########" << std::endl;}
+pulldown eg::neo::SimpleStamper s1
+!code {std::cerr << "####### Creating stamper s2 #########" << std::endl;}
+pulldown eg::neo::SimpleStamper s2
+!code {std::cerr << "####### Connecting stampers #########" << std::endl;}
+connect s1 out_port s2 in_port
+!code {std::cerr << "####### Running stamper s1 #########" << std::endl;}
+go s1 go
+!code {std::cerr << "####### Shutting down #########" << std::endl;}
+eof

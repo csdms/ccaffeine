@@ -1,0 +1,71 @@
+buildroot=../..
+
+CCAFE_HOME=..
+
+zeroth: first
+
+include $(CCAFE_HOME)/Makefile.Rules
+VPATH := $(srcdir)/cxx/cmd
+
+%.o : %.cxx
+	$(CXX) -c $(CXXFLAGS) $<
+
+%.i : %.cxx
+	-$(RM) $@
+	$(CXX) $(CPPFLAGS) $< | egrep -v ^$$ |egrep -v '^# ' > $@
+
+# generic commandline framework
+CXXSRC =	\
+CmdContext.cxx \
+CmdActionExit.cxx \
+CmdActionHelp.cxx \
+CmdParse.cxx
+
+# abstract classes
+HDRS = \
+CmdAction.h \
+
+CXXOBJ = $(CXXSRC:%.cxx=%.o)
+
+LIB= libcmd.a
+first all : lib
+	@touch .allbuild.complete
+
+lib $(LIB): $(CXXOBJ) $(HDRS)
+	-@$(RM) $(LIB)
+	ar ruv $(LIB) $(CXXOBJ)
+	$(RANLIB) $(LIB)
+
+gen:
+	@echo "gen cmd done"
+
+src-list:
+	@$(RM) src-list
+	@echo "CMD_LIST=\\" >> src-list
+	@for i in $(CXXSRC) ; do \
+		echo "$(srcdir)/cxx/cmd/$$i \\" >> src-list ; \
+	done
+	@echo "" >> src-list
+	@echo updated src-list
+
+bins:
+	@touch .binbuild.complete
+
+clean : 
+	-$(RM) shr.o $(CXXOBJ) *~ \#* *.i *.a *.so *.html *.gif \
+		*.u *.db *.tex *.class \
+		*.ps *.pnm *.eps *.aux *.dvi *.log .*html core src-list
+
+depend:
+	$(DEPEND) $(CXXFLAGS) $(CXXSRC)
+
+depend-sys:
+	$(DEPENDSYS) $(CXXFLAGS) $(CXXSRC)
+
+.PHONY: src-list
+
+ifneq "x$(TARGET)" "xclean"
+ifneq "x$(TARGET)" "xdistclean"
+include Makefile.depends
+endif
+endif

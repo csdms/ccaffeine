@@ -1,0 +1,63 @@
+setSize 842 648
+setMaximum true
+setDropLocation 472 364
+pulldown DataHolder DataHolder0
+parameters DataHolder0 CONFIG rows 10
+parameters DataHolder0 CONFIG cols 10
+go DataHolder0 freeze
+move DataHolder0 509 330
+setDropLocation 132 345
+pulldown ISIS_Vector ISIS_Vector0
+connect ISIS_Vector0 ESI_MapPartition DataHolder0 map
+setDropLocation 184 251
+pulldown ISIS_DCSR_Matrix ISIS_DCSR_Matrix0
+move ISIS_DCSR_Matrix0 184 207
+move ISIS_DCSR_Matrix0 191 129
+connect ISIS_DCSR_Matrix0 ESI_MapPartition DataHolder0 map
+move ISIS_DCSR_Matrix0 317 113
+move ISIS_Vector0 275 437
+move DataHolder0 292 326
+move ISIS_DCSR_Matrix0 321 27
+move DataHolder0 328 252
+move DataHolder0 323 280
+move DataHolder0 323 247
+move ISIS_Vector0 324 382
+setDropLocation 81 435
+pulldown Identity_PC Identity_PC0
+move Identity_PC0 20 414
+connect Identity_PC0 Sample_ESI_Vector ISIS_Vector0 x
+connect Identity_PC0 ESI_MatrixMultiply ISIS_DCSR_Matrix0 ESI_MatrixMultiply
+move Identity_PC0 18 29
+move Identity_PC0 57 17
+setDropLocation 35 197
+pulldown ISIS_GMRES ISIS_GMRES0
+connect ISIS_GMRES0 ESI_Operator ISIS_DCSR_Matrix0 ESI_Operator
+connect ISIS_GMRES0 ESI_Preconditioner Identity_PC0 ESI_Preconditioner
+move ISIS_GMRES0 98 173
+move ISIS_GMRES0 101 402
+setDropLocation 44 251
+pulldown Diffusion2 Diffusion20
+connect Diffusion20 matrix ISIS_DCSR_Matrix0 ESI_MatrixRowWriteAccess
+connect Diffusion20 BVector ISIS_Vector0 x
+move Diffusion20 21 180
+parameters Diffusion20 Config timeParam 0.1
+parameters Diffusion20 Config dxParam 0.1
+parameters Diffusion20 Config dyParam 0.1
+parameters Diffusion20 Config dtParam 0.1
+parameters Diffusion20 Config tEndParam 50.0
+parameters Diffusion20 Config tBeginParam 1.0
+parameters Diffusion20 Config isRandom true
+parameters Diffusion20 Config randDuration 30.0
+parameters Diffusion20 Config randProbability 0.0080
+parameters Diffusion20 Config randMaxTemp 100000.0
+parameters Diffusion20 Config randMinTemp 1.0
+connect Diffusion20 DATA DataHolder0 DATA
+move Diffusion20 18 259
+move Diffusion20 17 241
+move Diffusion20 17 250
+move Identity_PC0 -7 14
+move Diffusion20 81 252
+move Identity_PC0 -34 87
+move ISIS_DCSR_Matrix0 338 24
+move Identity_PC0 28 28
+eof

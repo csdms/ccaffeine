@@ -1,0 +1,13 @@
+# note this is valid syntax, but not the way it should be done.
+# try cxx/util/genDLIndex if you want to create
+# one of the oldstyle files.
+!date=Mon May 12 15:19:28 PDT 2003
+!builder=porky@ccafe.ca.sandia.gov
+!location=/usr/lib/
+libxml.so
+create_Timer Timer
+create_Crapper Loo
+!location=/lib/
+libdb.so
+create_DB DB2
+

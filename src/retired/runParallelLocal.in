@@ -1,0 +1,251 @@
+#! @SHELL@
+DEBUG=0
+progname=`echo $0 | sed -e 's%.*/%%g'`
+HAVE_MPI=@USEMPI@
+if test "x$HAVE_MPI" != "x1" ; then
+  echo "$progname: ccaffeine compiled without MPI. Exiting..."
+  echo "$progname: (Don't know how to launch w/out mpirun)"
+  exit 1
+fi
+MPIRUN=@MPIRUN@
+MPI_IS_MPD=@MPI_IS_MPD@
+if test "x$MPI_IS_MPD" = "x1"; then
+  mpdbin=@MPI_BIN@
+  mpdhelp="$mpdbin/mpdallexit plus:"
+else
+  mpdbin=""
+  mpdhelp=""
+fi
+
+bindir=@bindir@
+libdir=@libdir@
+prefix=@prefix@
+pkglibdir=@pkglibdir@
+pkgdatadir=@pkgdatadir@
+binsuffix=@PROGRAM_SUFFIX@
+client=$bindir/ccafe-client$binsuffix
+JAVA=@JAVA@; export JAVA
+JAVARUNFLAGS="-Djava.compiler=NONE -classpath $CCA_JAR:$prefix/cca/ccafe-@CCAFE_VERSION@/java"
+KILL_LIST="$client java pvmd3 slicer runOneProcWGUI$binsuffix mpirun runGUI runGUI$binsuffix runOneProcWGUI"
+MPI_HOST=localhost;export MPI_HOST # no clue, but sometimes needed
+# set some defaults
+CCAFE_IO_DIR="ccafe-io"
+PROCFILE=processors
+USERPROCFILE=0
+STARTDIR=`pwd`
+DIRPROCFILE=$STARTDIR
+NUMPROC=3
+
+# process the command line stuff before validating io locations
+i=$#
+while [ $i -gt 0 ]
+do
+	i=`expr $i - 1`
+	arg=$1
+	case $arg in
+	"--np")
+		shift
+		i=`expr $i - 1`
+		arg=$1
+		NUMPROC=$arg
+	        ;;
+
+	"--help")
+		cat << __EOF 
+$progname [--np <number of processes>] [--kill] [ccaffeine options]
+	--np 			number of processes requested from MPI.
+
+	--kill  		crudely wipe out the Ccaffeine parallel backend 
+				run previously. $mpdhelp
+                     killall -9 $client 
+                     java pvmd3 slicer run[OneProcW]GUI[$binsuffix] mpirun 
+
+  --debug         [0,1]   be less or more verbose in launching.
+
+	--help  		this message.
+
+	ccaffeine options	any valid combination of ccafe-client options
+          Interesting ones are:
+          --ccafe-outputdir <directory for scratch files>
+          --ccafe-rc <input script> 
+            An simple input is:  $pkgdatadir/CcaffeineRC
+
+__EOF
+		exit 0
+		;;
+
+	"--kill")
+                if test "x$MPI_IS_MPD" = "x1"; then
+                   $mpdbin/mpdallexit
+                fi
+		killall $KILL_LIST >/dev/null 2>&1
+		sleep 2
+		killall -9 $KILL_LIST >/dev/null 2>&1
+		exit 0
+		;;
+
+        "--ccafe-outputdir")
+		shift
+		CCAFE_IO_DIR="$1"
+		;;
+
+        "--debug")
+                shift
+                DEBUGSET="$1"
+                ;;
+
+        "--builderPort")
+		shift
+		MUXERARG="$MUXERARG --builderPort $1"
+		;;
+
+        "--ccafe-rc")
+		CCAFEARG="$CCAFEARG --ccafe-rc"
+                shift
+                CCAFE_RC_FILE="$1"
+                rcfile=$1
+                USERRCFILE=1
+		CCAFEARG="$CCAFEARG $CCAFE_RC_FILE"
+                ;;
+
+        "--file")
+		shift
+		PROCFILE=`$1`
+		USERPROCFILE=1
+		DIRPROCFILE=`dirname $1`
+		if test "x$DIRPROCFILE" = "x." ; then
+			PROCFILE="$STARTDIR/$1"
+		fi
+		if test ! -f $1 ;  then
+			echo "$progname: --file $1 not readable"
+			exit 1
+		fi
+		;;
+
+	*)
+		CCAFEARG="$CCAFEARG $arg"
+		if [ $DEBUG -ne "0" ]
+		then
+		    echo "arg =" $arg
+		    echo "CCAFEARG = " $CCAFEARG
+		fi
+	        ;;
+        esac
+	shift
+done
+
+if test "x$DEBUGSET" = "x1" ; then
+  DEBUG=1
+fi
+
+if test -d "$CCAFE_IO_DIR" -a -w "$CCAFE_IO_DIR"; then
+  :
+else
+  if test -d "$CCAFE_IO_DIR" ; then
+    echo "$progname: Can't write in $CCAFE_IO_DIR. Specify another with"
+    echo "  --ccafe-outputdir <some writable dir>"
+    exit 1;
+  fi
+  mkdir -p $CCAFE_IO_DIR
+  if test ! -d "$CCAFE_IO_DIR" ; then
+    echo "$progname: Can't create $CCAFE_IO_DIR. Specify another with"
+    echo "  --ccafe-outputdir=<some writable dir>"
+    exit 1;
+  fi
+fi
+
+# check and avoid relative path to work around rob/mpi bugs (and create others).
+slash=`echo $CCAFE_IO_DIR |sed -e 's%^/.*%yes%g'`
+if test "x$slash" != "xyes" ; then
+  CCAFE_IO_DIR=$STARTDIR/$CCAFE_IO_DIR
+fi
+
+tmpdir=$CCAFE_IO_DIR
+olddir=`pwd`
+cd $tmpdir
+tmpfile=`mktemp rplXXXXXX`
+if [ $? -ne 0 ]; then
+   echo "$progname: Can't create temp files in $tmpdir. Exiting..."
+   exit 1
+fi
+cd $olddir
+mlocal=$tmpdir/machines.local.$tmpfile
+muxfile=$tmpdir/firstMuxer.$tmpfile
+muxlog=$tmpdir/muxlog.$tmpfile
+if test "x$USERPROCFILE" = "x0" ; then
+  pfile=$tmpdir/processors.$tmpfile
+else
+  pfile=$PROCFILE
+fi
+
+# check and avoid relative path to work around rob/mpi bugs (and create others).
+if test "x$USERRCFILE" = "x1" ; then
+  slash=`echo $rcfile |sed -e 's%^/.*%yes%g'`
+  if test "x$slash" != "xyes" ; then
+    rcfile=$STARTDIR/$rcfile
+  fi
+fi
+
+if test "x$rcfile" = "x" ; then
+  RCFLAG=""
+else
+  RCFLAG="--ccafe-rc $rcfile"
+fi
+
+MPIARG="-np $NUMPROC"
+# may be different for mpd
+MFILE="-machinefile $mlocal"
+
+if test "x$MPI_IS_MPD" = "x1"; then
+  if test ! -f ~/.mpd.conf; then
+    echo "$progname: You forgot to set up ~/.mpd.conf. Exiting."
+    echo "           You can make one by running $bindir/setupMPD"
+    exit 1
+  fi
+  echo "Whacking all present MPI mpd device jobs..."
+  $mpdbin/mpdallexit
+  echo "Restarting mpd"
+  $mpdbin/mpd -b
+  sleep 2
+  $mpdbin/mpdtrace
+  MFILE=""
+fi
+rm -f $tmpdir/pErr* $tmpdir/pOut*
+
+
+# setup machines list
+echo 127.0.0.1 > $mlocal
+# set up proc file for clients
+if test "x$USERPROCFILE" = "x0" ; then
+  echo 127.0.0.1 server > $pfile
+  i=0
+  while [ $i -lt $NUMPROC ]
+  do
+	  echo $i client >> $pfile
+	  i=`expr $i + 1`
+  done
+fi
+# set up file for muxer
+echo 127.0.0.1 server > $muxfile
+i=0
+while [ $i -lt $NUMPROC ]
+do
+  echo $i client >> $muxfile
+  i=`expr $i + 1`
+done
+MUXCONFIG="--file $muxfile --logFile $muxlog $MUXERARG"
+echo starting the muxer ...
+if [ $DEBUG -ne "0" ]
+then
+    echo "$JAVA $JAVARUNFLAGS gov.sandia.ccaffeine.dc.distributed.MuxingProcess --name 127.0.0.1 --timeout 0 $MUXCONFIG"
+fi
+$JAVA $JAVARUNFLAGS gov.sandia.ccaffeine.dc.distributed.MuxingProcess --name 127.0.0.1 --timeout 0 $MUXCONFIG &
+echo done.
+sleep 1
+
+if [ $DEBUG -ne "0" ]
+then
+    echo $MPIRUN $MPIARG $MFILE $client --file $pfile --ccafe-outputdir $CCAFE_IO_DIR $RCFLAG $CCAFEARG &
+fi
+
+$MPIRUN $MPIARG $MFILE $client --file $pfile --ccafe-outputdir $CCAFE_IO_DIR $RCFLAG $CCAFEARG &

@@ -1,0 +1,129 @@
+
+#*
+#*  Version: $Revision: 1.1 $
+#*  Version control file: $RCSfile: Makefile.in,v $
+#*  Date last modified: $Date: 2006/08/04 18:39:15 $
+#*  Last modified by: $Author: baallan $
+
+# ben allan, 7/99, because we loath templates.
+
+buildroot=../../..
+CCAFE_HOME=../..
+zeroth: first
+
+include $(CCAFE_HOME)/Makefile.Rules
+VPATH := $(srcdir)/cxx/jc++/lang
+
+
+PURIFY=
+SOLFLAGS= +w
+SOLFLAGS=
+LOCALFLAGS= -DMAINExceptionJC $(SOLFLAGS)
+
+CXXSRC = \
+Object.cxx \
+FloatJC.cxx \
+DoubleJC.cxx \
+IntegerJC.cxx \
+LongJC.cxx \
+BooleanJC.cxx \
+String.cxx
+
+# ExceptionJC.cxx \
+
+CXXOBJ=$(CXXSRC:%.cxx=%.o)
+
+first all: lib
+
+src-list:
+	@for i in $(CXXSRC) ; do \
+		echo "$(srcdir)/cxx/jc++/lang/$$i \\" >> ../src-list ; \
+	done
+
+test:
+	$(PURIFY) $(CXX) -DNOISEX $(LOCALFLAGS) $(CXXFLAGS) ExceptionJC.cxx -o noisy.x
+	$(PURIFY) $(CXX) $(LOCALFLAGS) $(CXXFLAGS) ExceptionJC.cxx -o quiet.x
+	@echo 'RUNNING catch/throw ExceptionJC tests...'
+	@echo '----------------------------------------------------------------------------'
+	./noisy.x
+	@echo '----------------------------------------------------------------------------'
+	./quiet.x
+	@echo '----------------------------------------------------------------------------'
+	./quiet.x a
+	@echo '----------------------------------------------------------------------------'
+	./quiet.x b
+	@echo '----------------------------------------------------------------------------'
+	./quiet.x d
+	@echo '----------------------------------------------------------------------------'
+	./quiet.x e
+	@echo '----------------------------------------------------------------------------'
+	-./quiet.x c
+	-$(RM) core
+	@echo '----------------------------------------------------------------------------'
+	-./quiet.x f
+	-$(RM) core
+	@echo 'DONE ------------------------------------------------------------------------'
+
+eftest:
+	$(PURIFY) $(CXX) -DNOISEX $(LOCALFLAGS) $(CXXFLAGS) ExceptionJC.cxx $(EFENCE) -o efnoisy.x
+	$(PURIFY) $(CXX) $(LOCALFLAGS) $(CXXFLAGS) ExceptionJC.cxx $(EFENCE) -o efquiet.x
+	@echo 'RUNNING catch/throw ExceptionJC tests...'
+	@echo '----------------------------------------------------------------------------'
+	./efnoisy.x
+	@echo '----------------------------------------------------------------------------'
+	./efquiet.x
+	@echo '----------------------------------------------------------------------------'
+	./efquiet.x a
+	@echo '----------------------------------------------------------------------------'
+	./efquiet.x b
+	@echo '----------------------------------------------------------------------------'
+	./efquiet.x d
+	@echo '----------------------------------------------------------------------------'
+	./efquiet.x e
+	@echo '----------------------------------------------------------------------------'
+	-./efquiet.x c
+	-$(RM) core
+	@echo '----------------------------------------------------------------------------'
+	-./efquiet.x f
+	-$(RM) core
+	@echo 'DONE ------------------------------------------------------------------------'
+
+#note: in the following target, solaris ar converts ExceptionJC.o to libjexception.a
+# for no known reason. It should normally leave ExceptionJC.o in place, copying
+# it into the archive.
+olib : compile
+	cp ExceptionJC.o Except.o
+	ar $(ARFLAGS) libjexception.a $(CXXOBJ)
+	$(RANLIB) libjexception.a
+
+lib : compile
+	ar $(ARFLAGS) libjexception.a $(CXXOBJ)
+	$(RANLIB) libjexception.a
+
+compile : $(CXXOBJ)
+
+.SUFFIXES:
+.SUFFIXES: .o .cxx
+
+ExceptionJC.o:
+	$(CXX) -c -D_USE_EXJC $(CXXFLAGS) ExceptionJC.cxx
+
+.cxx.o:
+	$(CXX) -c $(CXXFLAGS) $<
+
+clean:
+	-$(RM) -r *.o *.a *.so core quiet.x noisy.x *.u
+
+depend:
+	$(DEPEND) $(CXXFLAGS) $(CXXSRC)
+
+depend-sys:
+	$(DEPENDSYS) $(CXXFLAGS) $(CXXSRC)
+
+.PHONY: src-list
+
+ifneq "x$(TARGET)" "xclean"
+ifneq "x$(TARGET)" "xdistclean"
+include Makefile.depends
+endif
+endif

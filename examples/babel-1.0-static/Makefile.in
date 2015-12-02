@@ -1,0 +1,63 @@
+# $Revision: 1.1 $
+# $Author: baallan $
+
+zeroth: first
+
+# computed from `ccafe-config --var CCAFE_MAKEINCL`
+# at configure time
+CCAFE_MAKEINCL=@CCAFE_MAKEINCL@
+
+include $(CCAFE_MAKEINCL)
+include $(CCAFE_BABEL_CCA_CONFIG)
+
+
+
+CCAFE_HOME=$(CCAFE_pkgdatadir)/cxx
+include $(CCAFE_HOME)/Makefile.Rules
+
+B2BCPP=$(BABEL_CCA_ROOT)/bin/bld2babel-cpp
+BABEL = $(CCASPEC_BABEL_BABEL)
+XBABEL_FLAGS=--hide-glue
+CCA_SERVER_DIR = $(CCASPEC_BABEL_XML_REPOSITORY)
+CCAFE_SERVER_DIR= $(CCAFE_pkgdatadir)/xml
+
+INPUT= ./test-input.scr
+OUTPUT=TestScriptBabel
+OUTDIR=src
+
+include MakeIncl.user
+
+SIDL_FILES=$(PKG_NAME).sidl
+
+all first: gen objs libs bins run
+
+gen: script-gen babel-gen
+
+script-gen:
+	$(B2BCPP) $(INPUT) $(OUTPUT) $(OUTDIR)
+
+babel-gen : $(SIDL_FILES)
+	$(BABEL) $(BABEL_FLAGS) $(XBABEL_FLAGS) -sC++ \
+		--output-directory=src --vpath=src \
+		--repository-path $(CCA_SERVER_DIR) \
+		--repository-path $(CCAFE_SERVER_DIR) $(SIDL_FILES)
+	$(BABEL) $(BABEL_FLAGS) $(XBABEL_FLAGS) $(CCA_BABEL_XMLFLAGS) \
+		--output-directory=xml \
+		--repository-path $(CCA_SERVER_DIR) \
+		--repository-path $(CCAFE_SERVER_DIR) $(SIDL_FILES)
+
+objs libs bins run:
+	(cd src; $(MAKE) $@)
+
+clean:
+	(cd src; $(MAKE) TARGET=clean $@)
+	-@$(RM) -r xml
+
+distclean: clean
+	$(RM) Makefile test-input.scr reconfigure
+
+# configure will work with 2.53 or later.
+configure: configure.ac config/*.m4
+	autoconf-2.53 configure.ac > configure
+	chmod a+x ./configure
+

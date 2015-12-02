@@ -1,0 +1,40 @@
+<xml>
+<!-- 
+Intent is to expand on this file as time goes by.
+  For now just enough to keep dccafe happy in replacing .cca format with
+  an xml format twice as complicated.
+ -->
+<!-- babel component example. -->
+<!-- if babel requires ccaffeine ports, framework changes to "ccaffeine". -->
+<!-- cca_pattern_binding might have scirun or aces sidl alternatives. -->
+<!-- -->
+<componentDeployment
+   name="BarComponent"
+   uniqueID="baallan@146.246.248.16#7.25.2003.dbg:/BarComponent"
+   palletClassAlias="Bar_SalesPitch">
+   <environment> 
+      <cca_spec binding="babel"/>
+      <library loading="dynamic"
+               name="libBarComponent.so" 
+               location="/home/baallan/mycomplibs" />
+    </environment>
+</componentDeployment>
+<!-- -->
+<!-- skinny classic component example -->
+<!-- create function is by convention create_FooComponentLite -->
+<!-- wrapper will have to make palletClassAlias same as name -->
+<!-- ccaffeine will make rosyi assumptions about env.lang and env.fwk -->
+<!-- -->
+<componentDeployment 
+  name="FooComponentLite" 
+>
+    <environment> 
+        <cca_spec  binding="classic"/> 
+        <library loading="dynamic" 
+                 name="libclassicFooLite.so"
+                 location="/home/baallan/mycomplibs"
+        />
+    </environment>
+</componentDeployment>
+<!-- -->
+</xml>
